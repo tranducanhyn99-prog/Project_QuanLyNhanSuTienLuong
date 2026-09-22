@@ -288,58 +288,57 @@ src/
 ├── main/
 │   └── java/
 │       └── com/
-│           └── nhom06/
-│               ├── config/
-│               │   ├── DatabaseConnection.java   # Quản lý kết nối JDBC
-│               │   └── AppConfig.java            # Hằng số ứng dụng (tên app, version)
-│               ├── model/
-│               │   ├── NhanVien.java
-│               │   ├── PhongBan.java
-│               │   ├── ChucVu.java
-│               │   ├── TaiKhoan.java
-│               │   ├── ChamCong.java
-│               │   ├── PhuCapNhanVien.java
-│               │   ├── KhauTruNhanVien.java
-│               │   ├── BangLuong.java
-│               │   └── ChiTietBangLuong.java
-│               ├── dao/
-│               │   ├── TaiKhoanDAO.java
-│               │   ├── NhanVienDAO.java
-│               │   ├── PhongBanDAO.java
-│               │   ├── ChucVuDAO.java
-│               │   ├── ChamCongDAO.java
-│               │   ├── PhuCapDAO.java
-│               │   ├── KhauTruDAO.java
-│               │   ├── BangLuongDAO.java
-│               │   └── BaoCaoDAO.java
-│               ├── service/
-│               │   ├── AuthService.java
-│               │   ├── NhanVienService.java
-│               │   ├── DanhMucService.java
-│               │   ├── ChamCongService.java
-│               │   ├── PhuCapKhauTruService.java
-│               │   ├── PayrollService.java
-│               │   └── BaoCaoService.java
-│               ├── ui/
-│               │   ├── auth/
-│               │   │   └── LoginFrame.java
-│               │   ├── main/
-│               │   │   └── MainFrame.java
-│               │   ├── nhanvien/
-│               │   │   ├── NhanVienPanel.java
-│               │   │   └── DanhMucPanel.java
-│               │   ├── chamcong/
-│               │   │   └── ChamCongPanel.java
-│               │   ├── luong/
-│               │   │   └── BangLuongPanel.java
-│               │   └── baocao/
-│               │       └── BaoCaoPanel.java
-│               ├── session/
-│               │   └── Session.java              # Singleton lưu thông tin đăng nhập
-│               └── util/
-│                   ├── PasswordUtil.java          # SHA-256 hash mật khẩu
-│                   ├── ValidationUtil.java        # Kiểm tra null, định dạng, range
-│                   └── MessageUtil.java           # Hiển thị JOptionPane chuẩn
+│           ├── config/
+│           │   ├── DatabaseConnection.java   # Quản lý kết nối JDBC
+│           │   └── AppConfig.java            # Hằng số ứng dụng (tên app, version)
+│           ├── model/
+│           │   ├── NhanVien.java
+│           │   ├── PhongBan.java
+│           │   ├── ChucVu.java
+│           │   ├── TaiKhoan.java
+│           │   ├── ChamCong.java
+│           │   ├── PhuCapNhanVien.java
+│           │   ├── KhauTruNhanVien.java
+│           │   ├── BangLuong.java
+│           │   └── ChiTietBangLuong.java
+│           ├── dao/
+│           │   ├── TaiKhoanDAO.java
+│           │   ├── NhanVienDAO.java
+│           │   ├── PhongBanDAO.java
+│           │   ├── ChucVuDAO.java
+│           │   ├── ChamCongDAO.java
+│           │   ├── PhuCapDAO.java
+│           │   ├── KhauTruDAO.java
+│           │   ├── BangLuongDAO.java
+│           │   └── BaoCaoDAO.java
+│           ├── service/
+│           │   ├── AuthService.java
+│           │   ├── NhanVienService.java
+│           │   ├── DanhMucService.java
+│           │   ├── ChamCongService.java
+│           │   ├── PhuCapKhauTruService.java
+│           │   ├── PayrollService.java
+│           │   └── BaoCaoService.java
+│           ├── ui/
+│           │   ├── auth/
+│           │   │   └── LoginFrame.java
+│           │   ├── main/
+│           │   │   └── MainFrame.java
+│           │   ├── nhanvien/
+│           │   │   ├── NhanVienPanel.java
+│           │   │   └── DanhMucPanel.java
+│           │   ├── chamcong/
+│           │   │   └── ChamCongPanel.java
+│           │   ├── luong/
+│           │   │   └── BangLuongPanel.java
+│           │   └── baocao/
+│           │       └── BaoCaoPanel.java
+│           ├── session/
+│           │   └── Session.java              # Singleton lưu thông tin đăng nhập
+│           └── util/
+│               ├── PasswordUtil.java          # SHA-256 hash mật khẩu
+│               ├── ValidationUtil.java        # Kiểm tra null, định dạng, range
+│               └── MessageUtil.java           # Hiển thị JOptionPane chuẩn
 └── resources/
     └── config.properties.template                # Template cấu hình JDBC
 ```

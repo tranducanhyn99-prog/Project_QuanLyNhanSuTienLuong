@@ -19,7 +19,7 @@ SQL Server (Tables, SP, Trigger, View, Function)
 
 ```
 src/
-├── main/java/com/nhom06/
+├── main/java/com/
 │   ├── config/         # DatabaseConnection, AppConfig
 │   ├── model/          # Java bean classes (NhanVien, TaiKhoan, ...)
 │   ├── dao/            # Data Access Objects (gọi SP/Query SQL Server)
