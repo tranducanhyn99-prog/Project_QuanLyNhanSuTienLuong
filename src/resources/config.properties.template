@@ -1,0 +1,15 @@
+# Template cấu hình kết nối JDBC
+# Sao chép file này thành config.properties và điền thông tin thực tế
+# KHÔNG COMMIT file config.properties lên GitHub
+
+# URL kết nối SQL Server
+# Thay localhost bằng IP/hostname nếu SQL Server trên máy khác
+# Thay 1433 nếu dùng port khác
+# Thay QuanLyNhanSuTienLuong bằng tên database thực tế
+db.url=jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhanSuTienLuong;encrypt=false;trustServerCertificate=true
+
+# Tên đăng nhập SQL Server (SQL Authentication)
+db.user=sa
+
+# Mật khẩu SQL Server
+db.password=YOUR_PASSWORD_HERE
