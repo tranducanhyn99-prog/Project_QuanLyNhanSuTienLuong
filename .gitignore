@@ -1,0 +1,29 @@
+﻿# Java / IDE
+*.class
+target/
+out/
+build/
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Secrets / local config
+.env
+*.env
+config.properties
+application.properties
+
+# SQL Server local artifacts
+*.bak
+*.mdf
+*.ldf
