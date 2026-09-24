@@ -21,16 +21,12 @@ public class DatabaseConnection {
                 user = props.getProperty("db.user");
                 password = props.getProperty("db.password");
             } else {
-                // Mặc định dự phòng nếu chưa tạo file config.properties
-                url = "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhanSuTienLuong;encrypt=false;trustServerCertificate=true;";
-                user = "sa";
-                password = "sa";
+                throw new ExceptionInInitializerError("Không tìm thấy file config.properties! Hãy tạo từ file template.");
             }
+        } catch (ExceptionInInitializerError e) {
+            throw e;
         } catch (Exception e) {
-            System.err.println("Cảnh báo: Không thể tải config.properties, dùng cấu hình mặc định.");
-            url = "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhanSuTienLuong;encrypt=false;trustServerCertificate=true;";
-            user = "sa";
-            password = "sa";
+            throw new ExceptionInInitializerError("Lỗi khi nạp file cấu hình config.properties: " + e.getMessage());
         }
     }
 

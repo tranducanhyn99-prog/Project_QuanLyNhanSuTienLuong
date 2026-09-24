@@ -89,12 +89,12 @@ BEGIN
         TenDangNhap   VARCHAR(50)   NOT NULL CONSTRAINT UQ_TAIKHOAN_TenDangNhap UNIQUE,
         MatKhau       CHAR(64)      NOT NULL, -- SHA-256 (64 hex characters)
         VaiTro        VARCHAR(30)   NOT NULL,
-        TrangThai     VARCHAR(10)   NOT NULL CONSTRAINT DF_TAIKHOAN_TrangThai DEFAULT 'HOATDONG',
+        TrangThai     VARCHAR(10)   NOT NULL CONSTRAINT DF_TAIKHOAN_TrangThai DEFAULT 'HOAT_DONG',
         NgayTao       DATE          NOT NULL CONSTRAINT DF_TAIKHOAN_NgayTao DEFAULT GETDATE(),
         NgaySuaCuoi   DATETIME      NULL,
         CONSTRAINT FK_TAIKHOAN_NHANVIEN FOREIGN KEY (MaNV) REFERENCES NHANVIEN(MaNV),
         CONSTRAINT CHK_TAIKHOAN_VaiTro CHECK (VaiTro IN ('DB_Admin','HR_Manager','Payroll_Officer','Employee')),
-        CONSTRAINT CHK_TAIKHOAN_TrangThai CHECK (TrangThai IN ('HOATDONG','KHOA'))
+        CONSTRAINT CHK_TAIKHOAN_TrangThai CHECK (TrangThai IN ('HOAT_DONG','KHOA'))
     );
 END
 GO
@@ -155,14 +155,15 @@ AS
 BEGIN
     DECLARE @SoNgayCong DECIMAL(4,1) = 0;
 
-    -- Kiểm tra bảng CHAMCONG nếu bảng đã tồn tại
+    -- Kiểm tra bảng CHAMCONG nếu bảng đã tồn tại (khớp thiết kế của TV2)
     IF EXISTS (SELECT * FROM sys.tables WHERE name = N'CHAMCONG')
     BEGIN
-        SELECT @SoNgayCong = ISNULL(SUM(SoCong), 0)
+        SELECT @SoNgayCong = COUNT(1)
         FROM CHAMCONG
         WHERE MaNV = @MaNV 
-          AND MONTH(Ngay) = @Thang 
-          AND YEAR(Ngay) = @Nam;
+          AND MONTH(NgayChamCong) = @Thang 
+          AND YEAR(NgayChamCong) = @Nam
+          AND TrangThai IN (N'CO_MAT', N'DI_TRE', N'VE_SOM');
     END
 
     RETURN @SoNgayCong;
@@ -273,7 +274,7 @@ BEGIN
             END
 
             INSERT INTO TAIKHOAN (MaNV, TenDangNhap, MatKhau, VaiTro, TrangThai, NgayTao)
-            VALUES (@NewMaNV, @TenDangNhap, @MatKhauSHA256, @VaiTro, 'HOATDONG', GETDATE());
+            VALUES (@NewMaNV, @TenDangNhap, @MatKhauSHA256, @VaiTro, 'HOAT_DONG', GETDATE());
         END
 
         COMMIT TRANSACTION;
