@@ -114,4 +114,3 @@ public class BangLuong {
         this.tongThucNhan = tongThucNhan;
     }
 }
-

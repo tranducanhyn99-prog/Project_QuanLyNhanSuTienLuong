@@ -1,6 +1,6 @@
 # TV4 - Test Case Transaction Module Tinh Luong
 
-**Tac gia:** Nguyen Quang Vinh (TV4, MSSV 24110385)  
+**Tac gia:** Nguyen Quang Vinh (TV4, MSSV 24110385)
 **Pham vi:** Kiem thu `sp_TinhBangLuongThang`, `fn_TinhTienCong`, trigger `trg_BangLuong_KhongSuaKhiDaChot`, view/index khau tru va UI `BangLuongPanel`.
 
 ## Dieu kien chuan bi

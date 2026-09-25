@@ -94,4 +94,3 @@ public class ChiTietBangLuong {
         this.thucNhan = thucNhan;
     }
 }
-
