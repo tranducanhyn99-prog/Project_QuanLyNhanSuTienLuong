@@ -4,20 +4,9 @@ import com.model.BangLuong;
 import com.model.ChiTietBangLuong;
 import com.service.PayrollService;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
-import javax.swing.JSplitPane;
-import javax.swing.JTable;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.ListSelectionModel;
+import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
+import java.awt.*;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -51,21 +40,21 @@ public class BangLuongPanel extends JPanel {
 
         LocalDate today = LocalDate.now();
         JPanel pnlTop = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        pnlTop.setBorder(BorderFactory.createTitledBorder("Tinh bang luong thang"));
+        pnlTop.setBorder(BorderFactory.createTitledBorder("Tính bảng lương tháng"));
 
         spnThang = new JSpinner(new SpinnerNumberModel(today.getMonthValue(), 1, 12, 1));
         spnNam = new JSpinner(new SpinnerNumberModel(today.getYear(), 2020, 2100, 1));
         spnNgayCongChuan = new JSpinner(new SpinnerNumberModel(26, 1, 31, 1));
 
-        JButton btnTinhLuong = new JButton("Tinh luong");
-        JButton btnXemKy = new JButton("Xem ky");
-        JButton btnTaiLai = new JButton("Tai lai");
+        JButton btnTinhLuong = new JButton("Tính lương");
+        JButton btnXemKy = new JButton("Xem kỳ");
+        JButton btnTaiLai = new JButton("Tải lại");
 
-        pnlTop.add(new JLabel("Thang:"));
+        pnlTop.add(new JLabel("Tháng:"));
         pnlTop.add(spnThang);
-        pnlTop.add(new JLabel("Nam:"));
+        pnlTop.add(new JLabel("Năm:"));
         pnlTop.add(spnNam);
-        pnlTop.add(new JLabel("Ngay cong chuan:"));
+        pnlTop.add(new JLabel("Ngày công chuẩn:"));
         pnlTop.add(spnNgayCongChuan);
         pnlTop.add(btnTinhLuong);
         pnlTop.add(btnXemKy);
@@ -73,7 +62,7 @@ public class BangLuongPanel extends JPanel {
         add(pnlTop, BorderLayout.NORTH);
 
         modelBangLuong = new DefaultTableModel(new String[]{
-            "Ma BL", "Thang", "Nam", "NCC", "Trang thai", "So NV", "Tong thuc nhan", "Ngay tao", "Ngay chot"
+            "Mã BL", "Tháng", "Năm", "NCC", "Trạng thái", "Số NV", "Tổng thực nhận", "Ngày tạo", "Ngày chốt"
         }, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -84,7 +73,7 @@ public class BangLuongPanel extends JPanel {
         tblBangLuong.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         modelChiTiet = new DefaultTableModel(new String[]{
-            "Ma CT", "Ma NV", "Ho ten", "Luong CB", "Ngay cong", "Tien cong", "Phu cap", "Khau tru", "Thuc nhan"
+            "Mã CT", "Mã NV", "Họ tên", "Lương CB", "Ngày công", "Tiền công", "Phụ cấp", "Khấu trừ", "Thực nhận"
         }, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -94,10 +83,10 @@ public class BangLuongPanel extends JPanel {
         tblChiTiet = new JTable(modelChiTiet);
 
         JScrollPane scrollBangLuong = new JScrollPane(tblBangLuong);
-        scrollBangLuong.setBorder(BorderFactory.createTitledBorder("Danh sach ky luong"));
+        scrollBangLuong.setBorder(BorderFactory.createTitledBorder("Danh sách kỳ lương"));
 
         JScrollPane scrollChiTiet = new JScrollPane(tblChiTiet);
-        scrollChiTiet.setBorder(BorderFactory.createTitledBorder("Chi tiet bang luong"));
+        scrollChiTiet.setBorder(BorderFactory.createTitledBorder("Chi tiết bảng lương"));
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollBangLuong, scrollChiTiet);
         splitPane.setResizeWeight(0.45);
@@ -124,8 +113,8 @@ public class BangLuongPanel extends JPanel {
 
         int confirm = JOptionPane.showConfirmDialog(
             this,
-            "Tinh bang luong thang " + thang + "/" + nam + " voi " + ngayCongChuan + " ngay cong chuan?",
-            "Xac nhan tinh luong",
+            "Tính bảng lương tháng " + thang + "/" + nam + " với " + ngayCongChuan + " ngày công chuẩn?",
+            "Xác nhận tính lương",
             JOptionPane.YES_NO_OPTION
         );
 
@@ -135,11 +124,11 @@ public class BangLuongPanel extends JPanel {
 
         try {
             int maBangLuong = payrollService.tinhBangLuongThang(thang, nam, ngayCongChuan);
-            JOptionPane.showMessageDialog(this, "Tinh luong thanh cong. Ma bang luong: " + maBangLuong);
+            JOptionPane.showMessageDialog(this, "Tính lương thành công. Mã bảng lương: " + maBangLuong);
             loadBangLuong();
             selectBangLuong(maBangLuong);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Tinh luong that bai: " + e.getMessage(), "Loi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Tính lương thất bại: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -151,13 +140,13 @@ public class BangLuongPanel extends JPanel {
             BangLuong bangLuong = payrollService.timBangLuongTheoKy(thang, nam);
             if (bangLuong == null) {
                 modelChiTiet.setRowCount(0);
-                JOptionPane.showMessageDialog(this, "Chua co bang luong thang " + thang + "/" + nam + ".");
+                JOptionPane.showMessageDialog(this, "Chưa có bảng lương tháng " + thang + "/" + nam + ".");
                 return;
             }
             selectBangLuong(bangLuong.getMaBangLuong());
             loadChiTietBangLuong(bangLuong.getMaBangLuong());
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Khong the tai ky luong: " + e.getMessage(), "Loi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Không thể tải kỳ lương: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -180,7 +169,7 @@ public class BangLuongPanel extends JPanel {
             }
             modelChiTiet.setRowCount(0);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Loi tai danh sach bang luong: " + e.getMessage(), "Loi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Lỗi tải danh sách bảng lương: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -202,7 +191,7 @@ public class BangLuongPanel extends JPanel {
                 });
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Loi tai chi tiet bang luong: " + e.getMessage(), "Loi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Lỗi tải chi tiết bảng lương: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
