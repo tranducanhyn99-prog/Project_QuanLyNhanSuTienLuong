@@ -1,0 +1,120 @@
+# TV4 - Test Case Transaction Module Tinh Luong
+
+**Tac gia:** Nguyen Quang Vinh (TV4, MSSV 24110385)  
+**Pham vi:** Kiem thu `sp_TinhBangLuongThang`, `fn_TinhTienCong`, trigger `trg_BangLuong_KhongSuaKhiDaChot`, view/index khau tru va UI `BangLuongPanel`.
+
+## Dieu kien chuan bi
+
+1. Chay script theo thu tu: `01_Module_NhanSu_TV1.sql`, script cham cong cua TV2, `03_phucap_khautru_TV3.sql`, `04_Module_TinhLuong_TV4.sql`.
+2. Co toi thieu 1 nhan vien `DANG_LAM_VIEC`.
+3. Co du lieu `CHAMCONG` trong thang/nam can tinh.
+
+## TC-TV4-01 - Tinh luong thanh cong
+
+```sql
+DECLARE @MaBangLuong INT;
+EXEC dbo.sp_TinhBangLuongThang
+    @Thang = 9,
+    @Nam = 2026,
+    @NgayCongChuan = 26,
+    @MaBangLuong = @MaBangLuong OUTPUT;
+
+SELECT @MaBangLuong AS MaBangLuongMoi;
+SELECT * FROM dbo.BANGLUONG WHERE MaBangLuong = @MaBangLuong;
+SELECT * FROM dbo.CHITIETBANGLUONG WHERE MaBangLuong = @MaBangLuong;
+```
+
+Ket qua mong doi: them 1 dong `BANGLUONG` trang thai `CHUA_CHOT`, moi nhan vien dang lam co 1 dong chi tiet, `ThucNhan = TienCong + TongPhuCap - TongKhauTru`.
+
+## TC-TV4-02 - Ky luong da ton tai
+
+```sql
+DECLARE @MaBangLuong INT;
+EXEC dbo.sp_TinhBangLuongThang 9, 2026, 26, @MaBangLuong OUTPUT;
+```
+
+Ket qua mong doi: procedure bao loi ky luong da ton tai, so dong `BANGLUONG` va `CHITIETBANGLUONG` khong doi.
+
+## TC-TV4-03 - Ky luong da chot
+
+```sql
+UPDATE dbo.BANGLUONG
+SET TrangThai = 'DA_CHOT', NgayChot = GETDATE()
+WHERE Thang = 9 AND Nam = 2026 AND TrangThai = 'CHUA_CHOT';
+
+DECLARE @MaBangLuong INT;
+EXEC dbo.sp_TinhBangLuongThang 9, 2026, 26, @MaBangLuong OUTPUT;
+```
+
+Ket qua mong doi: procedure bao loi ky luong da chot va khong tinh lai.
+
+## TC-TV4-04 - Trigger khoa sua/xoa ky da chot
+
+```sql
+UPDATE dbo.BANGLUONG
+SET NgayCongChuan = 27
+WHERE Thang = 9 AND Nam = 2026 AND TrangThai = 'DA_CHOT';
+
+DELETE FROM dbo.BANGLUONG
+WHERE Thang = 9 AND Nam = 2026 AND TrangThai = 'DA_CHOT';
+```
+
+Ket qua mong doi: ca 2 lenh deu bi `trg_BangLuong_KhongSuaKhiDaChot` chan.
+
+## TC-TV4-05 - Rollback khi loi insert chi tiet
+
+Dung trigger tam thoi de gia lap loi giua transaction, sau do drop ngay sau khi kiem thu:
+
+```sql
+IF OBJECT_ID('tempdb..#TV4_RowCountBefore') IS NOT NULL
+    DROP TABLE #TV4_RowCountBefore;
+
+SELECT
+    (SELECT COUNT(*) FROM dbo.BANGLUONG) AS TruocBL,
+    (SELECT COUNT(*) FROM dbo.CHITIETBANGLUONG) AS TruocCT
+INTO #TV4_RowCountBefore;
+GO
+
+CREATE OR ALTER TRIGGER dbo.trg_Test_CTBL_ForceError
+ON dbo.CHITIETBANGLUONG
+AFTER INSERT
+AS
+BEGIN
+    RAISERROR(N'Gia lap loi insert chi tiet luong.', 16, 1);
+END;
+GO
+
+DECLARE @MaBangLuong INT;
+EXEC dbo.sp_TinhBangLuongThang 10, 2026, 26, @MaBangLuong OUTPUT;
+GO
+
+DROP TRIGGER dbo.trg_Test_CTBL_ForceError;
+GO
+
+SELECT COUNT(*) AS SauBL FROM dbo.BANGLUONG;
+SELECT COUNT(*) AS SauCT FROM dbo.CHITIETBANGLUONG;
+SELECT * FROM #TV4_RowCountBefore;
+```
+
+Ket qua mong doi: procedure rollback toan bo. So dong sau khi test bang so dong truoc khi test.
+
+## TC-TV4-06 - Doi chieu cong thuc
+
+```sql
+SELECT
+    ct.MaNV,
+    ct.LuongCoBan,
+    bl.NgayCongChuan,
+    ct.NgayCongThucTe,
+    ct.TienCong,
+    dbo.fn_TinhTienCong(ct.LuongCoBan, bl.NgayCongChuan, ct.NgayCongThucTe) AS TienCongTinhLai,
+    ct.TongPhuCap,
+    ct.TongKhauTru,
+    ct.ThucNhan,
+    ct.TienCong + ct.TongPhuCap - ct.TongKhauTru AS ThucNhanTinhLai
+FROM dbo.CHITIETBANGLUONG ct
+INNER JOIN dbo.BANGLUONG bl ON ct.MaBangLuong = bl.MaBangLuong
+WHERE bl.Thang = 9 AND bl.Nam = 2026;
+```
+
+Ket qua mong doi: `TienCong` khop `fn_TinhTienCong`; `ThucNhan` khop cong thuc da chot.
