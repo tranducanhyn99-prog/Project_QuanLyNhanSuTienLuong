@@ -44,11 +44,12 @@ public class ChamCongService {
             throw new IllegalArgumentException("Giờ ra về phải lớn hơn giờ vào làm.");
         }
         String trangThai = cc.getTrangThai();
-        if (trangThai != null && !trangThai.trim().isEmpty()) {
-            if (!"CO_MAT".equals(trangThai) && !"DI_TRE".equals(trangThai)
-                    && !"VE_SOM".equals(trangThai) && !"VANG".equals(trangThai)) {
-                throw new IllegalArgumentException("Trạng thái chấm công không hợp lệ: " + trangThai);
-            }
+        if (trangThai == null || (!"CO_MAT".equals(trangThai) && !"DI_TRE".equals(trangThai)
+                && !"VE_SOM".equals(trangThai) && !"VANG".equals(trangThai))) {
+            throw new IllegalArgumentException("Trạng thái chấm công không hợp lệ: " + trangThai);
+        }
+        if (cc.getGhiChu() != null && cc.getGhiChu().length() > 255) {
+            throw new IllegalArgumentException("Ghi chú không được vượt quá 255 ký tự.");
         }
     }
 
