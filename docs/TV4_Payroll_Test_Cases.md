@@ -1,15 +1,16 @@
-# TV4 - Test Case Transaction Module Tinh Luong
+# TV4 - Test Case Transaction Module Tính Lương
 
-**Tac gia:** Nguyen Quang Vinh (TV4, MSSV 24110385)
-**Pham vi:** Kiem thu `sp_TinhBangLuongThang`, `fn_TinhTienCong`, trigger `trg_BangLuong_KhongSuaKhiDaChot`, view/index khau tru va UI `BangLuongPanel`.
+**Tác giả:** Nguyễn Quang Vinh (TV4, MSSV 24110385)
 
-## Dieu kien chuan bi
+**Phạm vi:** Kiểm thử `sp_TinhBangLuongThang`, `fn_TinhTienCong`, trigger `trg_BangLuong_KhongSuaKhiDaChot`, view/index khấu trừ và UI `BangLuongPanel`.
 
-1. Chay script theo thu tu: `01_Module_NhanSu_TV1.sql`, script cham cong cua TV2, `03_phucap_khautru_TV3.sql`, `04_Module_TinhLuong_TV4.sql`.
-2. Co toi thieu 1 nhan vien `DANG_LAM_VIEC`.
-3. Co du lieu `CHAMCONG` trong thang/nam can tinh.
+## Điều kiện chuẩn bị
 
-## TC-TV4-01 - Tinh luong thanh cong
+1. Chạy script theo thứ tự: `01_Module_NhanSu_TV1.sql`, script chấm công của TV2, `03_phucap_khautru_TV3.sql`, `04_Module_TinhLuong_TV4.sql`.
+2. Có tối thiểu 1 nhân viên `DANG_LAM_VIEC`.
+3. Có dữ liệu `CHAMCONG` trong tháng/năm cần tính.
+
+## TC-TV4-01 - Tính lương thành công
 
 ```sql
 DECLARE @MaBangLuong INT;
@@ -24,18 +25,18 @@ SELECT * FROM dbo.BANGLUONG WHERE MaBangLuong = @MaBangLuong;
 SELECT * FROM dbo.CHITIETBANGLUONG WHERE MaBangLuong = @MaBangLuong;
 ```
 
-Ket qua mong doi: them 1 dong `BANGLUONG` trang thai `CHUA_CHOT`, moi nhan vien dang lam co 1 dong chi tiet, `ThucNhan = TienCong + TongPhuCap - TongKhauTru`.
+Kết quả mong đợi: thêm 1 dòng `BANGLUONG` trạng thái `CHUA_CHOT`, mỗi nhân viên đang làm có 1 dòng chi tiết, `ThucNhan = TienCong + TongPhuCap - TongKhauTru`.
 
-## TC-TV4-02 - Ky luong da ton tai
+## TC-TV4-02 - Kỳ lương đã tồn tại
 
 ```sql
 DECLARE @MaBangLuong INT;
 EXEC dbo.sp_TinhBangLuongThang 9, 2026, 26, @MaBangLuong OUTPUT;
 ```
 
-Ket qua mong doi: procedure bao loi ky luong da ton tai, so dong `BANGLUONG` va `CHITIETBANGLUONG` khong doi.
+Kết quả mong đợi: procedure báo lỗi kỳ lương đã tồn tại, số dòng `BANGLUONG` và `CHITIETBANGLUONG` không đổi.
 
-## TC-TV4-03 - Ky luong da chot
+## TC-TV4-03 - Kỳ lương đã chốt
 
 ```sql
 UPDATE dbo.BANGLUONG
@@ -46,9 +47,9 @@ DECLARE @MaBangLuong INT;
 EXEC dbo.sp_TinhBangLuongThang 9, 2026, 26, @MaBangLuong OUTPUT;
 ```
 
-Ket qua mong doi: procedure bao loi ky luong da chot va khong tinh lai.
+Kết quả mong đợi: procedure báo lỗi kỳ lương đã chốt và không tính lại.
 
-## TC-TV4-04 - Trigger khoa sua/xoa ky da chot
+## TC-TV4-04 - Trigger khóa sửa/xóa kỳ đã chốt
 
 ```sql
 UPDATE dbo.BANGLUONG
@@ -59,11 +60,11 @@ DELETE FROM dbo.BANGLUONG
 WHERE Thang = 9 AND Nam = 2026 AND TrangThai = 'DA_CHOT';
 ```
 
-Ket qua mong doi: ca 2 lenh deu bi `trg_BangLuong_KhongSuaKhiDaChot` chan.
+Kết quả mong đợi: cả 2 lệnh đều bị `trg_BangLuong_KhongSuaKhiDaChot` chặn.
 
-## TC-TV4-05 - Rollback khi loi insert chi tiet
+## TC-TV4-05 - Rollback khi lỗi insert chi tiết
 
-Dung trigger tam thoi de gia lap loi giua transaction, sau do drop ngay sau khi kiem thu:
+Dùng trigger tạm thời để giả lập lỗi giữa transaction, sau đó drop ngay sau khi kiểm thử:
 
 ```sql
 IF OBJECT_ID('tempdb..#TV4_RowCountBefore') IS NOT NULL
@@ -80,7 +81,7 @@ ON dbo.CHITIETBANGLUONG
 AFTER INSERT
 AS
 BEGIN
-    RAISERROR(N'Gia lap loi insert chi tiet luong.', 16, 1);
+    RAISERROR(N'Giả lập lỗi insert chi tiết lương.', 16, 1);
 END;
 GO
 
@@ -96,9 +97,9 @@ SELECT COUNT(*) AS SauCT FROM dbo.CHITIETBANGLUONG;
 SELECT * FROM #TV4_RowCountBefore;
 ```
 
-Ket qua mong doi: procedure rollback toan bo. So dong sau khi test bang so dong truoc khi test.
+Kết quả mong đợi: procedure rollback toàn bộ. Số dòng sau khi test bằng số dòng trước khi test.
 
-## TC-TV4-06 - Doi chieu cong thuc
+## TC-TV4-06 - Đối chiếu công thức
 
 ```sql
 SELECT
@@ -117,4 +118,4 @@ INNER JOIN dbo.BANGLUONG bl ON ct.MaBangLuong = bl.MaBangLuong
 WHERE bl.Thang = 9 AND bl.Nam = 2026;
 ```
 
-Ket qua mong doi: `TienCong` khop `fn_TinhTienCong`; `ThucNhan` khop cong thuc da chot.
+Kết quả mong đợi: `TienCong` khớp `fn_TinhTienCong`; `ThucNhan` khớp công thức đã chốt.

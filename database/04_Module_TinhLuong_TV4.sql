@@ -268,7 +268,7 @@ BEGIN
             IF OBJECT_ID(N'dbo.fn_TinhSoNgayCong', N'FN') IS NOT NULL
             BEGIN
                 EXEC sys.sp_executesql
-                    N'SELECT @NgayCongOut = CONVERT(INT, dbo.fn_TinhSoNgayCong(@MaNVIn, @ThangIn, @NamIn));',
+                    N'SELECT @NgayCongOut = ISNULL(CONVERT(INT, dbo.fn_TinhSoNgayCong(@MaNVIn, @ThangIn, @NamIn)), 0);',
                     N'@MaNVIn INT, @ThangIn INT, @NamIn INT, @NgayCongOut INT OUTPUT',
                     @MaNVIn = @MaNV,
                     @ThangIn = @Thang,
@@ -296,7 +296,7 @@ BEGIN
             IF OBJECT_ID(N'dbo.fn_TongPhuCap', N'FN') IS NOT NULL
             BEGIN
                 EXEC sys.sp_executesql
-                    N'SELECT @TongPhuCapOut = CONVERT(DECIMAL(18,2), dbo.fn_TongPhuCap(@MaNVIn, @ThangIn, @NamIn));',
+                    N'SELECT @TongPhuCapOut = ISNULL(CONVERT(DECIMAL(18,2), dbo.fn_TongPhuCap(@MaNVIn, @ThangIn, @NamIn)), 0);',
                     N'@MaNVIn INT, @ThangIn INT, @NamIn INT, @TongPhuCapOut DECIMAL(18,2) OUTPUT',
                     @MaNVIn = @MaNV,
                     @ThangIn = @Thang,
@@ -319,7 +319,7 @@ BEGIN
             IF OBJECT_ID(N'dbo.fn_TongKhauTru', N'FN') IS NOT NULL
             BEGIN
                 EXEC sys.sp_executesql
-                    N'SELECT @TongKhauTruOut = CONVERT(DECIMAL(18,2), dbo.fn_TongKhauTru(@MaNVIn, @ThangIn, @NamIn));',
+                    N'SELECT @TongKhauTruOut = ISNULL(CONVERT(DECIMAL(18,2), dbo.fn_TongKhauTru(@MaNVIn, @ThangIn, @NamIn)), 0);',
                     N'@MaNVIn INT, @ThangIn INT, @NamIn INT, @TongKhauTruOut DECIMAL(18,2) OUTPUT',
                     @MaNVIn = @MaNV,
                     @ThangIn = @Thang,
@@ -342,7 +342,8 @@ BEGIN
             IF OBJECT_ID(N'dbo.fn_TinhThucNhan', N'FN') IS NOT NULL
             BEGIN
                 EXEC sys.sp_executesql
-                    N'SELECT @ThucNhanOut = CONVERT(DECIMAL(18,2), dbo.fn_TinhThucNhan(@TienCongIn, @TongPhuCapIn, @TongKhauTruIn));',
+                    N'SELECT @ThucNhanOut = ISNULL(CONVERT(DECIMAL(18,2), dbo.fn_TinhThucNhan(@TienCongIn, @TongPhuCapIn, @TongKhauTruIn)),
+                                                    @TienCongIn + @TongPhuCapIn - @TongKhauTruIn);',
                     N'@TienCongIn DECIMAL(18,2), @TongPhuCapIn DECIMAL(18,2), @TongKhauTruIn DECIMAL(18,2), @ThucNhanOut DECIMAL(18,2) OUTPUT',
                     @TienCongIn = @TienCong,
                     @TongPhuCapIn = @TongPhuCap,
@@ -384,10 +385,12 @@ BEGIN
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
-        IF CURSOR_STATUS('variable', '@curNhanVien') >= 0
+        DECLARE @CursorStatus INT = CURSOR_STATUS('variable', '@curNhanVien');
+
+        IF @CursorStatus IN (0, 1)
             CLOSE @curNhanVien;
 
-        IF CURSOR_STATUS('variable', '@curNhanVien') > -3
+        IF @CursorStatus IN (-1, 0, 1)
             DEALLOCATE @curNhanVien;
 
         IF @@TRANCOUNT > 0
