@@ -203,3 +203,27 @@ BEGIN
     END;
 END;
 GO
+
+-- ============================================================================
+-- 6. VIEW TỔNG HỢP CHẤM CÔNG THEO THÁNG (TASK 2.6: dbo.vw_TongHopChamCongThang)
+-- ============================================================================
+CREATE OR ALTER VIEW dbo.vw_TongHopChamCongThang
+AS
+SELECT
+    cc.MaNV,
+    nv.HoTen,
+    MONTH(cc.NgayChamCong) AS Thang,
+    YEAR(cc.NgayChamCong)  AS Nam,
+    COUNT(CASE WHEN cc.TrangThai IN (N'CO_MAT', N'DI_TRE', N'VE_SOM') THEN 1 END) AS SoNgayDiLam,
+    COUNT(CASE WHEN cc.TrangThai = N'DI_TRE' THEN 1 END) AS SoLanDiTre,
+    COUNT(CASE WHEN cc.TrangThai = N'VE_SOM' THEN 1 END) AS SoLanVeSom,
+    COUNT(CASE WHEN cc.TrangThai = N'VANG' THEN 1 END) AS SoNgayVang,
+    SUM(CASE
+        WHEN cc.GioRa IS NOT NULL AND cc.GioRa > cc.GioVao
+        THEN DATEDIFF(MINUTE, cc.GioVao, cc.GioRa)
+        ELSE 0
+    END) / 60.0 AS TongSoGioLam
+FROM dbo.CHAMCONG cc
+JOIN dbo.NHANVIEN nv ON cc.MaNV = nv.MaNV
+GROUP BY cc.MaNV, nv.HoTen, YEAR(cc.NgayChamCong), MONTH(cc.NgayChamCong);
+GO
