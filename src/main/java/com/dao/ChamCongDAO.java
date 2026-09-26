@@ -3,6 +3,7 @@ package com.dao;
 import com.config.DatabaseConnection;
 import com.model.ChamCong;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -16,55 +17,62 @@ import java.util.List;
 public class ChamCongDAO {
 
     public boolean insertSingle(ChamCong cc) throws SQLException {
-        String sql = "INSERT INTO CHAMCONG (MaNV, NgayChamCong, GioVao, GioRa, TrangThai, GhiChu) "
-                   + "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "{call dbo.sp_GhiNhanChamCong(?, ?, ?, ?, ?, ?, ?)}";
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, cc.getMaNV());
+             CallableStatement cs = conn.prepareCall(sql)) {
+            cs.setInt(1, cc.getMaNV());
             if (cc.getNgayChamCong() != null) {
-                ps.setDate(2, Date.valueOf(cc.getNgayChamCong()));
+                cs.setDate(2, Date.valueOf(cc.getNgayChamCong()));
             } else {
-                ps.setNull(2, Types.DATE);
+                cs.setNull(2, Types.DATE);
             }
             if (cc.getGioVao() != null) {
-                ps.setTime(3, Time.valueOf(cc.getGioVao()));
+                cs.setTime(3, Time.valueOf(cc.getGioVao()));
             } else {
-                ps.setNull(3, Types.TIME);
+                cs.setNull(3, Types.TIME);
             }
             if (cc.getGioRa() != null) {
-                ps.setTime(4, Time.valueOf(cc.getGioRa()));
+                cs.setTime(4, Time.valueOf(cc.getGioRa()));
             } else {
-                ps.setNull(4, Types.TIME);
+                cs.setNull(4, Types.TIME);
             }
-            ps.setString(5, cc.getTrangThai() != null ? cc.getTrangThai() : "CO_MAT");
-            ps.setString(6, cc.getGhiChu());
-            return ps.executeUpdate() > 0;
+            cs.setString(5, cc.getTrangThai() != null ? cc.getTrangThai() : "CO_MAT");
+            cs.setString(6, cc.getGhiChu());
+            cs.registerOutParameter(7, Types.INTEGER);
+
+            cs.execute();
+            int generatedId = cs.getInt(7);
+            cc.setMaChamCong(generatedId);
+            return generatedId > 0;
         }
     }
 
     public void insertInTransaction(Connection conn, ChamCong cc) throws SQLException {
-        String sql = "INSERT INTO CHAMCONG (MaNV, NgayChamCong, GioVao, GioRa, TrangThai, GhiChu) "
-                   + "VALUES (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, cc.getMaNV());
+        String sql = "{call dbo.sp_GhiNhanChamCong(?, ?, ?, ?, ?, ?, ?)}";
+        try (CallableStatement cs = conn.prepareCall(sql)) {
+            cs.setInt(1, cc.getMaNV());
             if (cc.getNgayChamCong() != null) {
-                ps.setDate(2, Date.valueOf(cc.getNgayChamCong()));
+                cs.setDate(2, Date.valueOf(cc.getNgayChamCong()));
             } else {
-                ps.setNull(2, Types.DATE);
+                cs.setNull(2, Types.DATE);
             }
             if (cc.getGioVao() != null) {
-                ps.setTime(3, Time.valueOf(cc.getGioVao()));
+                cs.setTime(3, Time.valueOf(cc.getGioVao()));
             } else {
-                ps.setNull(3, Types.TIME);
+                cs.setNull(3, Types.TIME);
             }
             if (cc.getGioRa() != null) {
-                ps.setTime(4, Time.valueOf(cc.getGioRa()));
+                cs.setTime(4, Time.valueOf(cc.getGioRa()));
             } else {
-                ps.setNull(4, Types.TIME);
+                cs.setNull(4, Types.TIME);
             }
-            ps.setString(5, cc.getTrangThai() != null ? cc.getTrangThai() : "CO_MAT");
-            ps.setString(6, cc.getGhiChu());
-            ps.executeUpdate();
+            cs.setString(5, cc.getTrangThai() != null ? cc.getTrangThai() : "CO_MAT");
+            cs.setString(6, cc.getGhiChu());
+            cs.registerOutParameter(7, Types.INTEGER);
+
+            cs.execute();
+            int generatedId = cs.getInt(7);
+            cc.setMaChamCong(generatedId);
         }
     }
 
