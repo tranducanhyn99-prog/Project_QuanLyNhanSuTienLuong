@@ -9,7 +9,7 @@
 
 ## 1. Mục tiêu và phạm vi kiểm thử
 
-Bộ tài liệu này thiết kế các kịch bản kiểm thử (Test Cases) nhằm xác minh chất lượng, tính toàn vẹn dữ liệu và độ tin cậy của **Module Chấm công** trước khi triển khai và nghiệm thu ở Tuần 2 và Tuần 3:
+Bộ tài liệu này thiết kế các kịch bản kiểm thử (Test Cases) nhằm xác minh chất lượng, tính toàn vẹn dữ liệu và độ tin cậy của **Module Chấm công** thuộc quyền sở hữu toàn diện của **TV2 (Phạm Minh Quân)** (bao gồm: bảng `CHAMCONG`, Model `ChamCong`, DAO `ChamCongDAO`, Service `ChamCongService`, các đối tượng CSDL `dbo.sp_GhiNhanChamCong`, `dbo.trg_ChamCong_KiemTraGio`, `dbo.trg_ChamCong_KiemTraNhanVien`, `dbo.vw_TongHopChamCongThang` và Index `IX_CHAMCONG_MaNV_Ngay`) trước khi triển khai và nghiệm thu ở Tuần 2 và Tuần 3:
 
 1. **Kiểm tra ràng buộc Schema & Constraint:** Đảm bảo các ràng buộc toàn vẹn khóa chính, khóa ngoại, tính duy nhất (`UNIQUE`) và miền giá trị (`CHECK`) hoạt động chính xác.
 2. **Kiểm tra Trigger nghiệp vụ:** Đảm bảo Trigger ngăn chặn triệt để hành vi chấm công cho nhân viên đã nghỉ việc (`trg_ChamCong_KiemTraNhanVien`) và kiểm soát tính hợp lý về giờ làm việc.
@@ -100,14 +100,17 @@ Bộ tài liệu này thiết kế các kịch bản kiểm thử (Test Cases) n
 
 Qua quá trình triển khai mã nguồn và kịch bản CSDL tại Tuần 2, các vấn đề kỹ thuật trước đây đã được giải quyết cụ thể:
 
-1. **Thủ tục `sp_GhiNhanChamCong` (TC-CC-01):**
+1. **Thủ tục `sp_GhiNhanChamCong` (Sở hữu TV2 - TC-CC-01):**
    - **Trạng thái:** [ĐÃ GIẢI QUYẾT / RESOLVED].
+   - **Quyền sở hữu:** Thuộc sở hữu của TV2 (Phạm Minh Quân).
    - **Kết quả:** Đã cài đặt chính thức trong `database/02_Module_ChamCong_TV2.sql` với 7 tham số (`@MaNV`, `@NgayChamCong`, `@GioVao`, `@GioRa`, `@TrangThai`, `@GhiChu`, `@MaChamCong OUTPUT`). Đã kiểm thử thành công, trả về đúng mã chấm công tự tăng qua JDBC `CallableStatement`.
-2. **Trigger kiểm tra giờ `trg_ChamCong_KiemTraGio` (TC-CC-10):**
+2. **Trigger kiểm tra giờ `trg_ChamCong_KiemTraGio` (Sở hữu TV2 - TC-CC-10):**
    - **Trạng thái:** [ĐÃ GIẢI QUYẾT / RESOLVED].
+   - **Quyền sở hữu:** Thuộc sở hữu của TV2 (Phạm Minh Quân) trên bảng `CHAMCONG`.
    - **Kết quả:** Đã cài đặt chính thức trong `database/02_Module_ChamCong_TV2.sql` (`AFTER INSERT, UPDATE`), ném lỗi qua `RAISERROR (N'Lỗi: Giờ ra về phải lớn hơn giờ vào làm.', 16, 1)` và gọi `ROLLBACK TRANSACTION`. Đã kiểm thử thành công qua Job `2026-09-25-004`.
-3. **Cơ chế Transaction nhập lô (TC-CC-11 đến TC-CC-14):**
+3. **Cơ chế Transaction nhập lô (Sở hữu TV2 - TC-CC-11 đến TC-CC-14):**
    - **Trạng thái:** [ĐÃ GIẢI QUYẾT / RESOLVED].
+   - **Quyền sở hữu:** Thuộc sở hữu của TV2 (Phạm Minh Quân) tại lớp `ChamCongService`.
    - **Kết quả:** Đã chốt thực thi giao dịch tại tầng Java JDBC `ChamCongService` (`conn.setAutoCommit(false)`, lặp gọi `insertInTransaction()`, `conn.commit()` và `conn.rollback()`). Đã kiểm thử tính nguyên tố thành công qua Job `2026-09-25-003`, `2026-09-25-005` và `2026-09-26-001`.
 4. **Định dạng file nhập lô (Pending Decision duy nhất còn lại):**
    - **Trạng thái:** [CHƯA CHỐT / UNRESOLVED].

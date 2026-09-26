@@ -9,7 +9,11 @@
 
 ## 1. Tổng quan tích hợp kiến trúc 4 tầng
 
-Tuân thủ kiến trúc phân lớp chuẩn của dự án được quy định tại [TV5_Architecture.md](TV5_Architecture.md), Module Chấm công được cấu trúc xuyên suốt qua 4 tầng:
+Tuân thủ kiến trúc phân lớp chuẩn của dự án được quy định tại [TV5_Architecture.md](TV5_Architecture.md), Module Chấm công do **TV2 (Phạm Minh Quân)** chịu trách nhiệm toàn diện từ thiết kế, cài đặt đến vận hành. TV2 sở hữu trọn vẹn:
+- **Cơ sở dữ liệu:** Bảng `CHAMCONG`, Index `IX_CHAMCONG_MaNV_Ngay`, Thủ tục `dbo.sp_GhiNhanChamCong`, Trigger `dbo.trg_ChamCong_KiemTraGio`, Trigger `dbo.trg_ChamCong_KiemTraNhanVien`, View `dbo.vw_TongHopChamCongThang`.
+- **Ứng dụng Java:** Model `com.model.ChamCong`, DAO `com.dao.ChamCongDAO`, Service `com.service.ChamCongService` (quản lý JDBC Transaction All-or-Nothing).
+
+Hệ thống được cấu trúc xuyên suốt qua 4 tầng:
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
@@ -21,19 +25,20 @@ Tuân thủ kiến trúc phân lớp chuẩn của dự án được quy định
 │               SERVICE LAYER (Business Logic)                 │
 │               com.service.ChamCongService                    │
 └──────────────────────────────┬───────────────────────────────┘
-                               │  điều phối Transaction / DAO
+                                │  điều phối Transaction / DAO
 ┌──────────────────────────────▼───────────────────────────────┐
 │               DAO LAYER (Data Access Object / JDBC)          │
 │                  com.dao.ChamCongDAO                         │
 └──────────────────────────────┬───────────────────────────────┘
-                               │  JDBC Connection (PreparedStatement/CallableStatement)
+                               │  JDBC Connection (CallableStatement/PreparedStatement)
 ┌──────────────────────────────▼───────────────────────────────┐
-│            DATABASE LAYER (Microsoft SQL Server)             │
+│       DATABASE LAYER (Microsoft SQL Server - TV2 sở hữu)     │
 │   Bảng: CHAMCONG                                             │
-│   Trigger: trg_ChamCong_KiemTraNhanVien                      │
-│   View: vw_TongHopChamCongThang                              │
+│   Thủ tục: dbo.sp_GhiNhanChamCong                            │
+│   Trigger: dbo.trg_ChamCong_KiemTraGio                       │
+│   Trigger: dbo.trg_ChamCong_KiemTraNhanVien                  │
+│   View: dbo.vw_TongHopChamCongThang                          │
 │   Index: IX_CHAMCONG_MaNV_Ngay                               │
-│   SP / Trigger liên quan: sp_GhiNhanChamCong, ...            │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -343,18 +348,21 @@ User (HR_Manager)           ChamCongPanel           ChamCongService             
                     └───────────┬─────────────┘
                                 │ cung cấp mã & trạng thái NV
                                 ▼
-┌──────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐
-│  TV5 (Hệ thống)  ├───►│   TV2 (Chấm công)       ├───►│    TV4 (Tính lương)     │
-│  - Session       │    │  - Bảng CHAMCONG        │    │  - sp_TinhBangLuong     │
-│  - Phân quyền    │    │  - vw_TongHopChamCong   │    │  - Lấy ngày công thực tế│
-└──────────────────┘    └───────────┬─────────────┘    └─────────────────────────┘
-                                    │
-                                    ▼ (tương thích các đối tượng SQL)
-                        ┌─────────────────────────┐
-                        │   TV3 (Phụ cấp/Khấu trừ)│
-                        │  - sp_GhiNhanChamCong   │
-                        │  - trg_ChamCong_KiemTraGio│
-                        └─────────────────────────┘
+┌──────────────────┐    ┌───────────────────────────────────────────┐    ┌─────────────────────────┐
+│  TV5 (Hệ thống)  ├───►│              TV2 (Chấm công)              ├───►│    TV4 (Tính lương)     │
+│  - Session       │    │  - Bảng CHAMCONG & Index MaNV_Ngay        │    │  - sp_TinhBangLuong     │
+│  - Phân quyền    │    │  - sp_GhiNhanChamCong                     │    │  - Lấy ngày công thực tế│
+└──────────────────┘    │  - trg_ChamCong_KiemTraNhanVien           │    └─────────────────────────┘
+                        │  - trg_ChamCong_KiemTraGio                │                 ▲
+                        │  - vw_TongHopChamCongThang                │                 │
+                        │  - Model, DAO, Service, Panel             │                 │
+                        └─────────────────────┬─────────────────────┘                 │
+                                              │ cung cấp số liệu công                 │
+                                              ▼                                       │
+                                  ┌─────────────────────────┐                         │
+                                  │   TV3 (Phụ cấp/Khấu trừ)│─────────────────────────┘
+                                  │  - Bảng PHUCAP, KHAUTRU │
+                                  └─────────────────────────┘
 ```
 
 ### 4.1 Tích hợp với TV1 (Nhân sự Core)
@@ -369,13 +377,18 @@ User (HR_Manager)           ChamCongPanel           ChamCongService             
 - Kết nối CSDL thông qua lớp dùng chung `com.config.DatabaseConnection`.
 - Phù hợp với ma trận GRANT/DENY của 4 Login SQL Server trong [TV5_Security_Design.md](TV5_Security_Design.md).
 
+### 4.4 Tích hợp với TV3 (Phụ cấp & Khấu trừ)
+- Toàn bộ các đối tượng chấm công (`CHAMCONG`, `sp_GhiNhanChamCong`, `trg_ChamCong_KiemTraGio`, `trg_ChamCong_KiemTraNhanVien`, `vw_TongHopChamCongThang`) đều thuộc quyền sở hữu của TV2.
+- TV2 cung cấp dữ liệu số ngày công và giờ làm việc (qua bảng `CHAMCONG` và view `vw_TongHopChamCongThang`) để TV3 tham chiếu tính toán phụ cấp chuyên cần hoặc các khoản khấu trừ liên quan nếu nghiệp vụ yêu cầu.
+
 ---
 
 ## 5. Tình trạng các hợp đồng giao diện & Quyết định kiến trúc (Interface Contracts & Status)
 
 Sau khi rà soát và hoàn thiện triển khai ở Tuần 2, tình trạng các giao diện tích hợp như sau:
 
-### 5.1 Thủ tục `dbo.sp_GhiNhanChamCong` — [ĐÃ HOÀN TẤT / RESOLVED]
+### 5.1 Thủ tục `dbo.sp_GhiNhanChamCong` (Sở hữu TV2) — [ĐÃ HOÀN TẤT / RESOLVED]
+- **Quyền sở hữu:** TV2 (Phạm Minh Quân) trực tiếp sở hữu, cài đặt và chịu trách nhiệm trong module Chấm công.
 - Đã được cài đặt chính thức trong file kịch bản CSDL module Chấm công (`database/02_Module_ChamCong_TV2.sql`).
 - Danh sách tham số chuẩn (7 tham số):
   - `@MaNV INT`
@@ -387,14 +400,16 @@ Sau khi rà soát và hoàn thiện triển khai ở Tuần 2, tình trạng cá
   - `@MaChamCong INT OUTPUT`
 - Lớp `ChamCongDAO` gọi trực tiếp qua `CallableStatement` (`{call dbo.sp_GhiNhanChamCong(?, ?, ?, ?, ?, ?, ?)}`), nhận giá trị `MaChamCong` tự tăng qua tham số OUTPUT thứ 7.
 
-### 5.2 Trigger `dbo.trg_ChamCong_KiemTraGio` — [ĐÃ HOÀN TẤT / RESOLVED]
+### 5.2 Trigger `dbo.trg_ChamCong_KiemTraGio` (Sở hữu TV2) — [ĐÃ HOÀN TẤT / RESOLVED]
+- **Quyền sở hữu:** TV2 (Phạm Minh Quân) trực tiếp sở hữu và quản lý trên bảng `CHAMCONG`.
 - Đã được cài đặt chính thức trong `database/02_Module_ChamCong_TV2.sql` bằng cú pháp `CREATE OR ALTER TRIGGER dbo.trg_ChamCong_KiemTraGio ON dbo.CHAMCONG AFTER INSERT, UPDATE`.
 - Khi vi phạm (`GioRa IS NOT NULL AND GioRa <= GioVao`), trigger thực hiện:
   - Thông báo lỗi tiếng Việt: `N'Lỗi: Giờ ra về phải lớn hơn giờ vào làm.'` (severity 16, state 1).
   - Tự động hủy giao dịch: `ROLLBACK TRANSACTION; RETURN;`.
 - Tầng `ChamCongService` bắt ngoại lệ `SQLException` và ném thông điệp tường minh cho tầng UI hiển thị.
 
-### 5.3 Cấu trúc dữ liệu View `dbo.vw_TongHopChamCongThang` — [ĐÃ HOÀN TẤT / RESOLVED]
+### 5.3 Cấu trúc dữ liệu View `dbo.vw_TongHopChamCongThang` (Sở hữu TV2) — [ĐÃ HOÀN TẤT / RESOLVED]
+- **Quyền sở hữu:** TV2 (Phạm Minh Quân) trực tiếp sở hữu và quản lý.
 - Đã được cài đặt chính thức trong `database/02_Module_ChamCong_TV2.sql`.
 - Cung cấp 9 cột chuẩn hóa: `MaNV`, `HoTen`, `Thang`, `Nam`, `SoNgayDiLam`, `SoLanDiTre`, `SoLanVeSom`, `SoNgayVang`, `TongSoGioLam`.
 - Đáp ứng đầy đủ yêu cầu tính lương của TV4 và báo cáo của TV5.

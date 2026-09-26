@@ -18,6 +18,10 @@ Module chấm công chịu trách nhiệm **ghi nhận, theo dõi và tổng h�
 
 Mỗi bản ghi chấm công phản ánh một lần làm việc của một nhân viên cụ thể trong một ngày xác định, bao gồm giờ vào làm (`GioVao`) và giờ ra về (`GioRa`).
 
+**Phạm vi sở hữu của TV2 (Phạm Minh Quân) trong hệ thống:**
+- **Cơ sở dữ liệu:** Bảng `CHAMCONG`, Chỉ mục phủ `IX_CHAMCONG_MaNV_Ngay`, Thủ tục `dbo.sp_GhiNhanChamCong`, Trigger `dbo.trg_ChamCong_KiemTraGio`, Trigger `dbo.trg_ChamCong_KiemTraNhanVien`, View `dbo.vw_TongHopChamCongThang`.
+- **Mã nguồn ứng dụng Java:** Model `com.model.ChamCong`, DAO `com.dao.ChamCongDAO` (thực thi qua `CallableStatement`), Service `com.service.ChamCongService` (điều phối nghiệp vụ và quản lý JDBC Transaction All-or-Nothing với `setAutoCommit(false)`, `commit()`, `rollback()`).
+
 ### 1.2 Tác nhân và phân quyền liên quan
 
 Căn cứ theo ma trận bảo mật tại [TV5_Security_Design.md](TV5_Security_Design.md) và thiết kế kiến trúc [TV5_Architecture.md](TV5_Architecture.md):
@@ -138,14 +142,53 @@ CREATE TABLE CHAMCONG (
 
 ## 3. Các đối tượng cơ sở dữ liệu liên quan (SQL Objects)
 
-Căn cứ ma trận phân công tại [Ke_hoach_phan_cong_Project_DBMS_Nhom06.md](Ke_hoach_phan_cong_Project_DBMS_Nhom06.md):
+Căn cứ ma trận phân công dự án và kết quả triển khai Tuần 2, toàn bộ các đối tượng CSDL cốt lõi của Module Chấm công thuộc quyền sở hữu toàn diện của **TV2 (Phạm Minh Quân)**:
 
-### 3.1 Trigger sở hữu chính của TV2: `trg_ChamCong_KiemTraNhanVien`
+### 3.1 Thủ tục sở hữu của TV2: `dbo.sp_GhiNhanChamCong`
 
 ```text
-Tên Trigger:   trg_ChamCong_KiemTraNhanVien
+Tên Thủ tục:   dbo.sp_GhiNhanChamCong
+Bảng tác động: CHAMCONG
+Quyền sở hữu:  TV2 (Phạm Minh Quân)
+Trạng thái:    ĐÃ CÀI ĐẶT (Tuần 2 - Task 2.4A)
+Mục đích:      Thực hiện nghiệp vụ ghi nhận bản ghi chấm công hàng ngày với đầy đủ kiểm tra tính toàn vẹn dữ liệu.
+
+Tham số giao tiếp (7 tham số):
+  - @MaNV         INT           (Bắt buộc, > 0, nhân viên phải tồn tại và có TrangThai = 'DANG_LAM_VIEC')
+  - @NgayChamCong DATE          (Bắt buộc, <= ngày hiện tại, không trùng lặp trong ngày)
+  - @GioVao       TIME(0)       (Bắt buộc, thời điểm check-in)
+  - @GioRa        TIME(0) = NULL(Tùy chọn, thời điểm check-out, nếu có phải > GioVao)
+  - @TrangThai    NVARCHAR(20)  (Bắt buộc, thuộc danh mục: CO_MAT, DI_TRE, VE_SOM, VANG)
+  - @GhiChu       NVARCHAR(255) (Tùy chọn, ghi chú bổ sung, tối đa 255 ký tự)
+  - @MaChamCong   INT OUTPUT    (Tham số đầu ra nhận mã chấm công tự tăng SCOPE_IDENTITY())
+```
+
+### 3.2 Trigger sở hữu của TV2: `dbo.trg_ChamCong_KiemTraGio`
+
+```text
+Tên Trigger:   dbo.trg_ChamCong_KiemTraGio
 Bảng áp dụng:  CHAMCONG
 Sự kiện:       AFTER INSERT, UPDATE
+Quyền sở hữu:  TV2 (Phạm Minh Quân)
+Trạng thái:    ĐÃ CÀI ĐẶT (Tuần 2 - Task 2.4A)
+Mục đích:      Kiểm tra ràng buộc logic giờ ra phải lớn hơn giờ vào làm (GioRa > GioVao).
+
+Đặc tả logic:
+  1. Kiểm tra set-based trong bảng ảo 'inserted' xem có dòng nào có GioRa IS NOT NULL và GioRa <= GioVao.
+  2. NẾU vi phạm:
+     - Gửi thông báo lỗi: RAISERROR (N'Lỗi: Giờ ra về phải lớn hơn giờ vào làm.', 16, 1)
+     - Thực thi ROLLBACK TRANSACTION
+     - RETURN
+  3. NGƯỢC LẠI: Cho phép giao dịch tiếp tục.
+```
+
+### 3.3 Trigger sở hữu của TV2: `dbo.trg_ChamCong_KiemTraNhanVien`
+
+```text
+Tên Trigger:   dbo.trg_ChamCong_KiemTraNhanVien
+Bảng áp dụng:  CHAMCONG
+Sự kiện:       AFTER INSERT, UPDATE
+Quyền sở hữu:  TV2 (Phạm Minh Quân)
 Trạng thái:    ĐÃ CÀI ĐẶT (Tuần 2 - Task 2.5)
 Mục đích:      Ngăn chặn ghi nhận hoặc cập nhật chấm công cho nhân viên đã nghỉ việc (TrangThai = 'NGHI_VIEC' hoặc không ở trạng thái hoạt động 'DANG_LAM_VIEC').
 
@@ -159,7 +202,7 @@ Mục đích:      Ngăn chặn ghi nhận hoặc cập nhật chấm công cho 
   3. NGƯỢC LẠI: Cho phép thao tác tiếp tục.
 ```
 
-### 3.2 View sở hữu chính của TV2: `vw_TongHopChamCongThang`
+### 3.4 View sở hữu của TV2: `dbo.vw_TongHopChamCongThang`
 
 ```text
 Tên View:      vw_TongHopChamCongThang
@@ -199,7 +242,7 @@ Logic truy vấn:
   GROUP BY cc.MaNV, nv.HoTen, YEAR(cc.NgayChamCong), MONTH(cc.NgayChamCong);
 ```
 
-### 3.3 Index sở hữu chính của TV2: `IX_CHAMCONG_MaNV_Ngay`
+### 3.5 Index sở hữu của TV2: `IX_CHAMCONG_MaNV_Ngay`
 
 ```text
 Tên Index:     IX_CHAMCONG_MaNV_Ngay
@@ -207,6 +250,7 @@ Bảng áp dụng:  CHAMCONG
 Loại Index:    NONCLUSTERED INDEX
 Cột Index:     (MaNV, NgayChamCong)
 Cột INCLUDE:   (GioVao, GioRa, TrangThai)
+Quyền sở hữu:  TV2 (Phạm Minh Quân)
 
 Mục đích và lợi ích hiệu năng:
   - Tối ưu hóa các câu truy vấn lọc theo MaNV và khoảng ngày trong tháng.
@@ -216,12 +260,13 @@ Mục đích và lợi ích hiệu năng:
   - Tuần 3 sẽ thực hiện đo kiểm Execution Plan và SET STATISTICS IO, TIME để đối chiếu.
 ```
 
-### 3.4 Transaction nghiệp vụ của TV2: Nhập chấm công theo lô (Batch Processing)
+### 3.6 Transaction nghiệp vụ của TV2: Nhập chấm công theo lô (Batch Processing)
 
 ```text
 Tên nghiệp vụ: Nhập chấm công theo lô (Import danh sách chấm công hằng ngày)
-Phạm vi:       Tầng Service (ChamCongService) điều phối thông qua JDBC Transaction hoặc Stored Procedure
+Phạm vi:       Tầng Service (ChamCongService) điều phối thông qua JDBC Transaction
 Nguyên tắc:    Tính nguyên tố (Atomicity) - Toàn bộ thành công hoặc hủy bỏ toàn bộ.
+Quyền sở hữu:  TV2 (Phạm Minh Quân)
 
 Kịch bản lỗi phải Rollback:
   - Một dòng trong danh sách có MaNV thuộc về nhân viên đã nghỉ việc (kích hoạt trg_ChamCong_KiemTraNhanVien).
@@ -230,7 +275,7 @@ Kịch bản lỗi phải Rollback:
   - Lỗi kết nối CSDL hoặc ngoại lệ runtime giữa quá trình ghi lô.
 ```
 
-### 3.5 Các đối tượng SQL khác theo ma trận phân công chung
+### 3.7 Các đối tượng SQL khác theo ma trận phân công chung
 
 Theo bảng phân công tổng thể của nhóm:
 - `sp_CapNhatNhanVien`: TV2 chịu trách nhiệm cài đặt theo phân công SQL dùng chung, phối hợp cùng TV1 để kiểm thử tính toàn vẹn liên kết.
@@ -242,10 +287,11 @@ Theo bảng phân công tổng thể của nhóm:
 
 Sau quá trình trao đổi kỹ thuật và triển khai ở Tuần 2, các vấn đề kiến trúc và giao diện giữa các thành viên được giải quyết và chốt cụ thể như sau:
 
-### 4.1 Thủ tục ghi nhận chấm công `dbo.sp_GhiNhanChamCong` — [ĐÃ CÀI ĐẶT / RESOLVED]
+### 4.1 Thủ tục ghi nhận chấm công `dbo.sp_GhiNhanChamCong` (Sở hữu TV2) — [ĐÃ CÀI ĐẶT / RESOLVED]
 
+- **Quyền sở hữu:** Thuộc sở hữu trực tiếp của **TV2 (Phạm Minh Quân)** trong module Chấm công. TV2 chịu trách nhiệm toàn diện từ cài đặt kịch bản SQL (`database/02_Module_ChamCong_TV2.sql`) đến tích hợp gọi qua `ChamCongDAO` bằng `CallableStatement`.
 - **Hiện trạng triển khai:** Đã được cài đặt chính thức trong file kịch bản CSDL module Chấm công (`database/02_Module_ChamCong_TV2.sql`) và tích hợp trực tiếp vào tầng DAO (`ChamCongDAO.java`) thông qua `CallableStatement`.
-- **Hợp đồng giao diện (Contract) chuẩn xác:**
+- **Hợp đồng giao diện (Contract) chuẩn xác (7 tham số):**
   - `@MaNV INT`: Mã nhân viên (bắt buộc, > 0, phải tồn tại và `TrangThai = 'DANG_LAM_VIEC'`).
   - `@NgayChamCong DATE`: Ngày chấm công (bắt buộc, `<= CAST(GETDATE() AS DATE)`, không trùng lặp trong ngày).
   - `@GioVao TIME(0)`: Giờ bắt đầu làm việc (bắt buộc).
@@ -255,8 +301,9 @@ Sau quá trình trao đổi kỹ thuật và triển khai ở Tuần 2, các v�
   - `@MaChamCong INT OUTPUT`: Mã định danh chấm công tự tăng trả về cho ứng dụng sau khi ghi nhận thành công.
 - **Quyền điều phối Transaction:** Thủ tục thực hiện kiểm tra nghiệp vụ và lệnh `INSERT` đơn lẻ, không tự bọc `BEGIN TRANSACTION` bên trong SP nhằm trao quyền điều phối Transaction cho tầng Java Service khi xử lý nhập theo lô.
 
-### 4.2 Trigger kiểm tra giờ làm việc `dbo.trg_ChamCong_KiemTraGio` — [ĐÃ CÀI ĐẶT / RESOLVED]
+### 4.2 Trigger kiểm tra giờ làm việc `dbo.trg_ChamCong_KiemTraGio` (Sở hữu TV2) — [ĐÃ CÀI ĐẶT / RESOLVED]
 
+- **Quyền sở hữu:** Thuộc sở hữu trực tiếp của **TV2 (Phạm Minh Quân)**. Cả hai trigger trên bảng `CHAMCONG` (`trg_ChamCong_KiemTraGio` và `trg_ChamCong_KiemTraNhanVien`) đều do TV2 quản lý và cài đặt trong `database/02_Module_ChamCong_TV2.sql`.
 - **Hiện trạng triển khai:** Đã được cài đặt chính thức trong `database/02_Module_ChamCong_TV2.sql` dưới dạng `CREATE OR ALTER TRIGGER dbo.trg_ChamCong_KiemTraGio ON dbo.CHAMCONG AFTER INSERT, UPDATE`.
 - **Nguyên lý hoạt động:** Trigger hoạt động theo cơ chế set-based, kiểm tra bảng ảo `inserted`. Nếu phát hiện bất kỳ bản ghi nào có `GioRa IS NOT NULL AND GioRa <= GioVao`, trigger thực hiện:
   ```sql
@@ -273,7 +320,7 @@ Sau quá trình trao đổi kỹ thuật và triển khai ở Tuần 2, các v�
 
 ### 4.4 Cơ chế thực thi Transaction nhập chấm công theo lô — [ĐÃ CHỐT / RESOLVED]
 
-- **Giải pháp lựa chọn:** Quản lý giao dịch tại tầng Java JDBC thông qua `ChamCongService`.
+- **Giải pháp lựa chọn & Quyền sở hữu:** Quản lý giao dịch tại tầng Java JDBC thuộc lớp `com.service.ChamCongService` do TV2 phụ trách.
 - **Nguyên lý thực thi:**
   - Service gọi `Connection.setAutoCommit(false)` để mở giao dịch.
   - Lặp qua từng bản ghi trong danh sách nhập lô và gọi `ChamCongDAO.insertInTransaction(conn, cc)`.
@@ -293,7 +340,7 @@ Sau quá trình trao đổi kỹ thuật và triển khai ở Tuần 2, các v�
 
 | Tuần | Mục tiêu công việc chính | Sản phẩm dự kiến |
 |---|---|---|
-| **Tuần 2** | - Cài đặt script DDL tạo bảng `CHAMCONG`, các Constraint và Index `IX_CHAMCONG_MaNV_Ngay`.<br>- Cài đặt Trigger `trg_ChamCong_KiemTraNhanVien`.<br>- Cài đặt View `vw_TongHopChamCongThang`.<br>- Phối hợp thống nhất và cài đặt các SP/Trigger còn chưa chốt.<br>- Xây dựng mã nguồn Java: `ChamCong.java`, `ChamCongDAO.java`, `ChamCongService.java`, `ChamCongPanel.java`.<br>- Cài đặt Transaction nhập chấm công theo lô. | - File script SQL module chấm công.<br>- Source code Java hoạt động.<br>- Giao diện chấm công kết nối CSDL.<br>- Bộ test kiểm thử giao dịch. |
+| **Tuần 2** | - Cài đặt script DDL tạo bảng `CHAMCONG`, các Constraint và Index `IX_CHAMCONG_MaNV_Ngay`.<br>- Cài đặt Trigger `trg_ChamCong_KiemTraNhanVien`.<br>- Cài đặt View `vw_TongHopChamCongThang`.<br>- Cài đặt các SP và Trigger thuộc quyền sở hữu TV2: `dbo.sp_GhiNhanChamCong`, `dbo.trg_ChamCong_KiemTraGio`, `dbo.trg_ChamCong_KiemTraNhanVien`.<br>- Xây dựng mã nguồn Java: `ChamCong.java`, `ChamCongDAO.java`, `ChamCongService.java`, `ChamCongPanel.java`.<br>- Cài đặt Transaction nhập chấm công theo lô. | - File script SQL module chấm công.<br>- Source code Java hoạt động.<br>- Giao diện chấm công kết nối CSDL.<br>- Bộ test kiểm thử giao dịch. |
 | **Tuần 3** | - Thực hiện kiểm thử toàn diện với bộ test case đã thiết kế.<br>- Đo hiệu năng Index `IX_CHAMCONG_MaNV_Ngay` (STATISTICS IO/TIME, Execution Plan).<br>- Thu thập ảnh chụp màn hình và log minh chứng phục vụ báo cáo.<br>- Tham gia integration test toàn hệ thống cùng TV5. | - Báo cáo kiểm thử chấm công.<br>- Minh chứng hiệu năng index và rollback trigger.<br>- Đóng góp nội dung vào báo cáo tổng kết 50–100 trang. |
 
 ---
