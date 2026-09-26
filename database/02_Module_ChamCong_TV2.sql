@@ -178,3 +178,28 @@ BEGIN
     SET @MaChamCong = SCOPE_IDENTITY();
 END;
 GO
+
+-- ============================================================================
+-- 5. TRIGGER KIỂM TRA TRẠNG THÁI NHÂN VIÊN KHI CHẤM CÔNG (TASK 2.5: dbo.trg_ChamCong_KiemTraNhanVien)
+-- ============================================================================
+CREATE OR ALTER TRIGGER dbo.trg_ChamCong_KiemTraNhanVien
+ON dbo.CHAMCONG
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Kiểm tra set-based: từ chối nếu có bất kỳ nhân viên nào không ở trạng thái hoạt động (DANG_LAM_VIEC)
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        JOIN dbo.NHANVIEN nv ON i.MaNV = nv.MaNV
+        WHERE nv.TrangThai <> N'DANG_LAM_VIEC'
+    )
+    BEGIN
+        RAISERROR (N'Không thể ghi nhận chấm công cho nhân viên đã nghỉ việc!', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+END;
+GO
