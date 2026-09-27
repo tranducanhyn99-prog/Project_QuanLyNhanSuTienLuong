@@ -11,6 +11,7 @@ public class ChamCong {
     private LocalTime gioRa;
     private String trangThai = "CO_MAT";
     private String ghiChu;
+    private String hoTen;
 
     public ChamCong() {
         this.trangThai = "CO_MAT";
@@ -89,6 +90,14 @@ public class ChamCong {
 
     public void setGhiChu(String ghiChu) {
         this.ghiChu = ghiChu;
+    }
+
+    public String getHoTen() {
+        return hoTen;
+    }
+
+    public void setHoTen(String hoTen) {
+        this.hoTen = hoTen;
     }
 
     @Override

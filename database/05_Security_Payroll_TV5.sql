@@ -316,6 +316,11 @@ GRANT SELECT ON vw_BangLuongChiTiet          TO role_HRManager;
 -- GRANT quyền gọi Function
 GRANT EXECUTE ON fn_TinhSoNgayCong   TO role_HRManager;
 
+-- GRANT quyền module Chấm công (TV2)
+GRANT SELECT, INSERT, UPDATE ON CHAMCONG TO role_HRManager;
+GRANT EXECUTE ON sp_GhiNhanChamCong      TO role_HRManager;
+GRANT SELECT ON vw_TongHopChamCongThang  TO role_HRManager;
+
 -- DENY quyền tính/chốt lương
 DENY EXECUTE ON sp_ChotBangLuong     TO role_HRManager;
 
@@ -345,15 +350,21 @@ GRANT EXECUTE ON sp_ChotBangLuong    TO role_PayrollOfficer;
 -- GRANT quyền View
 GRANT SELECT ON vw_NhanVien_PhongBan_ChucVu  TO role_PayrollOfficer;
 GRANT SELECT ON vw_BangLuongChiTiet          TO role_PayrollOfficer;
+GRANT SELECT ON vw_TongHopChamCongThang      TO role_PayrollOfficer;
 
 -- GRANT quyền Function
 GRANT EXECUTE ON fn_TinhSoNgayCong   TO role_PayrollOfficer;
 GRANT EXECUTE ON fn_TinhThucNhan     TO role_PayrollOfficer;
 
--- DENY quyền quản lý nhân sự
+-- GRANT quyền đọc chấm công để đối soát lương
+GRANT SELECT ON CHAMCONG             TO role_PayrollOfficer;
+
+-- DENY quyền quản lý nhân sự & ghi nhận chấm công
 DENY INSERT, UPDATE, DELETE ON NHANVIEN  TO role_PayrollOfficer;
 DENY INSERT, UPDATE, DELETE ON PHONGBAN  TO role_PayrollOfficer;
 DENY INSERT, UPDATE, DELETE ON CHUCVU    TO role_PayrollOfficer;
+DENY INSERT, UPDATE, DELETE ON CHAMCONG  TO role_PayrollOfficer;
+DENY EXECUTE ON sp_GhiNhanChamCong       TO role_PayrollOfficer;
 DENY SELECT, INSERT, UPDATE, DELETE ON TAIKHOAN TO role_PayrollOfficer;
 GO
 
@@ -372,6 +383,8 @@ DENY SELECT, INSERT, UPDATE, DELETE ON NHANVIEN          TO role_Employee;
 DENY SELECT, INSERT, UPDATE, DELETE ON PHONGBAN          TO role_Employee;
 DENY SELECT, INSERT, UPDATE, DELETE ON CHUCVU            TO role_Employee;
 DENY SELECT, INSERT, UPDATE, DELETE ON CHAMCONG          TO role_Employee;
+DENY EXECUTE ON sp_GhiNhanChamCong                      TO role_Employee;
+DENY SELECT ON vw_TongHopChamCongThang                  TO role_Employee;
 DENY SELECT, INSERT, UPDATE, DELETE ON PHUCAPNHANVIEN    TO role_Employee;
 DENY SELECT, INSERT, UPDATE, DELETE ON KHAUTRUNHANVIEN   TO role_Employee;
 DENY SELECT, INSERT, UPDATE, DELETE ON BANGLUONG         TO role_Employee;

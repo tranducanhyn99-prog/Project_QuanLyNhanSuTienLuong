@@ -4,6 +4,7 @@ import com.session.Session;
 import com.ui.admin.TaiKhoanPanel;
 import com.ui.auth.LoginFrame;
 import com.ui.baocao.BaoCaoPanel;
+import com.ui.chamcong.ChamCongPanel;
 import com.ui.luong.BangLuongPanel;
 import com.ui.nhanvien.DanhMucPanel;
 import com.ui.nhanvien.NhanVienPanel;
@@ -94,10 +95,10 @@ public class MainFrame extends JFrame {
         menuChamCong.setMnemonic('C');
 
         JMenuItem miNhapChamCong = new JMenuItem("Nhập chấm công");
-        miNhapChamCong.addActionListener(e -> openTab("Chấm công", this::createPlaceholderPanel));
+        miNhapChamCong.addActionListener(e -> openTab("Chấm công", () -> new ChamCongPanel()));
 
         JMenuItem miXemChamCong = new JMenuItem("Xem tổng hợp chấm công");
-        miXemChamCong.addActionListener(e -> openTab("Tổng hợp CC", this::createPlaceholderPanel));
+        miXemChamCong.addActionListener(e -> openTab("Tổng hợp CC", () -> new ChamCongPanel(true)));
 
         menuChamCong.add(miNhapChamCong);
         menuChamCong.add(miXemChamCong);
@@ -260,8 +261,11 @@ public class MainFrame extends JFrame {
         // Menu Danh mục: DB_Admin, HR_Manager
         menuDanhMuc.setVisible(session.hasRole("DB_Admin", "HR_Manager"));
 
-        // Menu Chấm công: DB_Admin, HR_Manager
-        menuChamCong.setVisible(session.hasRole("DB_Admin", "HR_Manager"));
+        // Menu Chấm công: DB_Admin, HR_Manager, Payroll_Officer (Payroll_Officer xem tổng hợp để đối soát lương)
+        menuChamCong.setVisible(session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer"));
+        if (menuChamCong.getItemCount() >= 2) {
+            menuChamCong.getItem(0).setEnabled(session.hasRole("DB_Admin", "HR_Manager"));
+        }
 
         // Menu Phụ cấp / Khấu trừ: DB_Admin, HR_Manager, Payroll_Officer
         menuPhuCapKhauTru.setVisible(session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer"));
