@@ -9,7 +9,11 @@
 
 ## 1. Tổng quan tích hợp kiến trúc 4 tầng
 
-Tuân thủ kiến trúc phân lớp chuẩn của dự án được quy định tại [TV5_Architecture.md](TV5_Architecture.md), Module Chấm công được cấu trúc xuyên suốt qua 4 tầng:
+Tuân thủ kiến trúc phân lớp chuẩn của dự án được quy định tại [TV5_Architecture.md](TV5_Architecture.md), Module Chấm công do **TV2 (Phạm Minh Quân)** chịu trách nhiệm toàn diện từ thiết kế, cài đặt đến vận hành. TV2 sở hữu trọn vẹn:
+- **Cơ sở dữ liệu:** Bảng `CHAMCONG`, Index `IX_CHAMCONG_MaNV_Ngay`, Thủ tục `dbo.sp_GhiNhanChamCong`, Trigger `dbo.trg_ChamCong_KiemTraGio`, Trigger `dbo.trg_ChamCong_KiemTraNhanVien`, View `dbo.vw_TongHopChamCongThang`.
+- **Ứng dụng Java:** Model `com.model.ChamCong`, DAO `com.dao.ChamCongDAO`, Service `com.service.ChamCongService` (quản lý JDBC Transaction All-or-Nothing).
+
+Hệ thống được cấu trúc xuyên suốt qua 4 tầng:
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
@@ -21,19 +25,20 @@ Tuân thủ kiến trúc phân lớp chuẩn của dự án được quy định
 │               SERVICE LAYER (Business Logic)                 │
 │               com.service.ChamCongService                    │
 └──────────────────────────────┬───────────────────────────────┘
-                               │  điều phối Transaction / DAO
+                                │  điều phối Transaction / DAO
 ┌──────────────────────────────▼───────────────────────────────┐
 │               DAO LAYER (Data Access Object / JDBC)          │
 │                  com.dao.ChamCongDAO                         │
 └──────────────────────────────┬───────────────────────────────┘
-                               │  JDBC Connection (PreparedStatement/CallableStatement)
+                               │  JDBC Connection (CallableStatement/PreparedStatement)
 ┌──────────────────────────────▼───────────────────────────────┐
-│            DATABASE LAYER (Microsoft SQL Server)             │
+│       DATABASE LAYER (Microsoft SQL Server - TV2 sở hữu)     │
 │   Bảng: CHAMCONG                                             │
-│   Trigger: trg_ChamCong_KiemTraNhanVien                      │
-│   View: vw_TongHopChamCongThang                              │
+│   Thủ tục: dbo.sp_GhiNhanChamCong                            │
+│   Trigger: dbo.trg_ChamCong_KiemTraGio                       │
+│   Trigger: dbo.trg_ChamCong_KiemTraNhanVien                  │
+│   View: dbo.vw_TongHopChamCongThang                          │
 │   Index: IX_CHAMCONG_MaNV_Ngay                               │
-│   SP / Trigger liên quan: sp_GhiNhanChamCong, ...            │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -105,45 +110,68 @@ import java.util.List;
 public class ChamCongDAO {
 
     /**
-     * Thêm mới một bản ghi chấm công (dùng Connection đơn lẻ)
+     * Thêm mới một bản ghi chấm công qua Stored Procedure dbo.sp_GhiNhanChamCong (dùng Connection đơn lẻ)
      */
     public boolean insertSingle(ChamCong cc) throws SQLException {
-        String sql = "INSERT INTO CHAMCONG (MaNV, NgayChamCong, GioVao, GioRa, TrangThai, GhiChu) "
-                   + "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "{call dbo.sp_GhiNhanChamCong(?, ?, ?, ?, ?, ?, ?)}";
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, cc.getMaNV());
-            ps.setDate(2, Date.valueOf(cc.getNgayChamCong()));
-            ps.setTime(3, Time.valueOf(cc.getGioVao()));
-            if (cc.getGioRa() != null) {
-                ps.setTime(4, Time.valueOf(cc.getGioRa()));
+             CallableStatement cs = conn.prepareCall(sql)) {
+            cs.setInt(1, cc.getMaNV());
+            if (cc.getNgayChamCong() != null) {
+                cs.setDate(2, Date.valueOf(cc.getNgayChamCong()));
             } else {
-                ps.setNull(4, Types.TIME);
+                cs.setNull(2, Types.DATE);
             }
-            ps.setString(5, cc.getTrangThai());
-            ps.setString(6, cc.getGhiChu());
-            return ps.executeUpdate() > 0;
+            if (cc.getGioVao() != null) {
+                cs.setTime(3, Time.valueOf(cc.getGioVao()));
+            } else {
+                cs.setNull(3, Types.TIME);
+            }
+            if (cc.getGioRa() != null) {
+                cs.setTime(4, Time.valueOf(cc.getGioRa()));
+            } else {
+                cs.setNull(4, Types.TIME);
+            }
+            cs.setString(5, cc.getTrangThai() != null ? cc.getTrangThai() : "CO_MAT");
+            cs.setString(6, cc.getGhiChu());
+            cs.registerOutParameter(7, Types.INTEGER);
+
+            cs.execute();
+            int generatedId = cs.getInt(7);
+            cc.setMaChamCong(generatedId);
+            return generatedId > 0;
         }
     }
 
     /**
-     * Ghi nhận một dòng trong Transaction theo lô (dùng Connection truyền từ Service)
+     * Ghi nhận một dòng trong Transaction theo lô qua dbo.sp_GhiNhanChamCong (dùng Connection truyền từ Service)
      */
     public void insertInTransaction(Connection conn, ChamCong cc) throws SQLException {
-        String sql = "INSERT INTO CHAMCONG (MaNV, NgayChamCong, GioVao, GioRa, TrangThai, GhiChu) "
-                   + "VALUES (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, cc.getMaNV());
-            ps.setDate(2, Date.valueOf(cc.getNgayChamCong()));
-            ps.setTime(3, Time.valueOf(cc.getGioVao()));
-            if (cc.getGioRa() != null) {
-                ps.setTime(4, Time.valueOf(cc.getGioRa()));
+        String sql = "{call dbo.sp_GhiNhanChamCong(?, ?, ?, ?, ?, ?, ?)}";
+        try (CallableStatement cs = conn.prepareCall(sql)) {
+            cs.setInt(1, cc.getMaNV());
+            if (cc.getNgayChamCong() != null) {
+                cs.setDate(2, Date.valueOf(cc.getNgayChamCong()));
             } else {
-                ps.setNull(4, Types.TIME);
+                cs.setNull(2, Types.DATE);
             }
-            ps.setString(5, cc.getTrangThai());
-            ps.setString(6, cc.getGhiChu());
-            ps.executeUpdate();
+            if (cc.getGioVao() != null) {
+                cs.setTime(3, Time.valueOf(cc.getGioVao()));
+            } else {
+                cs.setNull(3, Types.TIME);
+            }
+            if (cc.getGioRa() != null) {
+                cs.setTime(4, Time.valueOf(cc.getGioRa()));
+            } else {
+                cs.setNull(4, Types.TIME);
+            }
+            cs.setString(5, cc.getTrangThai() != null ? cc.getTrangThai() : "CO_MAT");
+            cs.setString(6, cc.getGhiChu());
+            cs.registerOutParameter(7, Types.INTEGER);
+
+            cs.execute();
+            int generatedId = cs.getInt(7);
+            cc.setMaChamCong(generatedId);
         }
     }
 
@@ -279,10 +307,10 @@ User (HR_Manager)           ChamCongPanel           ChamCongService             
       │      "Lưu chấm công"      │── 2. chamCongDonLe() ─►│                         │                         │
       │                           │                        │── 3. validate()         │                         │
       │                           │                        │── 4. insertSingle() ───►│                         │
-      │                           │                        │                         │── 5. INSERT query ─────►│
-      │                           │                        │                         │                         │── 6. Check UQ/FK
+      │                           │                        │                         │── 5. CallableStatement ─►│
+      │                           │                        │                         │   (sp_GhiNhanChamCong)  │── 6. Check UQ/FK
       │                           │                        │                         │                         │── 7. Run Triggers
-      │                           │                        │                         │◄── 8. Success / Rows ───│
+      │                           │                        │                         │◄── 8. Success / OutID ──│
       │                           │                        │◄── 9. Return true ──────│                         │
       │                           │◄── 10. Hoàn thành ─────│                         │                         │
       │◄── 11. JOptionPane ───────│                        │                         │                         │
@@ -298,8 +326,8 @@ User (HR_Manager)           ChamCongPanel           ChamCongService             
       │      nhấn "Nhập theo lô"  │── 2. nhapTheoLo(list) ─►                         │                         │
       │                           │                        │── 3. setAutoCommit(false)                         │
       │                           │                        │                                                   │
-      │                           │                        │── 4. insertInTransaction(Dòng 1) ────────────────►│ (Hợp lệ)
-      │                           │                        │── 5. insertInTransaction(Dòng 2) ────────────────►│ (Lỗi Trigger/UQ)
+      │                           │                        │── 4. insertInTransaction (sp dòng 1) ────────────►│ (Hợp lệ)
+      │                           │                        │── 5. insertInTransaction (sp dòng 2) ────────────►│ (Lỗi Trigger/UQ)
       │                           │                        │                                                   │   RAISERROR!
       │                           │                        │◄── 6. Catch SQLException ─────────────────────────│
       │                           │                        │── 7. conn.rollback() ────────────────────────────►│ (Hủy toàn bộ)
@@ -320,18 +348,21 @@ User (HR_Manager)           ChamCongPanel           ChamCongService             
                     └───────────┬─────────────┘
                                 │ cung cấp mã & trạng thái NV
                                 ▼
-┌──────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐
-│  TV5 (Hệ thống)  ├───►│   TV2 (Chấm công)       ├───►│    TV4 (Tính lương)     │
-│  - Session       │    │  - Bảng CHAMCONG        │    │  - sp_TinhBangLuong     │
-│  - Phân quyền    │    │  - vw_TongHopChamCong   │    │  - Lấy ngày công thực tế│
-└──────────────────┘    └───────────┬─────────────┘    └─────────────────────────┘
-                                    │
-                                    ▼ (điểm giao thoa)
-                        ┌─────────────────────────┐
-                        │   TV3 (Phụ cấp/Khấu trừ)│
-                        │  - sp_GhiNhanChamCong ? │
-                        │  - trg_KiemTraGio ?     │
-                        └─────────────────────────┘
+┌──────────────────┐    ┌───────────────────────────────────────────┐    ┌─────────────────────────┐
+│  TV5 (Hệ thống)  ├───►│              TV2 (Chấm công)              ├───►│    TV4 (Tính lương)     │
+│  - Session       │    │  - Bảng CHAMCONG & Index MaNV_Ngay        │    │  - sp_TinhBangLuong     │
+│  - Phân quyền    │    │  - sp_GhiNhanChamCong                     │    │  - Lấy ngày công thực tế│
+└──────────────────┘    │  - trg_ChamCong_KiemTraNhanVien           │    └─────────────────────────┘
+                        │  - trg_ChamCong_KiemTraGio                │                 ▲
+                        │  - vw_TongHopChamCongThang                │                 │
+                        │  - Model, DAO, Service, Panel             │                 │
+                        └─────────────────────┬─────────────────────┘                 │
+                                              │ cung cấp số liệu công                 │
+                                              ▼                                       │
+                                  ┌─────────────────────────┐                         │
+                                  │   TV3 (Phụ cấp/Khấu trừ)│─────────────────────────┘
+                                  │  - Bảng PHUCAP, KHAUTRU │
+                                  └─────────────────────────┘
 ```
 
 ### 4.1 Tích hợp với TV1 (Nhân sự Core)
@@ -346,30 +377,46 @@ User (HR_Manager)           ChamCongPanel           ChamCongService             
 - Kết nối CSDL thông qua lớp dùng chung `com.config.DatabaseConnection`.
 - Phù hợp với ma trận GRANT/DENY của 4 Login SQL Server trong [TV5_Security_Design.md](TV5_Security_Design.md).
 
+### 4.4 Tích hợp với TV3 (Phụ cấp & Khấu trừ)
+- Toàn bộ các đối tượng chấm công (`CHAMCONG`, `sp_GhiNhanChamCong`, `trg_ChamCong_KiemTraGio`, `trg_ChamCong_KiemTraNhanVien`, `vw_TongHopChamCongThang`) đều thuộc quyền sở hữu của TV2.
+- TV2 cung cấp dữ liệu số ngày công và giờ làm việc (qua bảng `CHAMCONG` và view `vw_TongHopChamCongThang`) để TV3 tham chiếu tính toán phụ cấp chuyên cần hoặc các khoản khấu trừ liên quan nếu nghiệp vụ yêu cầu.
+
 ---
 
-## 5. Các quyết định giao diện & hợp đồng chưa chốt (Unresolved Contracts)
+## 5. Tình trạng các hợp đồng giao diện & Quyết định kiến trúc (Interface Contracts & Status)
 
-Để tránh giả định sai lệch kiến trúc hoặc tranh chấp trách nhiệm giữa các thành viên, các vấn đề kỹ thuật sau được ghi nhận rõ là **CHƯA ĐƯỢC CHỐT (UNRESOLVED)**:
+Sau khi rà soát và hoàn thiện triển khai ở Tuần 2, tình trạng các giao diện tích hợp như sau:
 
-### 5.1 Hợp đồng thực thi thủ tục `sp_GhiNhanChamCong` (TV2 vs TV3) — [CHƯA CHỐT / UNRESOLVED]
-- Trong tài liệu [TV5_Architecture.md](TV5_Architecture.md), `ChamCongDAO` dự kiến gọi `sp_GhiNhanChamCong`.
-- Tuy nhiên, trong [Ke_hoach_phan_cong_Project_DBMS_Nhom06.md](Ke_hoach_phan_cong_Project_DBMS_Nhom06.md), đối tượng này lại thuộc sở hữu của TV3.
-- **Tình trạng:** **CHƯA CHỐT (UNRESOLVED)**. Chưa có thống nhất về:
-  - Tên và danh sách tham số chuẩn: `@MaNV INT, @Ngay DATE, @GioVao TIME, @GioRa TIME, @TrangThai NVARCHAR(20)`.
-  - Liệu DAO của TV2 có trực tiếp gọi SP này hay dùng câu lệnh `PreparedStatement` độc lập nếu TV3 chậm tiến độ.
+### 5.1 Thủ tục `dbo.sp_GhiNhanChamCong` (Sở hữu TV2) — [ĐÃ HOÀN TẤT / RESOLVED]
+- **Quyền sở hữu:** TV2 (Phạm Minh Quân) trực tiếp sở hữu, cài đặt và chịu trách nhiệm trong module Chấm công.
+- Đã được cài đặt chính thức trong file kịch bản CSDL module Chấm công (`database/02_Module_ChamCong_TV2.sql`).
+- Danh sách tham số chuẩn (7 tham số):
+  - `@MaNV INT`
+  - `@NgayChamCong DATE`
+  - `@GioVao TIME(0)`
+  - `@GioRa TIME(0) = NULL`
+  - `@TrangThai NVARCHAR(20)`
+  - `@GhiChu NVARCHAR(255) = NULL`
+  - `@MaChamCong INT OUTPUT`
+- Lớp `ChamCongDAO` gọi trực tiếp qua `CallableStatement` (`{call dbo.sp_GhiNhanChamCong(?, ?, ?, ?, ?, ?, ?)}`), nhận giá trị `MaChamCong` tự tăng qua tham số OUTPUT thứ 7.
 
-### 5.2 Hợp đồng thông báo ngoại lệ của Trigger `trg_ChamCong_KiemTraGio` (TV3) — [CHƯA CHỐT / UNRESOLVED]
-- Trigger kiểm tra giờ ra lớn hơn giờ vào hiện được phân bổ cho TV3 quản lý.
-- **Tình trạng:** **CHƯA CHỐT (UNRESOLVED)**. Cần thống nhất mã lỗi (`Error Number`) hoặc chuỗi thông báo từ `RAISERROR` (ví dụ: `N'Lỗi: Giờ ra về phải lớn hơn giờ vào làm.'`) để `ChamCongService` bắt chính xác và không hiển thị chuỗi lỗi hệ thống thô cho người dùng.
+### 5.2 Trigger `dbo.trg_ChamCong_KiemTraGio` (Sở hữu TV2) — [ĐÃ HOÀN TẤT / RESOLVED]
+- **Quyền sở hữu:** TV2 (Phạm Minh Quân) trực tiếp sở hữu và quản lý trên bảng `CHAMCONG`.
+- Đã được cài đặt chính thức trong `database/02_Module_ChamCong_TV2.sql` bằng cú pháp `CREATE OR ALTER TRIGGER dbo.trg_ChamCong_KiemTraGio ON dbo.CHAMCONG AFTER INSERT, UPDATE`.
+- Khi vi phạm (`GioRa IS NOT NULL AND GioRa <= GioVao`), trigger thực hiện:
+  - Thông báo lỗi tiếng Việt: `N'Lỗi: Giờ ra về phải lớn hơn giờ vào làm.'` (severity 16, state 1).
+  - Tự động hủy giao dịch: `ROLLBACK TRANSACTION; RETURN;`.
+- Tầng `ChamCongService` bắt ngoại lệ `SQLException` và ném thông điệp tường minh cho tầng UI hiển thị.
 
-### 5.3 Định dạng nguồn dữ liệu đầu vào cho tính năng nhập theo lô — [CHƯA CHỐT / UNRESOLVED]
+### 5.3 Cấu trúc dữ liệu View `dbo.vw_TongHopChamCongThang` (Sở hữu TV2) — [ĐÃ HOÀN TẤT / RESOLVED]
+- **Quyền sở hữu:** TV2 (Phạm Minh Quân) trực tiếp sở hữu và quản lý.
+- Đã được cài đặt chính thức trong `database/02_Module_ChamCong_TV2.sql`.
+- Cung cấp 9 cột chuẩn hóa: `MaNV`, `HoTen`, `Thang`, `Nam`, `SoNgayDiLam`, `SoLanDiTre`, `SoLanVeSom`, `SoNgayVang`, `TongSoGioLam`.
+- Đáp ứng đầy đủ yêu cầu tính lương của TV4 và báo cáo của TV5.
+
+### 5.4 Định dạng nguồn dữ liệu đầu vào cho tính năng nhập theo lô — [CHƯA CHỐT / UNRESOLVED]
 - Phương án đọc file: File văn bản định dạng `.csv` hay file bảng tính `.xlsx`, hoặc nhập trực tiếp từ giao diện bảng `JTable`.
-- **Tình trạng:** **CHƯA CHỐT (UNRESOLVED)**. Chờ nhóm thống nhất xem có bổ sung thư viện đọc Excel (như Apache POI - vượt quá phạm vi gọn nhẹ) hay chỉ dùng parser CSV tích hợp sẵn bằng thư viện chuẩn Java.
-
-### 5.4 Hợp đồng cấu trúc dữ liệu View `vw_TongHopChamCongThang` đối với TV4 — [CHƯA CHỐT / UNRESOLVED]
-- Xác định quy ước: Nếu nhân viên chỉ check-in (`GioRa IS NULL`), bản ghi đó có được tính là 1 ngày công không hay tính là 0.5 ngày công?
-- **Tình trạng:** **CHƯA CHỐT (UNRESOLVED)**. Cần TV1 và TV4 phản hồi để hoàn thiện công thức trong View.
+- **Tình trạng:** **CHƯA CHỐT (UNRESOLVED)**. Chờ nhóm thống nhất xem có bổ sung thư viện đọc Excel (như Apache POI - vượt quá phạm vi gọn nhẹ) hay chỉ dùng parser CSV tích hợp sẵn bằng thư viện chuẩn Java SE.
 
 ---
 
