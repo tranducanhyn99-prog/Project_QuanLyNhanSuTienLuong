@@ -3,6 +3,7 @@ package com.service;
 import com.config.DatabaseConnection;
 import com.dao.ChamCongDAO;
 import com.model.ChamCong;
+import com.model.TongHopChamCong;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -126,5 +127,47 @@ public class ChamCongService {
      */
     public List<ChamCong> findByNhanVienAndMonth(int maNV, int thang, int nam) throws Exception {
         return layChamCongTheoThang(maNV, thang, nam);
+    }
+
+    /**
+     * Lấy toàn bộ danh sách chấm công của công ty trong tháng.
+     */
+    public List<ChamCong> layDanhSachChamCongTheoThang(int thang, int nam) throws Exception {
+        if (thang < 1 || thang > 12) {
+            throw new IllegalArgumentException("Tháng phải từ 1 đến 12.");
+        }
+        if (nam <= 0) {
+            throw new IllegalArgumentException("Năm không hợp lệ.");
+        }
+        return chamCongDAO.findByMonth(thang, nam);
+    }
+
+    /**
+     * Lấy dữ liệu tổng hợp chấm công tháng từ View dbo.vw_TongHopChamCongThang.
+     */
+    public List<TongHopChamCong> layTongHopChamCongThang(int thang, int nam) throws Exception {
+        if (thang < 1 || thang > 12) {
+            throw new IllegalArgumentException("Tháng phải từ 1 đến 12.");
+        }
+        if (nam <= 0) {
+            throw new IllegalArgumentException("Năm không hợp lệ.");
+        }
+        return chamCongDAO.getTongHopTheoThang(thang, nam);
+    }
+
+    /**
+     * Lấy dữ liệu tổng hợp chấm công của một nhân viên trong tháng từ View.
+     */
+    public TongHopChamCong layTongHopChamCongNhanVien(int maNV, int thang, int nam) throws Exception {
+        if (maNV <= 0) {
+            throw new IllegalArgumentException("Mã nhân viên không hợp lệ.");
+        }
+        if (thang < 1 || thang > 12) {
+            throw new IllegalArgumentException("Tháng phải từ 1 đến 12.");
+        }
+        if (nam <= 0) {
+            throw new IllegalArgumentException("Năm không hợp lệ.");
+        }
+        return chamCongDAO.getTongHopTheoThangVaNhanVien(maNV, thang, nam);
     }
 }
