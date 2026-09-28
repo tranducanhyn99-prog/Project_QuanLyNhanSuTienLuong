@@ -44,6 +44,9 @@ public class DanhMucPanel extends JPanel {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         tblPhongBan = new JTable(modelPhongBan);
+        tblPhongBan.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tblPhongBan.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+        tblPhongBan.setRowHeight(24);
         pnlPB.add(new JScrollPane(tblPhongBan), BorderLayout.CENTER);
 
         JPanel pnlFormPB = new JPanel(new GridLayout(5, 2, 5, 5));
@@ -88,6 +91,9 @@ public class DanhMucPanel extends JPanel {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         tblChucVu = new JTable(modelChucVu);
+        tblChucVu.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tblChucVu.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+        tblChucVu.setRowHeight(24);
         pnlCV.add(new JScrollPane(tblChucVu), BorderLayout.CENTER);
 
         JPanel pnlFormCV = new JPanel(new GridLayout(4, 2, 5, 5));

@@ -69,6 +69,9 @@ public class NhanVienPanel extends JPanel {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         tblNhanVien = new JTable(modelNhanVien);
+        tblNhanVien.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tblNhanVien.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+        tblNhanVien.setRowHeight(24);
         add(new JScrollPane(tblNhanVien), BorderLayout.CENTER);
 
         // 3. SOUTH: FORM THÔNG TIN & NÚT BẤM

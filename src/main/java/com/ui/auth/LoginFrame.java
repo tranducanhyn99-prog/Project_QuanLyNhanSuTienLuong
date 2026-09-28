@@ -234,12 +234,26 @@ public class LoginFrame extends JFrame {
      * Điểm khởi chạy ứng dụng.
      */
     public static void main(String[] args) {
-        // Thiết lập Look and Feel
+        // Thiết lập Look and Feel và Font tiếng Việt chuẩn Segoe UI
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {
             // Fallback về Metal L&F mặc định
         }
+
+        Font defaultFont = new Font("Segoe UI", Font.PLAIN, 13);
+        Font boldFont = new Font("Segoe UI", Font.BOLD, 13);
+        UIManager.put("Label.font", defaultFont);
+        UIManager.put("Button.font", boldFont);
+        UIManager.put("TextField.font", defaultFont);
+        UIManager.put("PasswordField.font", defaultFont);
+        UIManager.put("Table.font", defaultFont);
+        UIManager.put("TableHeader.font", boldFont);
+        UIManager.put("ComboBox.font", defaultFont);
+        UIManager.put("TabbedPane.font", defaultFont);
+        UIManager.put("Menu.font", defaultFont);
+        UIManager.put("MenuItem.font", defaultFont);
+        UIManager.put("TitledBorder.font", boldFont);
 
         SwingUtilities.invokeLater(() -> {
             LoginFrame loginFrame = new LoginFrame();

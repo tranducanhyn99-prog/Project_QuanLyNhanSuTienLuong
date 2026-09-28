@@ -115,6 +115,20 @@ public class QuickTestLauncher extends JFrame {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {}
 
+        Font defaultFont = new Font("Segoe UI", Font.PLAIN, 13);
+        Font boldFont = new Font("Segoe UI", Font.BOLD, 13);
+        UIManager.put("Label.font", defaultFont);
+        UIManager.put("Button.font", boldFont);
+        UIManager.put("TextField.font", defaultFont);
+        UIManager.put("PasswordField.font", defaultFont);
+        UIManager.put("Table.font", defaultFont);
+        UIManager.put("TableHeader.font", boldFont);
+        UIManager.put("ComboBox.font", defaultFont);
+        UIManager.put("TabbedPane.font", defaultFont);
+        UIManager.put("Menu.font", defaultFont);
+        UIManager.put("MenuItem.font", defaultFont);
+        UIManager.put("TitledBorder.font", boldFont);
+
         SwingUtilities.invokeLater(() -> {
             QuickTestLauncher launcher = new QuickTestLauncher();
             launcher.setVisible(true);
