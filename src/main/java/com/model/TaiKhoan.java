@@ -39,6 +39,15 @@ public class TaiKhoan {
         this.trangThai   = trangThai;
     }
 
+    public TaiKhoan(int maTK, int maNV, String tenDangNhap, String vaiTro, String hoTenNV, String trangThai) {
+        this.maTK        = maTK;
+        this.maNV        = maNV;
+        this.tenDangNhap = tenDangNhap;
+        this.vaiTro      = vaiTro;
+        this.hoTenNV     = hoTenNV;
+        this.trangThai   = trangThai;
+    }
+
     // ─── Getters & Setters ───────────────────────────────────────────
 
     public int getMaTK() {

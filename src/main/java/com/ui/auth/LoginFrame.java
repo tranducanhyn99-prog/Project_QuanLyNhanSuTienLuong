@@ -2,6 +2,7 @@ package com.ui.auth;
 
 import com.model.TaiKhoan;
 import com.service.AuthService;
+import com.session.Session;
 import com.ui.main.MainFrame;
 
 import javax.swing.*;
@@ -155,31 +156,45 @@ public class LoginFrame extends JFrame {
 
         // Thực hiện trên SwingWorker để không block UI
         SwingWorker<TaiKhoan, Void> worker = new SwingWorker<TaiKhoan, Void>() {
-            private Exception error;
-
             @Override
-            protected TaiKhoan doInBackground() {
-                try {
-                    return authService.login(tenDangNhap, matKhau);
-                } catch (Exception ex) {
-                    error = ex;
-                    return null;
-                }
+            protected TaiKhoan doInBackground() throws Exception {
+                return authService.login(tenDangNhap, matKhau);
             }
 
             @Override
             protected void done() {
                 btnDangNhap.setEnabled(true);
-                if (error != null) {
-                    lblStatus.setText(error.getMessage());
+                try {
+                    // 1. Lấy object TaiKhoan trả về từ AuthService.login()
+                    TaiKhoan taiKhoan = get();
+                    if (taiKhoan == null) {
+                        lblStatus.setText("Tên đăng nhập hoặc mật khẩu không đúng!");
+                        lblStatus.setForeground(Color.RED);
+                        txtMatKhau.setText("");
+                        txtMatKhau.requestFocusInWindow();
+                        return;
+                    }
+
+                    // 2. Lưu thông tin tài khoản vào Session sau khi đăng nhập thành công
+                    // 3. Gọi Session.getInstance().login(...) trước khi mở MainFrame
+                    Session.getInstance().login(taiKhoan);
+
+                    lblStatus.setText("Đăng nhập thành công!");
+                    lblStatus.setForeground(new Color(0, 128, 0));
+
+                    // Mở MainFrame sau khi Session đã có dữ liệu đầy đủ
+                    openMainFrame();
+                } catch (Exception ex) {
+                    Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+                    String msg = cause.getMessage();
+                    if (msg == null || msg.trim().isEmpty()) {
+                        msg = "Đăng nhập thất bại!";
+                    }
+                    lblStatus.setText(msg);
                     lblStatus.setForeground(Color.RED);
                     txtMatKhau.setText("");
                     txtMatKhau.requestFocusInWindow();
-                    System.err.println("[LoginFrame] Lỗi đăng nhập: " + error.getMessage());
-                } else {
-                    lblStatus.setText("Đăng nhập thành công!");
-                    lblStatus.setForeground(new Color(0, 128, 0));
-                    openMainFrame();
+                    System.err.println("[LoginFrame] Lỗi đăng nhập: " + msg);
                 }
             }
         };

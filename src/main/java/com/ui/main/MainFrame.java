@@ -194,10 +194,11 @@ public class MainFrame extends JFrame {
         JPanel content = new JPanel(new GridLayout(4, 1, 0, 8));
         content.setBackground(Color.WHITE);
 
-        JLabel lblWelcome = new JLabel("Chào mừng, " + session.getDisplayName() + "!", SwingConstants.CENTER);
+        JLabel lblWelcome = new JLabel("Chào mừng, " + session.getUserInfo() + "!", SwingConstants.CENTER);
         lblWelcome.setFont(new Font("Segoe UI", Font.BOLD, 20));
 
-        JLabel lblRole = new JLabel("Vai trò: " + session.getVaiTroDisplayName(), SwingConstants.CENTER);
+        String roleStr = session.getFullRoleDisplayName();
+        JLabel lblRole = new JLabel("Vai trò: " + (roleStr.isEmpty() ? "Chưa đăng nhập" : roleStr), SwingConstants.CENTER);
         lblRole.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         lblRole.setForeground(Color.GRAY);
 
@@ -229,10 +230,11 @@ public class MainFrame extends JFrame {
             BorderFactory.createEmptyBorder(4, 10, 4, 10)
         ));
 
-        lblStatusUser = new JLabel("Người dùng: " + session.getDisplayName());
+        lblStatusUser = new JLabel("Người dùng: " + session.getUserInfo());
         lblStatusUser.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-        lblStatusRole = new JLabel("Vai trò: " + session.getVaiTroDisplayName());
+        String roleStr = session.getFullRoleDisplayName();
+        lblStatusRole = new JLabel("Vai trò: " + (roleStr.isEmpty() ? "Chưa đăng nhập" : roleStr));
         lblStatusRole.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         lblStatusRole.setForeground(Color.GRAY);
         lblStatusRole.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -409,7 +411,10 @@ public class MainFrame extends JFrame {
     // ═══════════════════════════════════════════════════════════════════
 
     private void setupFrame() {
-        setTitle(APP_TITLE + " – " + session.getDisplayName() + " [" + session.getVaiTroDisplayName() + "]");
+        String titleUser = session.getUserInfo();
+        String roleStr = session.getFullRoleDisplayName();
+        String roleSuffix = !roleStr.isEmpty() ? " [" + roleStr + "]" : "";
+        setTitle(APP_TITLE + " – " + titleUser + roleSuffix);
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setSize(1100, 700);
         setMinimumSize(new Dimension(900, 600));
@@ -422,6 +427,36 @@ public class MainFrame extends JFrame {
             }
         });
     }
+
+    /**
+     * Cập nhật lại thông tin hiển thị và phân quyền menu từ Session hiện tại.
+     */
+    public void updateSessionDisplay() {
+        applyRolePermissions();
+        if (lblStatusUser != null) {
+            lblStatusUser.setText("Người dùng: " + session.getUserInfo());
+        }
+        if (lblStatusRole != null) {
+            String roleStr = session.getFullRoleDisplayName();
+            lblStatusRole.setText("Vai trò: " + (roleStr.isEmpty() ? "Chưa đăng nhập" : roleStr));
+        }
+        String titleUser = session.getUserInfo();
+        String roleStr = session.getFullRoleDisplayName();
+        String roleSuffix = !roleStr.isEmpty() ? " [" + roleStr + "]" : "";
+        setTitle(APP_TITLE + " – " + titleUser + roleSuffix);
+    }
+
+    // ─── Getters phục vụ kiểm thử phân quyền và giao diện ─────────────
+
+    public JMenu getMenuNhanVien() { return menuNhanVien; }
+    public JMenu getMenuDanhMuc() { return menuDanhMuc; }
+    public JMenu getMenuChamCong() { return menuChamCong; }
+    public JMenu getMenuPhuCapKhauTru() { return menuPhuCapKhauTru; }
+    public JMenu getMenuLuong() { return menuLuong; }
+    public JMenu getMenuBaoCao() { return menuBaoCao; }
+    public JMenu getMenuQuanTri() { return menuQuanTri; }
+    public JLabel getLblStatusUser() { return lblStatusUser; }
+    public JLabel getLblStatusRole() { return lblStatusRole; }
 
     // ═══════════════════════════════════════════════════════════════════
     //  FUNCTIONAL INTERFACE (để truyền lambda tạo Panel)
