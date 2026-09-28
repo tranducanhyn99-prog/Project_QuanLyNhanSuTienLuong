@@ -1,5 +1,7 @@
 package com.session;
 
+import com.model.TaiKhoan;
+
 /**
  * Session – Singleton lưu trữ thông tin phiên đăng nhập.
  *
@@ -10,13 +12,13 @@ package com.session;
  */
 public class Session {
 
-    private static Session instance;
+    private static volatile Session instance;
 
-    private int    maTK;
-    private int    maNV;           // -1 nếu là DB_Admin không gắn nhân viên
-    private String tenDangNhap;
-    private String vaiTro;         // "DB_Admin" | "HR_Manager" | "Payroll_Officer" | "Employee"
-    private String hoTenNV;        // Họ tên nhân viên (null nếu DB_Admin hệ thống)
+    private volatile int    maTK;
+    private volatile int    maNV;           // -1 nếu là DB_Admin không gắn nhân viên
+    private volatile String tenDangNhap;
+    private volatile String vaiTro;         // "DB_Admin" | "HR_Manager" | "Payroll_Officer" | "Employee"
+    private volatile String hoTenNV;        // Họ tên nhân viên (null nếu DB_Admin hệ thống)
 
     // ─── Constructor (private – Singleton) ───────────────────────────
 
@@ -28,7 +30,11 @@ public class Session {
 
     public static Session getInstance() {
         if (instance == null) {
-            instance = new Session();
+            synchronized (Session.class) {
+                if (instance == null) {
+                    instance = new Session();
+                }
+            }
         }
         return instance;
     }
@@ -36,9 +42,17 @@ public class Session {
     // ─── Lifecycle ───────────────────────────────────────────────────
 
     /**
-     * Gọi sau khi đăng nhập thành công.
+     * Gọi sau khi đăng nhập thành công từ đối tượng TaiKhoan.
      */
-    public void login(int maTK, int maNV, String tenDangNhap, String vaiTro, String hoTenNV) {
+    public synchronized void login(TaiKhoan tk) {
+        if (tk == null) return;
+        login(tk.getMaTK(), tk.getMaNV(), tk.getTenDangNhap(), tk.getVaiTro(), tk.getHoTenNV());
+    }
+
+    /**
+     * Gọi sau khi đăng nhập thành công với các thông tin chi tiết.
+     */
+    public synchronized void login(int maTK, int maNV, String tenDangNhap, String vaiTro, String hoTenNV) {
         this.maTK        = maTK;
         this.maNV        = maNV;
         this.tenDangNhap = tenDangNhap;
@@ -49,7 +63,7 @@ public class Session {
     /**
      * Gọi khi đăng xuất – xóa sạch thông tin phiên.
      */
-    public void logout() {
+    public synchronized void logout() {
         reset();
     }
 
@@ -117,6 +131,22 @@ public class Session {
     }
 
     /**
+     * Trả về chuỗi thông tin người dùng kết hợp họ tên và tên đăng nhập:
+     * - Nếu có họ tên: "Nguyễn Văn A (hr_manager)"
+     * - Nếu không gắn nhân viên: "admin"
+     * - Nếu chưa đăng nhập: "Khách"
+     */
+    public String getUserInfo() {
+        if (!isLoggedIn()) {
+            return "Khách";
+        }
+        if (hoTenNV != null && !hoTenNV.trim().isEmpty()) {
+            return hoTenNV + " (" + tenDangNhap + ")";
+        }
+        return tenDangNhap != null ? tenDangNhap : "Khách";
+    }
+
+    /**
      * Trả về tên vai trò tiếng Việt cho hiển thị.
      */
     public String getVaiTroDisplayName() {
@@ -128,5 +158,20 @@ public class Session {
             case "Employee":        return "Nhân viên";
             default:                return vaiTro;
         }
+    }
+
+    /**
+     * Trả về mô tả đầy đủ của vai trò gồm tên tiếng Việt và mã hệ thống:
+     * Ví dụ: "Quản trị viên (DB_Admin)", "Quản lý nhân sự (HR_Manager)"
+     */
+    public String getFullRoleDisplayName() {
+        if (vaiTro == null || vaiTro.trim().isEmpty()) {
+            return "";
+        }
+        String vnName = getVaiTroDisplayName();
+        if (vnName.isEmpty() || vnName.equals(vaiTro)) {
+            return vaiTro;
+        }
+        return vnName + " (" + vaiTro + ")";
     }
 }

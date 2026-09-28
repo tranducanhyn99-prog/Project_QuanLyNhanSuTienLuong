@@ -63,13 +63,7 @@ public class AuthService {
 
         // 6. Thiết lập Session
         Session session = Session.getInstance();
-        session.login(
-            taiKhoan.getMaTK(),
-            taiKhoan.getMaNV(),
-            taiKhoan.getTenDangNhap(),
-            taiKhoan.getVaiTro(),
-            taiKhoan.getHoTenNV()
-        );
+        session.login(taiKhoan);
 
         return taiKhoan;
     }

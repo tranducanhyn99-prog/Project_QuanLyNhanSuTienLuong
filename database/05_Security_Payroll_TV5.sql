@@ -186,7 +186,7 @@ GO
 -- Dùng UPDLOCK + HOLDLOCK để ngăn concurrency (2 Payroll_Officer cùng chốt).
 -- TRY...CATCH + Transaction đầy đủ.
 -- ============================================================================
-CREATE OR ALTER PROCEDURE sp_ChotBangLuong
+CREATE OR ALTER PROCEDURE dbo.sp_ChotBangLuong
     @MaBangLuong INT
 AS
 BEGIN

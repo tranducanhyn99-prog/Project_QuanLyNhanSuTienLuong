@@ -181,41 +181,253 @@ public class MainFrame extends JFrame {
         tabbedPane.setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
         // Tab chào mừng mặc định
-        JPanel welcomePanel = createWelcomePanel();
+        JComponent welcomePanel = createWelcomePanel();
         tabbedPane.addTab("Trang chủ", welcomePanel);
 
         add(tabbedPane, BorderLayout.CENTER);
     }
 
-    private JPanel createWelcomePanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(Color.WHITE);
+    private JComponent createWelcomePanel() {
+        JPanel container = new JPanel();
+        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
+        container.setBackground(new Color(248, 250, 252));
+        container.setBorder(BorderFactory.createEmptyBorder(20, 24, 24, 24));
 
-        JPanel content = new JPanel(new GridLayout(4, 1, 0, 8));
-        content.setBackground(Color.WHITE);
+        // 1. Hero banner (Gradient nền màu xanh doanh nghiệp)
+        container.add(createHeroBanner());
+        container.add(Box.createVerticalStrut(18));
 
-        JLabel lblWelcome = new JLabel("Chào mừng, " + session.getDisplayName() + "!", SwingConstants.CENTER);
-        lblWelcome.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        // 2. Thống kê KPI / Trạng thái hệ thống
+        JPanel statsPanel = new JPanel(new GridLayout(1, 4, 14, 0));
+        statsPanel.setOpaque(false);
+        statsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+        statsPanel.add(createStatCard("HỒ SƠ NHÂN SỰ", "5 Nhân viên", "● Đang hoạt động", new Color(14, 165, 233)));
+        statsPanel.add(createStatCard("CƠ CẤU DOANH NGHIỆP", "4 PB • 5 Chức vụ", "● Chuẩn hóa danh mục", new Color(139, 92, 246)));
+        statsPanel.add(createStatCard("KỲ TÍNH LƯƠNG", "Tháng 09 / 2026", "● Chu kỳ đang mở", new Color(245, 158, 11)));
+        statsPanel.add(createStatCard("CƠ SỞ DỮ LIỆU", "SQL Server 2025", "● RBAC • ACID OK", new Color(16, 185, 129)));
+        container.add(statsPanel);
+        container.add(Box.createVerticalStrut(22));
 
-        JLabel lblRole = new JLabel("Vai trò: " + session.getVaiTroDisplayName(), SwingConstants.CENTER);
-        lblRole.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        lblRole.setForeground(Color.GRAY);
+        // 3. Tiêu đề khối thao tác nhanh
+        JLabel lblSection = new JLabel("LỐI TẮT NGHIỆP VỤ NHANH");
+        lblSection.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblSection.setForeground(new Color(71, 85, 105));
+        lblSection.setAlignmentX(Component.LEFT_ALIGNMENT);
+        container.add(lblSection);
+        container.add(Box.createVerticalStrut(10));
 
-        JLabel lblInfo = new JLabel(APP_TITLE, SwingConstants.CENTER);
-        lblInfo.setFont(new Font("Segoe UI", Font.ITALIC, 12));
-        lblInfo.setForeground(new Color(100, 100, 100));
+        // 4. Lưới nút thao tác nhanh
+        JPanel actionsPanel = new JPanel(new GridLayout(2, 3, 14, 14));
+        actionsPanel.setOpaque(false);
+        actionsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
 
-        JLabel lblHint = new JLabel("Sử dụng menu phía trên để truy cập các chức năng.", SwingConstants.CENTER);
-        lblHint.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblHint.setForeground(new Color(120, 120, 120));
+        boolean canHR = session.hasRole("DB_Admin", "HR_Manager");
+        boolean canPayroll = session.hasRole("DB_Admin", "Payroll_Officer");
+        boolean canCC = session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer");
+        boolean canAdmin = session.hasRole("DB_Admin");
 
-        content.add(lblWelcome);
-        content.add(lblRole);
-        content.add(lblInfo);
-        content.add(lblHint);
+        actionsPanel.add(createActionCard("Hồ sơ Nhân viên", "Quản lý lý lịch, chức vụ, phòng ban & lương cơ bản", "NV",
+            () -> openTab("Nhân viên", () -> new NhanVienPanel()), canHR));
 
-        panel.add(content);
-        return panel;
+        actionsPanel.add(createActionCard("Phòng ban & Chức vụ", "Thiết lập cơ cấu phòng ban và phụ cấp trách nhiệm", "DM",
+            () -> openTab("Danh mục", () -> new DanhMucPanel()), canHR));
+
+        actionsPanel.add(createActionCard("Chấm công Nhân sự", "Theo dõi ngày công, làm thêm giờ và nghỉ phép", "CC",
+            () -> openTab("Chấm công", () -> new ChamCongPanel()), canCC));
+
+        actionsPanel.add(createActionCard("Tính toán Bảng lương", "Quy trình tính lương tự động, BHXH và Thuế TNCN", "BL",
+            () -> openTab("Tính bảng lương", () -> new BangLuongPanel()), canPayroll));
+
+        actionsPanel.add(createActionCard("Báo cáo & Phiếu lương", "Xuất bảng lương tổng hợp và tra cứu phiếu lương", "BC",
+            () -> openTab("Báo cáo tổng hợp", () -> new BaoCaoPanel()), true));
+
+        actionsPanel.add(createActionCard("Quản trị Tài khoản", "Phân quyền người dùng, bảo mật và tài khoản đăng nhập", "QT",
+            () -> openTab("Quản lý tài khoản", () -> new TaiKhoanPanel()), canAdmin));
+
+        container.add(actionsPanel);
+        container.add(Box.createVerticalStrut(20));
+
+        // 5. Thanh thông tin phiên đăng nhập
+        JPanel footerCard = new JPanel(new BorderLayout());
+        footerCard.setOpaque(true);
+        footerCard.setBackground(Color.WHITE);
+        footerCard.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+            BorderFactory.createEmptyBorder(10, 16, 10, 16)
+        ));
+        footerCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+
+        int maNV = session.getMaNV();
+        String idInfo = (maNV > 0) ? ("Mã NV: " + maNV) : "Tài khoản quản trị";
+        JLabel lblLeftInfo = new JLabel("Phiên đăng nhập: " + session.getTenDangNhap() + " (" + idInfo + ")  |  Cơ chế phân quyền RBAC");
+        lblLeftInfo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblLeftInfo.setForeground(new Color(100, 116, 139));
+
+        JLabel lblRightInfo = new JLabel("Hệ Quản trị Cơ sở Dữ liệu – Nhóm TV5");
+        lblRightInfo.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        lblRightInfo.setForeground(new Color(148, 163, 184));
+
+        footerCard.add(lblLeftInfo, BorderLayout.WEST);
+        footerCard.add(lblRightInfo, BorderLayout.EAST);
+
+        container.add(footerCard);
+
+        JScrollPane scroll = new JScrollPane(container);
+        scroll.setBorder(null);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        return scroll;
+    }
+
+    private JPanel createHeroBanner() {
+        JPanel hero = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Gradient nền chuyển sắc từ Navy (#1A365D) sang Royal Blue (#2563EB)
+                GradientPaint gp = new GradientPaint(
+                    0, 0, new Color(26, 54, 93),
+                    getWidth(), getHeight(), new Color(37, 99, 235)
+                );
+                g2.setPaint(gp);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                g2.dispose();
+            }
+        };
+        hero.setOpaque(false);
+        hero.setLayout(new BorderLayout(20, 10));
+        hero.setBorder(BorderFactory.createEmptyBorder(22, 26, 22, 26));
+
+        JPanel leftCol = new JPanel();
+        leftCol.setOpaque(false);
+        leftCol.setLayout(new BoxLayout(leftCol, BoxLayout.Y_AXIS));
+
+        JLabel lblSystem = new JLabel("HỆ THỐNG QUẢN LÝ NHÂN SỰ VÀ TIỀN LƯƠNG ENTERPRISE");
+        lblSystem.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblSystem.setForeground(new Color(191, 219, 254));
+
+        JLabel lblGreet = new JLabel("Xin chào, " + session.getUserInfo() + "!");
+        lblGreet.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblGreet.setForeground(Color.WHITE);
+
+        String roleStr = session.getFullRoleDisplayName();
+        if (roleStr.isEmpty()) roleStr = "Chưa xác định";
+
+        JLabel lblDesc = new JLabel("Vai trò hiện hành: " + roleStr + "  •  Hãy chọn một nghiệp vụ bên dưới hoặc sử dụng thanh thực đơn để bắt đầu.");
+        lblDesc.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblDesc.setForeground(new Color(224, 231, 255));
+
+        leftCol.add(lblSystem);
+        leftCol.add(Box.createVerticalStrut(6));
+        leftCol.add(lblGreet);
+        leftCol.add(Box.createVerticalStrut(6));
+        leftCol.add(lblDesc);
+
+        hero.add(leftCol, BorderLayout.CENTER);
+        return hero;
+    }
+
+    private JPanel createStatCard(String title, String value, String subtext, Color accentColor) {
+        JPanel card = new JPanel(new BorderLayout(0, 6));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 4, 0, 0, accentColor),
+                BorderFactory.createEmptyBorder(12, 14, 12, 14)
+            )
+        ));
+
+        JLabel lblTitle = new JLabel(title);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblTitle.setForeground(new Color(100, 116, 139));
+
+        JLabel lblValue = new JLabel(value);
+        lblValue.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblValue.setForeground(new Color(15, 23, 42));
+
+        JLabel lblSub = new JLabel(subtext);
+        lblSub.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblSub.setForeground(accentColor);
+
+        card.add(lblTitle, BorderLayout.NORTH);
+        card.add(lblValue, BorderLayout.CENTER);
+        card.add(lblSub, BorderLayout.SOUTH);
+
+        return card;
+    }
+
+    private JPanel createActionCard(String title, String desc, String badge, Runnable action, boolean enabled) {
+        JPanel card = new JPanel(new BorderLayout(10, 8));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(enabled ? new Color(226, 232, 240) : new Color(241, 245, 249), 1),
+            BorderFactory.createEmptyBorder(14, 16, 14, 16)
+        ));
+        card.setCursor(enabled ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
+
+        // Tiêu đề và badge
+        JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        topRow.setOpaque(false);
+
+        JLabel lblBadge = new JLabel(badge);
+        lblBadge.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblBadge.setOpaque(true);
+        lblBadge.setBackground(enabled ? new Color(238, 242, 255) : new Color(241, 245, 249));
+        lblBadge.setForeground(enabled ? new Color(67, 56, 202) : Color.GRAY);
+        lblBadge.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(enabled ? new Color(199, 210, 254) : new Color(226, 232, 240), 1),
+            BorderFactory.createEmptyBorder(2, 6, 2, 6)
+        ));
+
+        JLabel lblTitle = new JLabel(title);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblTitle.setForeground(enabled ? new Color(30, 41, 59) : new Color(156, 163, 175));
+
+        topRow.add(lblBadge);
+        topRow.add(lblTitle);
+
+        JLabel lblDesc = new JLabel(enabled ? desc : "Không khả dụng cho vai trò tài khoản hiện tại");
+        lblDesc.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblDesc.setForeground(enabled ? new Color(100, 116, 139) : new Color(156, 163, 175));
+
+        card.add(topRow, BorderLayout.NORTH);
+        card.add(lblDesc, BorderLayout.CENTER);
+
+        if (enabled) {
+            Color normalBg = Color.WHITE;
+            Color hoverBg = new Color(245, 248, 255);
+            Color hoverBorder = new Color(147, 197, 253);
+            Color normalBorder = new Color(226, 232, 240);
+
+            card.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseEntered(java.awt.event.MouseEvent e) {
+                    card.setBackground(hoverBg);
+                    card.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(hoverBorder, 1),
+                        BorderFactory.createEmptyBorder(14, 16, 14, 16)
+                    ));
+                }
+
+                @Override
+                public void mouseExited(java.awt.event.MouseEvent e) {
+                    card.setBackground(normalBg);
+                    card.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(normalBorder, 1),
+                        BorderFactory.createEmptyBorder(14, 16, 14, 16)
+                    ));
+                }
+
+                @Override
+                public void mouseClicked(java.awt.event.MouseEvent e) {
+                    action.run();
+                }
+            });
+        }
+
+        return card;
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -229,10 +441,11 @@ public class MainFrame extends JFrame {
             BorderFactory.createEmptyBorder(4, 10, 4, 10)
         ));
 
-        lblStatusUser = new JLabel("Người dùng: " + session.getDisplayName());
+        lblStatusUser = new JLabel("Người dùng: " + session.getUserInfo());
         lblStatusUser.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-        lblStatusRole = new JLabel("Vai trò: " + session.getVaiTroDisplayName());
+        String roleStr = session.getFullRoleDisplayName();
+        lblStatusRole = new JLabel("Vai trò: " + (roleStr.isEmpty() ? "Chưa đăng nhập" : roleStr));
         lblStatusRole.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         lblStatusRole.setForeground(Color.GRAY);
         lblStatusRole.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -409,7 +622,10 @@ public class MainFrame extends JFrame {
     // ═══════════════════════════════════════════════════════════════════
 
     private void setupFrame() {
-        setTitle(APP_TITLE + " – " + session.getDisplayName() + " [" + session.getVaiTroDisplayName() + "]");
+        String titleUser = session.getUserInfo();
+        String roleStr = session.getFullRoleDisplayName();
+        String roleSuffix = !roleStr.isEmpty() ? " [" + roleStr + "]" : "";
+        setTitle(APP_TITLE + " – " + titleUser + roleSuffix);
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setSize(1100, 700);
         setMinimumSize(new Dimension(900, 600));
@@ -422,6 +638,44 @@ public class MainFrame extends JFrame {
             }
         });
     }
+
+    /**
+     * Cập nhật lại thông tin hiển thị và phân quyền menu từ Session hiện tại.
+     */
+    public void updateSessionDisplay() {
+        applyRolePermissions();
+        if (lblStatusUser != null) {
+            lblStatusUser.setText("Người dùng: " + session.getUserInfo());
+        }
+        if (lblStatusRole != null) {
+            String roleStr = session.getFullRoleDisplayName();
+            lblStatusRole.setText("Vai trò: " + (roleStr.isEmpty() ? "Chưa đăng nhập" : roleStr));
+        }
+        String titleUser = session.getUserInfo();
+        String roleStr = session.getFullRoleDisplayName();
+        String roleSuffix = !roleStr.isEmpty() ? " [" + roleStr + "]" : "";
+        setTitle(APP_TITLE + " – " + titleUser + roleSuffix);
+
+        if (tabbedPane != null) {
+            int welcomeIdx = tabbedPane.indexOfTab("Trang chủ");
+            if (welcomeIdx >= 0) {
+                tabbedPane.setComponentAt(welcomeIdx, createWelcomePanel());
+            }
+        }
+    }
+
+    // ─── Getters phục vụ kiểm thử phân quyền và giao diện ─────────────
+
+    public JMenu getMenuNhanVien() { return menuNhanVien; }
+    public JMenu getMenuDanhMuc() { return menuDanhMuc; }
+    public JMenu getMenuChamCong() { return menuChamCong; }
+    public JMenu getMenuPhuCapKhauTru() { return menuPhuCapKhauTru; }
+    public JMenu getMenuLuong() { return menuLuong; }
+    public JMenu getMenuBaoCao() { return menuBaoCao; }
+    public JMenu getMenuQuanTri() { return menuQuanTri; }
+    public JLabel getLblStatusUser() { return lblStatusUser; }
+    public JLabel getLblStatusRole() { return lblStatusRole; }
+    public JTabbedPane getTabbedPane() { return tabbedPane; }
 
     // ═══════════════════════════════════════════════════════════════════
     //  FUNCTIONAL INTERFACE (để truyền lambda tạo Panel)

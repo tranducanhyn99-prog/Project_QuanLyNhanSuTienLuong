@@ -240,15 +240,25 @@ BEGIN
         IF (@TrangThaiKy IS NOT NULL)
         BEGIN
             IF (@TrangThaiKy = 'DA_CHOT')
-                RAISERROR(N'Ky luong nay da duoc chot. Khong the tinh lai.', 16, 1);
+                RAISERROR(N'Kỳ lương này đã được chốt. Không thể tính lại! Vui lòng mở lại (hủy chốt) bảng lương trước nếu cần điều chỉnh.', 16, 1);
             ELSE
-                RAISERROR(N'Ky luong nay da ton tai. Vui long xoa ky chua chot neu muon tinh lai.', 16, 1);
+            BEGIN
+                -- Bảng lương đã có nhưng chưa chốt -> Tính lại: xóa chi tiết cũ và nạp lại theo dữ liệu mới nhất
+                SELECT @MaBangLuong = MaBangLuong FROM dbo.BANGLUONG WHERE Thang = @Thang AND Nam = @Nam;
+                DELETE FROM dbo.CHITIETBANGLUONG WHERE MaBangLuong = @MaBangLuong;
+                UPDATE dbo.BANGLUONG
+                SET NgayCongChuan = @NgayCongChuan,
+                    NgayTao = GETDATE()
+                WHERE MaBangLuong = @MaBangLuong;
+            END;
+        END
+        ELSE
+        BEGIN
+            INSERT INTO dbo.BANGLUONG (Thang, Nam, NgayCongChuan, TrangThai)
+            VALUES (@Thang, @Nam, @NgayCongChuan, 'CHUA_CHOT');
+
+            SET @MaBangLuong = CONVERT(INT, SCOPE_IDENTITY());
         END;
-
-        INSERT INTO dbo.BANGLUONG (Thang, Nam, NgayCongChuan, TrangThai)
-        VALUES (@Thang, @Nam, @NgayCongChuan, 'CHUA_CHOT');
-
-        SET @MaBangLuong = CONVERT(INT, SCOPE_IDENTITY());
 
         SET @curNhanVien = CURSOR LOCAL FAST_FORWARD FOR
             SELECT MaNV, LuongCoBan
@@ -398,6 +408,76 @@ BEGIN
 
         DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
         RAISERROR(@ErrorMessage, 16, 1);
+    END CATCH
+END;
+GO
+
+-- ============================================================================
+-- PHAN 7: STORED PROCEDURE XOA BANG LUONG CHUA CHOT (RESET BANG LUONG)
+-- ============================================================================
+CREATE OR ALTER PROCEDURE dbo.sp_XoaBangLuongChuaChot
+    @MaBangLuong INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @TrangThai VARCHAR(15);
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        SELECT @TrangThai = TrangThai
+        FROM dbo.BANGLUONG WITH (UPDLOCK, HOLDLOCK)
+        WHERE MaBangLuong = @MaBangLuong;
+
+        IF @TrangThai IS NULL
+            RAISERROR(N'Không tìm thấy bảng lương với mã %d!', 16, 1, @MaBangLuong);
+
+        IF @TrangThai = 'DA_CHOT'
+            RAISERROR(N'Bảng lương đã chốt không thể xóa trực tiếp! Vui lòng mở lại (hủy chốt) trước nếu muốn điều chỉnh.', 16, 1);
+
+        DELETE FROM dbo.CHITIETBANGLUONG WHERE MaBangLuong = @MaBangLuong;
+        DELETE FROM dbo.BANGLUONG WHERE MaBangLuong = @MaBangLuong;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        DECLARE @Err NVARCHAR(4000) = ERROR_MESSAGE();
+        RAISERROR(@Err, 16, 1);
+    END CATCH
+END;
+GO
+
+-- ============================================================================
+-- PHAN 8: STORED PROCEDURE HUY CHOT / MO LAI BANG LUONG (REOPEN / UNLOCK)
+-- ============================================================================
+CREATE OR ALTER PROCEDURE dbo.sp_HuyChotBangLuong
+    @MaBangLuong INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @TrangThai VARCHAR(15);
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        SELECT @TrangThai = TrangThai
+        FROM dbo.BANGLUONG WITH (UPDLOCK, HOLDLOCK)
+        WHERE MaBangLuong = @MaBangLuong;
+
+        IF @TrangThai IS NULL
+            RAISERROR(N'Không tìm thấy bảng lương với mã %d!', 16, 1, @MaBangLuong);
+
+        IF @TrangThai <> 'DA_CHOT'
+            RAISERROR(N'Bảng lương chưa chốt, không cần hủy chốt!', 16, 1);
+
+        UPDATE dbo.BANGLUONG
+        SET TrangThai = 'CHUA_CHOT',
+            NgayChot  = NULL
+        WHERE MaBangLuong = @MaBangLuong;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
+        RAISERROR(@ErrMsg, 16, 1);
     END CATCH
 END;
 GO
