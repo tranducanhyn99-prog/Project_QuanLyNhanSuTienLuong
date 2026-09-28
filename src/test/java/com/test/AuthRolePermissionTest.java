@@ -4,6 +4,9 @@ import com.model.TaiKhoan;
 import com.session.Session;
 import com.ui.main.MainFrame;
 import com.ui.nhanvien.NhanVienPanel;
+import com.ui.baocao.BaoCaoPanel;
+import com.ui.luong.BangLuongPanel;
+import com.ui.chamcong.ChamCongPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -254,6 +257,18 @@ public class AuthRolePermissionTest {
         // Khởi tạo NhanVienPanel để kiểm tra cấu trúc layout không có exception
         NhanVienPanel nvPanel = new NhanVienPanel();
         assertTrue("NhanVienPanel phải được khởi tạo thành công", nvPanel != null);
+
+        // Khởi tạo BaoCaoPanel để kiểm tra nút Chốt lương và Hủy chốt
+        BaoCaoPanel bcPanel = new BaoCaoPanel();
+        assertTrue("BaoCaoPanel phải được khởi tạo thành công", bcPanel != null);
+
+        // Khởi tạo BangLuongPanel để kiểm tra tính và xóa kỳ lương
+        BangLuongPanel blPanel = new BangLuongPanel();
+        assertTrue("BangLuongPanel phải được khởi tạo thành công", blPanel != null);
+
+        // Khởi tạo ChamCongPanel để kiểm tra nút xóa chấm công
+        ChamCongPanel ccPanel = new ChamCongPanel();
+        assertTrue("ChamCongPanel phải được khởi tạo thành công", ccPanel != null);
 
         mainFrame.dispose();
         session.logout();

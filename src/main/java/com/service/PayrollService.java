@@ -124,6 +124,48 @@ public class PayrollService {
     }
 
     /**
+     * Hủy chốt / Mở lại bảng lương theo MaBangLuong.
+     * Kiểm tra quyền: Chỉ DB_Admin hoặc Payroll_Officer mới được mở lại.
+     */
+    public void huyChotBangLuong(int maBangLuong) throws Exception {
+        Session session = Session.getInstance();
+        if (session.isLoggedIn() && !session.hasRole("DB_Admin", "Payroll_Officer")) {
+            throw new Exception("Bạn không có quyền mở lại bảng lương! Chỉ DB_Admin hoặc Payroll_Officer mới được thực hiện.");
+        }
+
+        if (maBangLuong <= 0) {
+            throw new Exception("Mã bảng lương không hợp lệ!");
+        }
+
+        try {
+            bangLuongDAO.huyChotBangLuong(maBangLuong);
+        } catch (SQLException ex) {
+            throw new Exception("Lỗi khi mở lại bảng lương: " + ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Xóa bảng lương chưa chốt (reset kỳ lương nháp).
+     * Kiểm tra quyền: Chỉ DB_Admin hoặc Payroll_Officer mới được xóa.
+     */
+    public void xoaBangLuong(int maBangLuong) throws Exception {
+        Session session = Session.getInstance();
+        if (session.isLoggedIn() && !session.hasRole("DB_Admin", "Payroll_Officer")) {
+            throw new Exception("Bạn không có quyền xóa bảng lương! Chỉ DB_Admin hoặc Payroll_Officer mới được thực hiện.");
+        }
+
+        if (maBangLuong <= 0) {
+            throw new Exception("Mã bảng lương không hợp lệ!");
+        }
+
+        try {
+            bangLuongDAO.xoaBangLuong(maBangLuong);
+        } catch (SQLException ex) {
+            throw new Exception("Lỗi khi xóa bảng lương: " + ex.getMessage(), ex);
+        }
+    }
+
+    /**
      * Lấy chi tiết bảng lương theo tháng/năm (TV5)
      */
     public List<ChiTietBangLuong> getChiTietByThangNam(int thang, int nam) throws SQLException {

@@ -138,7 +138,31 @@ public class BangLuongDAO {
      * Sử dụng UPDLOCK + HOLDLOCK để chống xung đột Concurrency.
      */
     public void chotBangLuong(int maBangLuong) throws SQLException {
-        String sql = "{CALL sp_ChotBangLuong(?)}";
+        String sql = "{CALL dbo.sp_ChotBangLuong(?)}";
+        try (Connection conn = DatabaseConnection.getConnection();
+             CallableStatement cs = conn.prepareCall(sql)) {
+            cs.setInt(1, maBangLuong);
+            cs.execute();
+        }
+    }
+
+    /**
+     * Mở lại bảng lương (hủy chốt) – gọi Stored Procedure sp_HuyChotBangLuong
+     */
+    public void huyChotBangLuong(int maBangLuong) throws SQLException {
+        String sql = "{CALL dbo.sp_HuyChotBangLuong(?)}";
+        try (Connection conn = DatabaseConnection.getConnection();
+             CallableStatement cs = conn.prepareCall(sql)) {
+            cs.setInt(1, maBangLuong);
+            cs.execute();
+        }
+    }
+
+    /**
+     * Xóa bảng lương chưa chốt (reset kỳ lương nháp) – gọi sp_XoaBangLuongChuaChot
+     */
+    public void xoaBangLuong(int maBangLuong) throws SQLException {
+        String sql = "{CALL dbo.sp_XoaBangLuongChuaChot(?)}";
         try (Connection conn = DatabaseConnection.getConnection();
              CallableStatement cs = conn.prepareCall(sql)) {
             cs.setInt(1, maBangLuong);

@@ -44,6 +44,8 @@ public class BaoCaoPanel extends JPanel {
     private JLabel               lblTongThucNhan;
     private JLabel               lblTrangThai;
     private JButton              btnChotLuong;
+    private JButton              btnHuyChot;
+    private JButton              btnXoaKyBaoCao;
     private JButton              btnLamMoi;
 
     public BaoCaoPanel() {
@@ -105,11 +107,71 @@ public class BaoCaoPanel extends JPanel {
         lblTrangThai = new JLabel("");
         lblTrangThai.setFont(new Font("Segoe UI", Font.BOLD, 13));
 
-        btnChotLuong = new JButton("Chốt bảng lương");
+        // Nút Chốt bảng lương: vẽ đồ họa trực tiếp đảm bảo nền ĐỎ nổi bật, chữ trắng sắc nét
+        btnChotLuong = new JButton("Chốt bảng lương") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (!isEnabled()) {
+                    g2.setColor(new Color(226, 232, 240));
+                } else if (getModel().isPressed()) {
+                    g2.setColor(new Color(153, 27, 27)); // Crimson đậm khi nhấn
+                } else if (getModel().isRollover()) {
+                    g2.setColor(new Color(185, 28, 28)); // Đỏ sáng khi di chuột
+                } else {
+                    g2.setColor(new Color(220, 38, 38)); // Đỏ nổi bật
+                }
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
         btnChotLuong.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnChotLuong.setBackground(new Color(220, 53, 69));
         btnChotLuong.setForeground(Color.WHITE);
         btnChotLuong.setFocusPainted(false);
+        btnChotLuong.setContentAreaFilled(false);
+        btnChotLuong.setBorderPainted(false);
+        btnChotLuong.setOpaque(false);
+        btnChotLuong.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnChotLuong.setPreferredSize(new Dimension(150, 34));
+
+        // Nút Mở lại bảng lương (Hủy chốt): vẽ nền Cam Hổ Phách sang trọng
+        btnHuyChot = new JButton("Mở lại bảng lương (Hủy chốt)") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (!isEnabled()) {
+                    g2.setColor(new Color(226, 232, 240));
+                } else if (getModel().isPressed()) {
+                    g2.setColor(new Color(180, 83, 9));
+                } else if (getModel().isRollover()) {
+                    g2.setColor(new Color(217, 119, 6));
+                } else {
+                    g2.setColor(new Color(245, 158, 11));
+                }
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btnHuyChot.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnHuyChot.setForeground(Color.WHITE);
+        btnHuyChot.setFocusPainted(false);
+        btnHuyChot.setContentAreaFilled(false);
+        btnHuyChot.setBorderPainted(false);
+        btnHuyChot.setOpaque(false);
+        btnHuyChot.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnHuyChot.setPreferredSize(new Dimension(215, 34));
+        btnHuyChot.setVisible(false);
+
+        // Nút Xóa kỳ lương nháp
+        btnXoaKyBaoCao = new JButton("Xóa kỳ lương (chưa chốt)");
+        btnXoaKyBaoCao.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnXoaKyBaoCao.setForeground(new Color(185, 28, 28));
+        btnXoaKyBaoCao.setPreferredSize(new Dimension(185, 34));
+        btnXoaKyBaoCao.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         btnLamMoi = new JButton("Làm mới");
         btnLamMoi.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -151,9 +213,11 @@ public class BaoCaoPanel extends JPanel {
 
         pnlBottom.add(lblTongThucNhan, BorderLayout.WEST);
 
-        // Nút chốt chỉ hiện cho DB_Admin/Payroll_Officer
+        // Khối thao tác (Chốt, Hủy chốt, Xóa kỳ nháp) chỉ hiện cho DB_Admin/Payroll_Officer
         if (session.hasRole("DB_Admin", "Payroll_Officer")) {
             JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+            pnlActions.add(btnXoaKyBaoCao);
+            pnlActions.add(btnHuyChot);
             pnlActions.add(btnChotLuong);
             pnlBottom.add(pnlActions, BorderLayout.EAST);
         }
@@ -182,6 +246,8 @@ public class BaoCaoPanel extends JPanel {
         });
 
         btnChotLuong.addActionListener(e -> handleChotLuong());
+        btnHuyChot.addActionListener(e -> handleHuyChotLuong());
+        btnXoaKyBaoCao.addActionListener(e -> handleXoaKyBaoCao());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -403,20 +469,129 @@ public class BaoCaoPanel extends JPanel {
         worker.execute();
     }
 
+    private void handleHuyChotLuong() {
+        BangLuong selected = (BangLuong) cboKyLuong.getSelectedItem();
+        if (selected == null) {
+            showError("Vui lòng chọn kỳ lương!");
+            return;
+        }
+
+        if (!selected.isDaChot()) {
+            JOptionPane.showMessageDialog(this,
+                "Kỳ lương này chưa chốt, không cần mở lại!",
+                "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        int choice = JOptionPane.showConfirmDialog(this,
+            "Bạn có chắc chắn muốn MỞ LẠI (HỦY CHỐT) bảng lương " + selected.getDisplayLabel() + "?\n\n"
+            + "Sau khi mở lại:\n"
+            + "• Kỳ lương sẽ trở về trạng thái CHƯA CHỐT (Bản nháp)\n"
+            + "• Bạn có thể vào phân hệ Chấm công sửa/xóa ngày công, tính lại lương hoặc xóa kỳ lương này",
+            "Xác nhận mở lại bảng lương",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+
+        if (choice != JOptionPane.YES_OPTION) return;
+
+        btnHuyChot.setEnabled(false);
+        btnHuyChot.setText("Đang mở lại...");
+
+        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+            private Exception error;
+
+            @Override
+            protected Void doInBackground() {
+                try {
+                    payrollService.huyChotBangLuong(selected.getMaBangLuong());
+                } catch (Exception ex) {
+                    error = ex;
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                btnHuyChot.setEnabled(true);
+                btnHuyChot.setText("Mở lại bảng lương (Hủy chốt)");
+
+                if (error != null) {
+                    showError(error.getMessage());
+                } else {
+                    JOptionPane.showMessageDialog(BaoCaoPanel.this,
+                        "Đã mở lại bảng lương " + selected.getDisplayLabel() + " thành công!\nHiện tại bạn có thể điều chỉnh ngày công và tính lại bảng lương.",
+                        "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                    loadKyLuong();
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private void handleXoaKyBaoCao() {
+        BangLuong selected = (BangLuong) cboKyLuong.getSelectedItem();
+        if (selected == null) {
+            showError("Vui lòng chọn kỳ lương cần xóa!");
+            return;
+        }
+
+        if (selected.isDaChot()) {
+            JOptionPane.showMessageDialog(this,
+                "Bảng lương này ĐÃ CHỐT, không thể xóa trực tiếp!\nVui lòng bấm 'Mở lại bảng lương (Hủy chốt)' trước nếu muốn điều chỉnh.",
+                "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int choice = JOptionPane.showConfirmDialog(this,
+            "Bạn có chắc chắn muốn XÓA bảng lương " + selected.getDisplayLabel() + " (trạng thái CHƯA CHỐT)?\n\n"
+            + "Toàn bộ chi tiết lương nháp của tháng này sẽ được xóa để bạn có thể kiểm tra lại dữ liệu và tính lại từ đầu.",
+            "Xác nhận xóa bảng lương",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+
+        if (choice != JOptionPane.YES_OPTION) return;
+
+        try {
+            payrollService.xoaBangLuong(selected.getMaBangLuong());
+            JOptionPane.showMessageDialog(this, "Đã xóa bảng lương " + selected.getDisplayLabel() + " thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            loadKyLuong();
+        } catch (Exception ex) {
+            showError("Lỗi khi xóa bảng lương: " + ex.getMessage());
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     //  UTILITY
     // ═══════════════════════════════════════════════════════════════════
 
     private void updateTrangThaiLabel(BangLuong bl) {
+        boolean canManage = session.hasRole("DB_Admin", "Payroll_Officer");
         if (bl.isDaChot()) {
             lblTrangThai.setText("● ĐÃ CHỐT");
-            lblTrangThai.setForeground(new Color(40, 167, 69));
-            btnChotLuong.setEnabled(false);
+            lblTrangThai.setForeground(new Color(22, 163, 74));
+            if (btnChotLuong != null) btnChotLuong.setVisible(false);
+            if (btnHuyChot != null) {
+                btnHuyChot.setVisible(true);
+                btnHuyChot.setEnabled(canManage);
+            }
+            if (btnXoaKyBaoCao != null) btnXoaKyBaoCao.setVisible(false);
         } else {
-            lblTrangThai.setText("○ CHƯA CHỐT");
-            lblTrangThai.setForeground(new Color(255, 153, 0));
-            btnChotLuong.setEnabled(true);
+            lblTrangThai.setText("○ CHƯA CHỐT (Bản nháp)");
+            lblTrangThai.setForeground(new Color(217, 119, 6));
+            if (btnChotLuong != null) {
+                btnChotLuong.setVisible(true);
+                btnChotLuong.setEnabled(canManage);
+            }
+            if (btnHuyChot != null) btnHuyChot.setVisible(false);
+            if (btnXoaKyBaoCao != null) {
+                btnXoaKyBaoCao.setVisible(true);
+                btnXoaKyBaoCao.setEnabled(canManage);
+            }
         }
+        revalidate();
+        repaint();
     }
 
     private String formatMoney(BigDecimal amount) {

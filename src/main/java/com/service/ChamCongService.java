@@ -4,6 +4,7 @@ import com.config.DatabaseConnection;
 import com.dao.ChamCongDAO;
 import com.model.ChamCong;
 import com.model.TongHopChamCong;
+import com.session.Session;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -169,5 +170,20 @@ public class ChamCongService {
             throw new IllegalArgumentException("Năm không hợp lệ.");
         }
         return chamCongDAO.getTongHopTheoThangVaNhanVien(maNV, thang, nam);
+    }
+
+    /**
+     * Xóa một bản ghi chấm công.
+     * Kiểm tra phân quyền: Chỉ DB_Admin hoặc HR_Manager mới được xóa.
+     */
+    public boolean xoaChamCong(int maChamCong) throws Exception {
+        Session session = Session.getInstance();
+        if (session.isLoggedIn() && !session.hasRole("DB_Admin", "HR_Manager")) {
+            throw new Exception("Bạn không có quyền xóa chấm công! Chỉ Quản trị viên hoặc Quản lý nhân sự mới được thực hiện.");
+        }
+        if (maChamCong <= 0) {
+            throw new IllegalArgumentException("Mã chấm công không hợp lệ.");
+        }
+        return chamCongDAO.deleteChamCong(maChamCong);
     }
 }
