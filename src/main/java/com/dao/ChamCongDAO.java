@@ -245,4 +245,47 @@ public class ChamCongDAO {
             return ps.executeUpdate() > 0;
         }
     }
+
+    /**
+     * Cập nhật thông tin chấm công (giờ vào, giờ ra, trạng thái, ghi chú).
+     * Kiểm tra không cho phép sửa nếu kỳ lương của tháng đó đã được chốt (DA_CHOT).
+     */
+    public boolean updateChamCong(ChamCong cc) throws SQLException {
+        // Kiểm tra xem lượt chấm công này có thuộc về kỳ lương đã chốt không
+        String checkSql = "SELECT bl.TrangThai "
+                        + "FROM dbo.CHAMCONG cc "
+                        + "JOIN dbo.BANGLUONG bl ON MONTH(cc.NgayChamCong) = bl.Thang AND YEAR(cc.NgayChamCong) = bl.Nam "
+                        + "WHERE cc.MaChamCong = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement checkPs = conn.prepareStatement(checkSql)) {
+            checkPs.setInt(1, cc.getMaChamCong());
+            try (ResultSet rs = checkPs.executeQuery()) {
+                if (rs.next() && "DA_CHOT".equals(rs.getString("TrangThai"))) {
+                    throw new SQLException("Không thể sửa lượt chấm công này vì kỳ lương của tháng đó đã CHỐT! Vui lòng mở lại bảng lương trước nếu muốn điều chỉnh.");
+                }
+            }
+        }
+
+        String sql = "UPDATE dbo.CHAMCONG "
+                   + "SET GioVao = ?, GioRa = ?, TrangThai = ?, GhiChu = ? "
+                   + "WHERE MaChamCong = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (cc.getGioVao() != null) {
+                ps.setTime(1, Time.valueOf(cc.getGioVao()));
+            } else {
+                ps.setNull(1, Types.TIME);
+            }
+            if (cc.getGioRa() != null) {
+                ps.setTime(2, Time.valueOf(cc.getGioRa()));
+            } else {
+                ps.setNull(2, Types.TIME);
+            }
+            ps.setString(3, cc.getTrangThai() != null ? cc.getTrangThai() : "CO_MAT");
+            ps.setString(4, cc.getGhiChu());
+            ps.setInt(5, cc.getMaChamCong());
+
+            return ps.executeUpdate() > 0;
+        }
+    }
 }

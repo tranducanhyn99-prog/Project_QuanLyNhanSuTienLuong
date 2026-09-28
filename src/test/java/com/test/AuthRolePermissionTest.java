@@ -72,6 +72,10 @@ public class AuthRolePermissionTest {
         }
     }
 
+    private static void assertFalse(String message, boolean condition) {
+        assertTrue(message, !condition);
+    }
+
     private static void assertEquals(String message, Object expected, Object actual) {
         totalTests++;
         if (expected == null && actual == null) {
@@ -266,9 +270,15 @@ public class AuthRolePermissionTest {
         BangLuongPanel blPanel = new BangLuongPanel();
         assertTrue("BangLuongPanel phải được khởi tạo thành công", blPanel != null);
 
-        // Khởi tạo ChamCongPanel để kiểm tra nút xóa chấm công
-        ChamCongPanel ccPanel = new ChamCongPanel();
+        // Khởi tạo ChamCongPanel để kiểm tra nút xóa chấm công và tab tổng hợp
+        ChamCongPanel ccPanel = new ChamCongPanel(true);
         assertTrue("ChamCongPanel phải được khởi tạo thành công", ccPanel != null);
+
+        // Khởi tạo DieuChinhChamCongDialog để kiểm tra drill-down chấm công
+        com.ui.chamcong.DieuChinhChamCongDialog dcDialog = new com.ui.chamcong.DieuChinhChamCongDialog(mainFrame, 1, "Nguyễn Văn A", 3, 2026);
+        assertTrue("DieuChinhChamCongDialog phải được khởi tạo thành công", dcDialog != null);
+        assertFalse("Mặc định dataChanged trong dialog là false", dcDialog.isDataChanged());
+        dcDialog.dispose();
 
         mainFrame.dispose();
         session.logout();

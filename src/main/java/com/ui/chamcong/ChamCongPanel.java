@@ -58,6 +58,7 @@ public class ChamCongPanel extends JPanel {
     private JSpinner spnThangTongHop;
     private JSpinner spnNamTongHop;
     private JButton btnXemTongHop;
+    private JButton btnDieuChinhCong;
     private JTable tblTongHop;
     private DefaultTableModel modelTongHop;
     private JLabel lblTongHopThongKe;
@@ -205,11 +206,18 @@ public class ChamCongPanel extends JPanel {
         btnXemTongHop = new JButton("Xem tổng hợp tháng");
         btnXemTongHop.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
+        btnDieuChinhCong = new JButton("Xem & Điều chỉnh ngày công NV");
+        btnDieuChinhCong.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnDieuChinhCong.setForeground(new Color(30, 64, 175));
+        btnDieuChinhCong.setToolTipText("Xem toàn bộ ngày công của nhân viên đã chọn trong tháng và thêm/sửa/xóa ngày công");
+
         pnlFilterTongHop.add(new JLabel("Tháng:"));
         pnlFilterTongHop.add(spnThangTongHop);
         pnlFilterTongHop.add(new JLabel("Năm:"));
         pnlFilterTongHop.add(spnNamTongHop);
         pnlFilterTongHop.add(btnXemTongHop);
+        pnlFilterTongHop.add(Box.createHorizontalStrut(12));
+        pnlFilterTongHop.add(btnDieuChinhCong);
         pnlTab2.add(pnlFilterTongHop, BorderLayout.NORTH);
 
         modelTongHop = new DefaultTableModel(new String[]{
@@ -254,6 +262,15 @@ public class ChamCongPanel extends JPanel {
         btnTaiLaiChiTiet.addActionListener(e -> loadDuLieuChiTiet());
         btnXoaChamCong.addActionListener(e -> xuLyXoaChamCong());
         btnXemTongHop.addActionListener(e -> loadDuLieuTongHop());
+        btnDieuChinhCong.addActionListener(e -> moDialogDieuChinhCong());
+        tblTongHop.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (evt.getClickCount() == 2) {
+                    moDialogDieuChinhCong();
+                }
+            }
+        });
     }
 
     private JSpinner createTimeSpinner(int hour, int minute) {
@@ -468,10 +485,34 @@ public class ChamCongPanel extends JPanel {
         }
     }
 
+    private void moDialogDieuChinhCong() {
+        int selectedRow = tblTongHop.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Vui lòng chọn một nhân viên từ bảng danh sách tổng hợp để xem hoặc điều chỉnh chi tiết ngày công!",
+                    "Chưa chọn nhân viên", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int maNV = Integer.parseInt(modelTongHop.getValueAt(selectedRow, 0).toString());
+        String hoTen = modelTongHop.getValueAt(selectedRow, 1).toString();
+        int thang = (Integer) spnThangTongHop.getValue();
+        int nam = (Integer) spnNamTongHop.getValue();
+
+        Window parentWindow = SwingUtilities.getWindowAncestor(this);
+        DieuChinhChamCongDialog dialog = new DieuChinhChamCongDialog(parentWindow, maNV, hoTen, thang, nam);
+        dialog.setVisible(true);
+
+        if (dialog.isDataChanged()) {
+            loadDuLieuTongHop();
+            loadDuLieuChiTiet();
+        }
+    }
+
     /**
      * Phân quyền RBAC theo quy chuẩn Session TV5:
-     * - DB_Admin, HR_Manager: Full quyền ghi nhận, điểm danh lô, xóa công.
-     * - Payroll_Officer: Chỉ xem để đối soát lương, khóa các nút thêm mới / xóa.
+     * - DB_Admin, HR_Manager: Full quyền ghi nhận, điểm danh lô, xóa công, điều chỉnh chi tiết ngày công.
+     * - Payroll_Officer: Chỉ xem để đối soát lương, khóa các nút thêm mới / xóa / điều chỉnh.
      * - Employee: Chế độ chỉ xem.
      */
     private void applySecurityPermissions() {
@@ -480,6 +521,7 @@ public class ChamCongPanel extends JPanel {
         btnDiemDanhHangLoat.setEnabled(canManage);
         btnLamMoiForm.setEnabled(canManage);
         if (btnXoaChamCong != null) btnXoaChamCong.setEnabled(canManage);
+        if (btnDieuChinhCong != null) btnDieuChinhCong.setEnabled(canManage);
         cboNhanVien.setEnabled(canManage);
         spnNgayCC.setEnabled(canManage);
         spnGioVao.setEnabled(canManage);
@@ -491,6 +533,7 @@ public class ChamCongPanel extends JPanel {
             btnGhiNhan.setToolTipText("Chỉ Quản lý nhân sự (HR_Manager) hoặc Quản trị viên mới được ghi nhận chấm công.");
             btnDiemDanhHangLoat.setToolTipText("Chỉ Quản lý nhân sự (HR_Manager) hoặc Quản trị viên mới được điểm danh hàng loạt.");
             if (btnXoaChamCong != null) btnXoaChamCong.setToolTipText("Chỉ Quản lý nhân sự (HR_Manager) hoặc Quản trị viên mới được xóa chấm công.");
+            if (btnDieuChinhCong != null) btnDieuChinhCong.setToolTipText("Chỉ Quản lý nhân sự (HR_Manager) hoặc Quản trị viên mới được điều chỉnh ngày công.");
         }
     }
 
