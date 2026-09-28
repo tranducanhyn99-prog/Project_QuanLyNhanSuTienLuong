@@ -77,61 +77,61 @@ public class NhanVienPanel extends JPanel {
         // 3. SOUTH: FORM THÔNG TIN & NÚT BẤM
         JPanel pnlSouth = new JPanel(new BorderLayout(5, 5));
         
-        JPanel pnlForm = new JPanel(new GridLayout(6, 4, 8, 8));
-        pnlForm.setBorder(BorderFactory.createTitledBorder("Thông tin hồ sơ nhân sự"));
+        JPanel pnlForm = new JPanel(new GridBagLayout());
+        pnlForm.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(), "Thông tin hồ sơ nhân sự"));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 8, 5, 8);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        pnlForm.add(new JLabel("Mã Nhân Viên:"));
-        txtMaNV = new JTextField();
-        txtMaNV.setEditable(false);
-        pnlForm.add(txtMaNV);
+        // Row 0: Mã NV, Họ Tên, Ngày Sinh
+        gbc.gridy = 0;
+        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(new JLabel("Mã Nhân Viên:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; txtMaNV = new JTextField(); txtMaNV.setEditable(false); pnlForm.add(txtMaNV, gbc);
 
-        pnlForm.add(new JLabel("Họ và Tên (*):"));
-        txtHoTen = new JTextField();
-        pnlForm.add(txtHoTen);
+        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(new JLabel("Họ và Tên (*):"), gbc);
+        gbc.gridx = 3; gbc.weightx = 1.0; txtHoTen = new JTextField(); pnlForm.add(txtHoTen, gbc);
 
-        pnlForm.add(new JLabel("Ngày Sinh (YYYY-MM-DD):"));
-        txtNgaySinh = new JTextField();
-        pnlForm.add(txtNgaySinh);
+        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(new JLabel("Ngày Sinh (YYYY-MM-DD):"), gbc);
+        gbc.gridx = 5; gbc.weightx = 1.0; txtNgaySinh = new JTextField(); pnlForm.add(txtNgaySinh, gbc);
 
-        pnlForm.add(new JLabel("Giới Tính:"));
-        cboGioiTinh = new JComboBox<>(new String[]{"Nam", "Nữ", "Khác"});
-        pnlForm.add(cboGioiTinh);
+        // Row 1: Giới Tính, CCCD, Số Điện Thoại
+        gbc.gridy = 1;
+        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(new JLabel("Giới Tính:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; cboGioiTinh = new JComboBox<>(new String[]{"Nam", "Nữ", "Khác"}); pnlForm.add(cboGioiTinh, gbc);
 
-        pnlForm.add(new JLabel("CCCD (12 số):"));
-        txtCCCD = new JTextField();
-        pnlForm.add(txtCCCD);
+        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(new JLabel("CCCD (12 số):"), gbc);
+        gbc.gridx = 3; gbc.weightx = 1.0; txtCCCD = new JTextField(); pnlForm.add(txtCCCD, gbc);
 
-        pnlForm.add(new JLabel("Số Điện Thoại (10 số):"));
-        txtSoDienThoai = new JTextField();
-        pnlForm.add(txtSoDienThoai);
+        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(new JLabel("Số Điện Thoại (10 số):"), gbc);
+        gbc.gridx = 5; gbc.weightx = 1.0; txtSoDienThoai = new JTextField(); pnlForm.add(txtSoDienThoai, gbc);
 
-        pnlForm.add(new JLabel("Email (*):"));
-        txtEmail = new JTextField();
-        pnlForm.add(txtEmail);
+        // Row 2: Email, Địa Chỉ, Ngày Vào Làm
+        gbc.gridy = 2;
+        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(new JLabel("Email (*):"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; txtEmail = new JTextField(); pnlForm.add(txtEmail, gbc);
 
-        pnlForm.add(new JLabel("Địa Chỉ:"));
-        txtDiaChi = new JTextField();
-        pnlForm.add(txtDiaChi);
+        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(new JLabel("Địa Chỉ:"), gbc);
+        gbc.gridx = 3; gbc.weightx = 1.0; txtDiaChi = new JTextField(); pnlForm.add(txtDiaChi, gbc);
 
-        pnlForm.add(new JLabel("Ngày Vào Làm (YYYY-MM-DD):"));
-        txtNgayVaoLam = new JTextField();
-        pnlForm.add(txtNgayVaoLam);
+        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(new JLabel("Ngày Vào Làm (YYYY-MM-DD):"), gbc);
+        gbc.gridx = 5; gbc.weightx = 1.0; txtNgayVaoLam = new JTextField(); pnlForm.add(txtNgayVaoLam, gbc);
 
-        pnlForm.add(new JLabel("Lương Cơ Bản (VNĐ):"));
-        txtLuongCoBan = new JTextField();
-        pnlForm.add(txtLuongCoBan);
+        // Row 3: Lương Cơ Bản, Phòng Ban, Chức Vụ
+        gbc.gridy = 3;
+        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(new JLabel("Lương Cơ Bản (VNĐ):"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; txtLuongCoBan = new JTextField(); pnlForm.add(txtLuongCoBan, gbc);
 
-        pnlForm.add(new JLabel("Phòng Ban:"));
-        cboPhongBan = new JComboBox<>();
-        pnlForm.add(cboPhongBan);
+        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(new JLabel("Phòng Ban:"), gbc);
+        gbc.gridx = 3; gbc.weightx = 1.0; cboPhongBan = new JComboBox<>(); pnlForm.add(cboPhongBan, gbc);
 
-        pnlForm.add(new JLabel("Chức Vụ:"));
-        cboChucVu = new JComboBox<>();
-        pnlForm.add(cboChucVu);
+        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(new JLabel("Chức Vụ:"), gbc);
+        gbc.gridx = 5; gbc.weightx = 1.0; cboChucVu = new JComboBox<>(); pnlForm.add(cboChucVu, gbc);
 
-        pnlForm.add(new JLabel("Trạng Thái:"));
-        cboTrangThai = new JComboBox<>(new String[]{"DANG_LAM_VIEC", "NGHI_VIEC"});
-        pnlForm.add(cboTrangThai);
+        // Row 4: Trạng Thái
+        gbc.gridy = 4;
+        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(new JLabel("Trạng Thái:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; cboTrangThai = new JComboBox<>(new String[]{"DANG_LAM_VIEC", "NGHI_VIEC"}); pnlForm.add(cboTrangThai, gbc);
 
         // Subpanel: Cấp tài khoản đồng thời
         pnlTaiKhoan = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));

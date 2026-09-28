@@ -1,7 +1,7 @@
-﻿$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
 
 Write-Host "==============================================================" -ForegroundColor Cyan
-Write-Host "   CHAY 67 TESTCASE KIEM THU TU DONG PHAN QUYEN & SESSION     " -ForegroundColor Cyan
+Write-Host "   BỘ KIỂM THỬ TỰ ĐỘNG PHÂN QUYỀN, SESSION & GIAO DIỆN (TV5)  " -ForegroundColor Cyan
 Write-Host "==============================================================" -ForegroundColor Cyan
 
 $jdbcJar = "C:\Users\DUCANHZZ\.m2\repository\com\microsoft\sqlserver\mssql-jdbc\12.6.4.jre11\mssql-jdbc-12.6.4.jre11.jar"

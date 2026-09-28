@@ -3,6 +3,7 @@ package com.test;
 import com.model.TaiKhoan;
 import com.session.Session;
 import com.ui.main.MainFrame;
+import com.ui.nhanvien.NhanVienPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -38,6 +39,7 @@ public class AuthRolePermissionTest {
             testRolePayrollOfficer();
             testRoleEmployee();
             testLogout();
+            testDashboardAndNhanVienPanel();
 
             System.out.println("==============================================================");
             System.out.println(String.format("   KẾT QUẢ: %d/%d testcase ĐÃ ĐẠT (PASSED)", passedTests, totalTests));
@@ -233,5 +235,27 @@ public class AuthRolePermissionTest {
         assertTrue("Session.isLoggedIn() phải là false sau logout", !session.isLoggedIn());
         assertEquals("Session.getUserInfo() sau logout", "Khách", session.getUserInfo());
         assertEquals("Session.getFullRoleDisplayName() sau logout", "", session.getFullRoleDisplayName());
+    }
+
+    // ─── 8. Kiểm tra Trang chủ Dashboard & NhanVienPanel Layout ──────
+    private static void testDashboardAndNhanVienPanel() {
+        System.out.println("\n--- 8. Kiểm tra Trang chủ Dashboard & NhanVienPanel Layout ---");
+        TaiKhoan admin = new TaiKhoan(1, -1, "admin", "DB_Admin", null, "HOAT_DONG");
+        Session session = Session.getInstance();
+        session.login(admin);
+
+        MainFrame mainFrame = new MainFrame();
+
+        // Kiểm tra tab Trang chủ
+        assertTrue("MainFrame phải có ít nhất 1 tab", mainFrame.getTabbedPane().getTabCount() >= 1);
+        assertEquals("Tab đầu tiên phải là Trang chủ", "Trang chủ", mainFrame.getTabbedPane().getTitleAt(0));
+        assertTrue("Tab Trang chủ phải chứa JScrollPane cho dashboard", mainFrame.getTabbedPane().getComponentAt(0) instanceof JScrollPane);
+
+        // Khởi tạo NhanVienPanel để kiểm tra cấu trúc layout không có exception
+        NhanVienPanel nvPanel = new NhanVienPanel();
+        assertTrue("NhanVienPanel phải được khởi tạo thành công", nvPanel != null);
+
+        mainFrame.dispose();
+        session.logout();
     }
 }
