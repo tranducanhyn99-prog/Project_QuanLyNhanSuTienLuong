@@ -59,6 +59,7 @@ public class ChamCongService {
      * Ghi nhận chấm công cho một nhân viên đơn lẻ.
      */
     public boolean chamCongDonLe(ChamCong cc) throws Exception {
+        checkPermission("ghi nhận chấm công");
         validateChamCong(cc);
         return chamCongDAO.insertSingle(cc);
     }
@@ -67,6 +68,7 @@ public class ChamCongService {
      * Nhập danh sách chấm công theo lô trong một Transaction đảm bảo All-or-Nothing.
      */
     public void nhapChamCongTheoLo(List<ChamCong> danhSach) throws Exception {
+        checkPermission("nhập lô chấm công");
         if (danhSach == null || danhSach.isEmpty()) {
             throw new IllegalArgumentException("Danh sách chấm công nhập lô không được rỗng.");
         }
@@ -177,10 +179,7 @@ public class ChamCongService {
      * Kiểm tra phân quyền: Chỉ DB_Admin hoặc HR_Manager mới được xóa.
      */
     public boolean xoaChamCong(int maChamCong) throws Exception {
-        Session session = Session.getInstance();
-        if (session.isLoggedIn() && !session.hasRole("DB_Admin", "HR_Manager")) {
-            throw new Exception("Bạn không có quyền xóa chấm công! Chỉ Quản trị viên hoặc Quản lý nhân sự mới được thực hiện.");
-        }
+        checkPermission("xóa chấm công");
         if (maChamCong <= 0) {
             throw new IllegalArgumentException("Mã chấm công không hợp lệ.");
         }
@@ -192,10 +191,7 @@ public class ChamCongService {
      * Kiểm tra phân quyền: Chỉ DB_Admin hoặc HR_Manager mới được cập nhật.
      */
     public boolean capNhatChamCong(ChamCong cc) throws Exception {
-        Session session = Session.getInstance();
-        if (session.isLoggedIn() && !session.hasRole("DB_Admin", "HR_Manager")) {
-            throw new Exception("Bạn không có quyền sửa chấm công! Chỉ Quản trị viên hoặc Quản lý nhân sự mới được thực hiện.");
-        }
+        checkPermission("sửa chấm công");
         if (cc == null || cc.getMaChamCong() <= 0) {
             throw new IllegalArgumentException("Dữ liệu chấm công không hợp lệ.");
         }
@@ -206,5 +202,12 @@ public class ChamCongService {
             throw new IllegalArgumentException("Giờ ra về phải lớn hơn giờ vào làm.");
         }
         return chamCongDAO.updateChamCong(cc);
+    }
+
+    private void checkPermission(String action) throws Exception {
+        Session session = Session.getInstance();
+        if (!session.isLoggedIn() || !session.hasRole("DB_Admin", "HR_Manager")) {
+            throw new Exception("Bạn không có quyền " + action + "! Chỉ Quản trị viên hoặc Quản lý nhân sự mới được thực hiện.");
+        }
     }
 }
