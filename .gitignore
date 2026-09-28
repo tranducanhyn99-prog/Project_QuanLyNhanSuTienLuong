@@ -27,3 +27,4 @@ application.properties
 *.bak
 *.mdf
 *.ldf
+.antigravity-bridge/

@@ -5,23 +5,68 @@ Write-Host "==============================================================" -For
 Write-Host "   KHOI CHAY UNG DUNG QUAN LY NHAN SU & TIEN LUONG            " -ForegroundColor Cyan
 Write-Host "==============================================================" -ForegroundColor Cyan
 
-$jdbcJar = "C:\Users\DUCANHZZ\.m2\repository\com\microsoft\sqlserver\mssql-jdbc\12.6.4.jre11\mssql-jdbc-12.6.4.jre11.jar"
-$cp = "bin;src/resources;$jdbcJar"
+# Neo duong dan ve goc repository
+$repoRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+Set-Location $repoRoot
 
-if (!(Test-Path "bin")) {
-    New-Item -ItemType Directory -Path "bin" | Out-Null
+# Trinh phan giai driver SQL Server JDBC da nen tang
+$jdbcJar = $null
+if ($env:MSSQL_JDBC_JAR -and (Test-Path $env:MSSQL_JDBC_JAR)) {
+    $jdbcJar = (Resolve-Path $env:MSSQL_JDBC_JAR).Path
+}
+
+if (-not $jdbcJar) {
+    $projectLib = Join-Path $repoRoot "lib"
+    if (Test-Path $projectLib) {
+        $candidate = Get-ChildItem -Path $projectLib -Filter "*.jar" -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match "mssql-jdbc" -and $_.Name -notmatch "sources|javadoc" } |
+            Select-Object -First 1
+        if ($candidate) { $jdbcJar = $candidate.FullName }
+    }
+}
+
+if (-not $jdbcJar) {
+    $userHome = if ($env:USERPROFILE) { $env:USERPROFILE } else { [Environment]::GetFolderPath("UserProfile") }
+    $m2Dir = Join-Path $userHome ".m2\repository\com\microsoft\sqlserver\mssql-jdbc"
+    if (Test-Path $m2Dir) {
+        $candidate = Get-ChildItem -Path $m2Dir -Recurse -Filter "*.jar" -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match "mssql-jdbc" -and $_.Name -notmatch "sources|javadoc" } |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+        if ($candidate) { $jdbcJar = $candidate.FullName }
+    }
+}
+
+if (-not $jdbcJar -or !(Test-Path $jdbcJar)) {
+    Write-Error "Khong tim thay thu vien SQL Server JDBC Driver (mssql-jdbc*.jar)! Vui long dat file JAR vao thu muc lib/, tai ve qua Maven (.m2), hoac cau hinh bien moi truong MSSQL_JDBC_JAR."
+    exit 1
+}
+
+$binDir = Join-Path $repoRoot "bin"
+$resDir = Join-Path $repoRoot "src\resources"
+$cp = "$binDir;$resDir;$jdbcJar"
+
+if (!(Test-Path $binDir)) {
+    New-Item -ItemType Directory -Path $binDir | Out-Null
 }
 
 # Sao chep config.properties vao bin neu co
-if (Test-Path "src/resources/config.properties") {
-    Copy-Item "src/resources/config.properties" "bin/config.properties" -Force
+$configFile = Join-Path $resDir "config.properties"
+$targetConfig = Join-Path $binDir "config.properties"
+if (Test-Path $configFile) {
+    Copy-Item $configFile $targetConfig -Force
 }
 
+$srcDir = Join-Path $repoRoot "src"
 Write-Host "Dang bien dich ma nguon Java..." -ForegroundColor Yellow
-$sources = Get-ChildItem -Recurse -Filter "*.java" src | Select-Object -ExpandProperty FullName
-javac -encoding UTF-8 -cp $cp -d bin $sources
+$sources = Get-ChildItem -Path $srcDir -Recurse -Filter "*.java" | Select-Object -ExpandProperty FullName
+javac -encoding UTF-8 -cp $cp -d $binDir $sources
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Bien dich ma nguon Java that bai!"
+    exit 1
+}
 
-Write-Host "[OK] Dang mo man hinh dang nhap (LoginFrame)..." -ForegroundColor Green
+Write-Host "[OK] Bien dich thanh cong! Dang mo man hinh dang nhap (LoginFrame)..." -ForegroundColor Green
 Start-Process -FilePath "java" -ArgumentList "-cp `"$cp`" com.ui.auth.LoginFrame"
-Write-Host ">>> Man hinh LoginFrame da mo tren man hinh! <<<" -ForegroundColor Green
-Write-Host ">>> Tai khoan test: admin / 123456 (DB_Admin) <<<" -ForegroundColor Green
+Write-Host "[INFO] Man hinh LoginFrame da mo tren man hinh!" -ForegroundColor Green
+Write-Host "[INFO] Tai khoan test: admin / 123456 (DB_Admin)" -ForegroundColor Green
