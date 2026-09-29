@@ -51,12 +51,25 @@ Project_QuanLyNhanSuTienLuong/
 └── CONTRIBUTING.md
 ```
 
-## Tài liệu hiện có
+## Tài liệu dự án
 
-- [Kế hoạch phân công Project DBMS](docs/Ke_hoach_phan_cong_Project_DBMS_Nhom06.md)
+### 1. Kế hoạch & Kiến trúc chung
+- [Kế hoạch phân công Project DBMS (Nhóm 06)](docs/Ke_hoach_phan_cong_Project_DBMS_Nhom06.md)
 - [Kế hoạch phân công - bản Word](docs/Ke_hoach_phan_cong_Project_DBMS_Nhom06.docx)
 - [Phân tích và thiết kế hệ thống - bản Word](docs/Nhom_06_Phan_Tich_Thiet_Ke_He_Thong.docx)
 - [Hướng dẫn làm việc với Git/GitHub](docs/GIT_WORKFLOW.md)
+- [Thiết kế Kiến trúc Hệ thống 4 tầng](docs/TV5_Architecture.md)
+- [Checklist Tích hợp trước khi merge PR](docs/TV5_Integration_Checklist.md)
+
+### 2. Báo cáo Tiến độ & Thiết kế 5 Phân hệ
+- [TV1 – Quản lý Hồ sơ Nhân sự & Danh mục](docs/TV1_Tien_Do_Thuc_Hien.md)
+- [TV2 – Quản lý Chấm công & Tổng hợp công](docs/TV2_Tien_Do_Thuc_Hien.md)
+- [TV3 – Quản lý Phụ cấp & Khấu trừ](docs/TV3_Tien_Do_Thuc_Hien.md)
+- [TV4 – Quản lý Tính lương & Bảng lương](docs/TV4_Tien_Do_Thuc_Hien.md)
+- [TV5 – Bảo mật, Concurrency & Chốt kỳ lương](docs/TV5_Tien_Do_Thuc_Hien.md)
+
+### 3. Báo cáo Chuyên đề Tổng kết
+- [Chương 3 – Kiến trúc Bảo mật 2 tầng, Concurrency & Benchmark Index](docs/Chuong3_Bao_Mat_Va_Concurrency_TV5.md)
 
 ## Quy trình Git/GitHub
 
