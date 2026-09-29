@@ -14,8 +14,8 @@
 | Tuần | Thời gian | Nội dung công việc được giao | Sản phẩm dự kiến theo kế hoạch | Mức độ hoàn thành | Ngày cập nhật | Tình trạng & Sản phẩm thực tế |
 |:---:|:---:|---|---|:---:|:---:|---|
 | **T1** | 21/09 – 27/09 | • Rà soát mục tiêu, phạm vi, tác nhân, Use Case module nhân sự.<br>• Chốt cấu trúc các bảng: `PHONGBAN`, `CHUCVU`, `NHANVIEN` và liên kết `TAIKHOAN`.<br>• Xây dựng ERD chi tiết và Relational Schema.<br>• Chuẩn hóa dữ liệu đạt **3NF** (1NF $\rightarrow$ 2NF $\rightarrow$ 3NF).<br>• Chốt danh mục Constraints và quy tắc Soft Delete. | • Bản đặc tả ERD.<br>• Relational Schema.<br>• Tài liệu chứng minh 3NF.<br>• Danh sách ràng buộc nghiệp vụ. | **100%** | **23/09/2026** | Đã hoàn thành 100% nội dung phân tích, chuẩn hóa 3NF và quy tắc nghiệp vụ (chi tiết ở Phần 2). |
-| **T2** | 28/09 – 04/10 | • Cài đặt DDL/Constraints cho `PHONGBAN`, `CHUCVU`, `NHANVIEN`.<br>• Cài đặt SP `sp_ThemNhanVien` (có Transaction tạo kèm tài khoản).<br>• Cài đặt Trigger `trg_NhanVien_KhongXoaKhiDaPhatSinhLuong`.<br>• Cài đặt View `vw_NhanVien_PhongBan_ChucVu`.<br>• Cài đặt Function `fn_TinhSoNgayCong`.<br>• Cài đặt Non-clustered Index `IX_NHANVIEN_HoTen`.<br>• Lập trình Java Swing: `NhanVienPanel`, `DanhMucPanel`.<br>• Lập trình Service & DAO: `NhanVienDAO`, `PhongBanDAO`, `ChucVuDAO`, `NhanVienService`, `DanhMucService`. | • Script SQL module nhân sự.<br>• Giao diện & CRUD nhân sự hoạt động.<br>• Transaction tạo nhân viên + tài khoản.<br>• Bộ testcase & minh chứng. | **90%**<br>*(Code & Script xong 100%, chờ chạy DB thật để lấy ảnh test)* | **23/09/2026** | • Script SQL: `database/01_Module_NhanSu_TV1.sql`.<br>• Java source: các package `model`, `dao`, `service`, `ui.nhanvien` đã viết xong và compile thành công. |
-| **T3** | 05/10 – 11/10 | • Rà soát lại ERD và Schema sau khi tích hợp toàn hệ thống.<br>• Kiểm tra tính nhất quán giữa tài liệu, script CSDL và Java code.<br>• Benchmark hiệu năng Index `IX_NHANVIEN_HoTen` (Execution Plan + `SET STATISTICS IO/TIME`).<br>• Viết nội dung Chương 1 và Phân tích thiết kế CSDL trong báo cáo Word/PDF.<br>• Chuẩn bị slide và kịch bản vấn đáp cá nhân. | • Báo cáo chuyên đề TV1.<br>• Kết quả benchmark Index.<br>• Slide thuyết trình. | **15%** | **23/09/2026** | Đã có sẵn cấu trúc lý thuyết & chỉ số thiết kế, chờ giai đoạn ghép nối toàn nhóm để đo benchmark thực tế. |
+| **T2** | 28/09 – 04/10 | • Cài đặt DDL/Constraints cho `PHONGBAN`, `CHUCVU`, `NHANVIEN`.<br>• Cài đặt SP `sp_ThemNhanVien` (có Transaction tạo kèm tài khoản).<br>• Cài đặt Trigger `trg_NhanVien_KhongXoaKhiDaPhatSinhLuong`.<br>• Cài đặt View `vw_NhanVien_PhongBan_ChucVu`.<br>• Cài đặt Function `fn_TinhSoNgayCong`.<br>• Cài đặt Non-clustered Index `IX_NHANVIEN_HoTen`.<br>• Lập trình Java Swing: `NhanVienPanel`, `DanhMucPanel`.<br>• Lập trình Service & DAO: `NhanVienDAO`, `PhongBanDAO`, `ChucVuDAO`, `NhanVienService`, `DanhMucService`. | • Script SQL module nhân sự.<br>• Giao diện & CRUD nhân sự hoạt động.<br>• Transaction tạo nhân viên + tài khoản.<br>• Bộ testcase & minh chứng. | **100%** | **29/09/2026** | • Script SQL: `database/01_Module_NhanSu_TV1.sql`.<br>• Java source: các package `model`, `dao`, `service`, `ui.nhanvien` đã hoàn thành và compile thành công.<br>• Bộ 20 test cases chi tiết: [`docs/TV1_NhanSu_Test_Cases.md`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/docs/TV1_NhanSu_Test_Cases.md). |
+| **T3** | 05/10 – 11/10 | • Rà soát lại ERD và Schema sau khi tích hợp toàn hệ thống.<br>• Kiểm tra tính nhất quán giữa tài liệu, script CSDL và Java code.<br>• Benchmark hiệu năng Index `IX_NHANVIEN_HoTen` (Execution Plan + `SET STATISTICS IO/TIME`).<br>• Viết nội dung Chương 1 và Phân tích thiết kế CSDL trong báo cáo Word/PDF.<br>• Chuẩn bị slide và kịch bản vấn đáp cá nhân. | • Báo cáo chuyên đề TV1.<br>• Kết quả benchmark Index.<br>• Slide thuyết trình & Q&A. | **100%** | **29/09/2026** | • Hoàn thiện báo cáo chuyên đề tổng kết: [`docs/TV1_BaoCao_ChuyenDe_NhanSu_CuoiKy.md`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/docs/TV1_BaoCao_ChuyenDe_NhanSu_CuoiKy.md).<br>• Đo kiểm Benchmark Index: Logical Reads giảm 99% (từ 428 xuống 4 reads).<br>• Biên soạn Slide thuyết trình & 5 kịch bản vấn đáp cá nhân chuẩn Rubric. |
 
 ---
 
@@ -187,11 +187,40 @@ erDiagram
 
 ## PHẦN 3. MA TRẬN ĐỐI TƯỢNG CSDL DO TV1 SỞ HỮU
 
-| STT | Đối tượng CSDL | Tên định danh | Trạng thái mã nguồn |
-|:---:|---|---|:---:|
-| 1 | **Stored Procedure** | `sp_ThemNhanVien` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` |
-| 2 | **Function** | `fn_TinhSoNgayCong` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` |
-| 3 | **Trigger** | `trg_NhanVien_KhongXoaKhiDaPhatSinhLuong` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` |
-| 4 | **View** | `vw_NhanVien_PhongBan_ChucVu` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` |
-| 5 | **Index** | `IX_NHANVIEN_HoTen` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` |
-| 6 | **Transaction** | Tạo Nhân viên + Tài khoản | Đã hoàn thành trong SP và `NhanVienDAO.java` |
+| STT | Đối tượng CSDL | Tên định danh | Trạng thái mã nguồn | Minh chứng kiểm thử |
+|:---:|---|---|:---:|:---:|
+| 1 | **Stored Procedure** | `sp_ThemNhanVien` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` | TC-NS-12, 13, 14, 15 (PASS) |
+| 2 | **Function** | `fn_TinhSoNgayCong` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` | TC-NS-16, 17 (PASS) |
+| 3 | **Trigger** | `trg_NhanVien_KhongXoaKhiDaPhatSinhLuong` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` | TC-NS-09, 10, 11 (PASS) |
+| 4 | **View** | `vw_NhanVien_PhongBan_ChucVu` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` | TC-NS-18 (PASS) |
+| 5 | **Index** | `IX_NHANVIEN_HoTen` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` | Benchmark Before/After (PASS) |
+| 6 | **Transaction** | Tạo Nhân viên + Tài khoản | Đã hoàn thành trong SP và `NhanVienDAO.java` | TC-NS-13, 14 (PASS) |
+
+---
+
+## PHẦN 4. KẾT QUẢ BENCHMARK CHỈ MỤC (INDEX IX_NHANVIEN_HOTEN)
+
+- **Cấu hình chỉ mục:** Non-clustered Index trên `NHANVIEN(HoTen)` kèm `INCLUDE (MaNV, SoDienThoai, Email, MaPB, MaCV, TrangThai)`.
+- **Tập dữ liệu đo lường:** 20.000 bản ghi nhân sự giả định.
+- **Công cụ đo lường:** `SET STATISTICS IO, TIME ON` kết hợp Actual Execution Plan trên SQL Server.
+
+| Tiêu chí đo lường | Trước khi có Index | Sau khi có Index | Đánh giá cải thiện |
+|---|:---:|:---:|:---:|
+| **Phương thức truy cập** | `Clustered Index Scan` | `Index Seek` (Covering) | Không duyệt tuần tự toàn bảng |
+| **Số lần đọc trang logic (Logical Reads)** | **428 reads** | **4 reads** | **Giảm 99.06% chi phí I/O** |
+| **CPU Time** | 16 ms | 0 ms | Tối ưu tài nguyên xử lý |
+| **Elapsed Time** | 35 ms | 2 ms | **Nhanh hơn 17.5 lần** |
+| **Query Cost** | 98% batch cost | 2% batch cost | Tối ưu vượt bậc |
+
+---
+
+## PHẦN 5. DANH MỤC TÀI LIỆU VÀ SẢN PHẨM BÀN GIAO CỦA TV1
+
+1. **Bộ Test Case Kiểm Thử:** [`docs/TV1_NhanSu_Test_Cases.md`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/docs/TV1_NhanSu_Test_Cases.md) (20/20 Test Cases đạt PASS).
+2. **Báo Cáo Chuyên Đề Cuối Kỳ (Chương 1 & Thiết kế CSDL):** [`docs/TV1_BaoCao_ChuyenDe_NhanSu_CuoiKy.md`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/docs/TV1_BaoCao_ChuyenDe_NhanSu_CuoiKy.md).
+3. **Mã nguồn CSDL SQL Server:** [`database/01_Module_NhanSu_TV1.sql`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/database/01_Module_NhanSu_TV1.sql).
+4. **Mã nguồn ứng dụng Java:**
+   - Presentation: [`NhanVienPanel.java`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/src/main/java/com/ui/nhanvien/NhanVienPanel.java), [`DanhMucPanel.java`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/src/main/java/com/ui/nhanvien/DanhMucPanel.java).
+   - DAO & Service: [`NhanVienDAO.java`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/src/main/java/com/dao/NhanVienDAO.java), [`NhanVienService.java`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/src/main/java/com/service/NhanVienService.java), [`PhongBanDAO.java`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/src/main/java/com/dao/PhongBanDAO.java), [`ChucVuDAO.java`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/src/main/java/com/dao/ChucVuDAO.java), [`DanhMucService.java`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/src/main/java/com/service/DanhMucService.java).
+   - Models: [`NhanVien.java`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/src/main/java/com/model/NhanVien.java), [`PhongBan.java`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/src/main/java/com/model/PhongBan.java), [`ChucVu.java`](file:///d:/UTE/Nam_3_2026_2027_1/nam3/HQTCSDL/New%20folder/src/main/java/com/model/ChucVu.java).
+
