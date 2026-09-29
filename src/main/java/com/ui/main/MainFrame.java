@@ -6,6 +6,7 @@ import com.ui.auth.LoginFrame;
 import com.ui.baocao.BaoCaoPanel;
 import com.ui.chamcong.ChamCongPanel;
 import com.ui.luong.BangLuongPanel;
+import com.ui.luong.PhuCapKhauTruPanel;
 import com.ui.nhanvien.DanhMucPanel;
 import com.ui.nhanvien.NhanVienPanel;
 
@@ -109,7 +110,7 @@ public class MainFrame extends JFrame {
         menuPhuCapKhauTru.setMnemonic('P');
 
         JMenuItem miPhuCap = new JMenuItem("Quản lý phụ cấp & khấu trừ");
-        miPhuCap.addActionListener(e -> openTab("Phụ cấp / Khấu trừ", this::createPlaceholderPanel));
+        miPhuCap.addActionListener(e -> openTab("Phụ cấp / Khấu trừ", () -> new PhuCapKhauTruPanel()));
 
         menuPhuCapKhauTru.add(miPhuCap);
         menuBar.add(menuPhuCapKhauTru);

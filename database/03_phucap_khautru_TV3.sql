@@ -1,34 +1,33 @@
--- =================================================================
--- PROJECT: HỆ THỐNG QUẢN LÝ NHÂN SỰ VÀ TIỀN LƯƠNG (DBMS330284)
--- HỌC PHẦN: HỆ QUẢN TRỊ CƠ SỞ DỮ LIỆU - NHÓM 06
--- PHÂN HỆ: QUẢN LÝ PHỤ CẤP & KHẤU TRỪ THEO KỲ
--- THỰC HIỆN: TV3 - TRẦN TIẾN ĐẠT (MSSV: 24110198) - TUẦN 1
--- =================================================================
+-- ============================================================================
+-- PROJECT: Quản Lý Nhân Sự và Tiền Lương (DBMS330284) - Nhóm 06
+-- HỌC PHẦN: Hệ Quản Trị Cơ Sở Dữ Liệu
+-- MODULE: Phụ Cấp, Khấu Trừ & Nghiệp Vụ Tuần 2
+-- TÁC GIẢ: TV3 - Trần Tiến Đạt (MSSV: 24110198)
+-- ============================================================================
 
 USE QuanLyNhanSuTienLuong;
 GO
 
--- 1. TẠO BẢNG PHUCAPNHANVIEN (DÙNG CẤU TRÚC KIỂM TRA AN TOÀN TRÁNH MẤT DỮ LIỆU)
+-- ============================================================================
+-- PHẦN 1: BẢNG DỮ LIỆU VÀ CHỈ MỤC (WEEK 1 & WEEK 2)
+-- ============================================================================
+
+-- 1.1. Bảng PHUCAPNHANVIEN (Chuẩn hóa 3NF)
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'PHUCAPNHANVIEN')
 BEGIN
     CREATE TABLE dbo.PHUCAPNHANVIEN (
-        MaPCNV INT IDENTITY(1,1) NOT NULL,
-        MaNV INT NOT NULL, -- Đồng bộ kiểu INT theo bảng NHANVIEN của TV1
-        Thang INT NOT NULL,
-        Nam INT NOT NULL,
-        TenPhuCap NVARCHAR(100) NOT NULL,
-        SoTien DECIMAL(18,2) NOT NULL CONSTRAINT DF_PHUCAP_SoTien DEFAULT 0,
+        MaPCNV      INT IDENTITY(1,1) NOT NULL,
+        MaNV        INT NOT NULL,
+        Thang       INT NOT NULL,
+        Nam         INT NOT NULL,
+        TenPhuCap   NVARCHAR(100) NOT NULL,
+        SoTien      DECIMAL(18,2) NOT NULL CONSTRAINT DF_PHUCAP_SoTien DEFAULT 0,
         NgayGhiNhan DATE NOT NULL CONSTRAINT DF_PHUCAP_NgayGhiNhan DEFAULT CAST(GETDATE() AS DATE),
-        GhiChu NVARCHAR(255) NULL,
+        GhiChu      NVARCHAR(255) NULL,
 
-        -- Khóa chính
         CONSTRAINT PK_PHUCAPNHANVIEN PRIMARY KEY CLUSTERED (MaPCNV),
-
-        -- Khóa ngoại tham chiếu NHANVIEN(MaNV)
         CONSTRAINT FK_PHUCAP_NHANVIEN FOREIGN KEY (MaNV)
             REFERENCES dbo.NHANVIEN(MaNV) ON DELETE NO ACTION ON UPDATE CASCADE,
-
-        -- Ràng buộc miền giá trị hợp lệ
         CONSTRAINT CK_PHUCAP_Thang CHECK (Thang BETWEEN 1 AND 12),
         CONSTRAINT CK_PHUCAP_Nam CHECK (Nam >= 2020),
         CONSTRAINT CK_PHUCAP_SoTien CHECK (SoTien >= 0)
@@ -36,27 +35,22 @@ BEGIN
 END;
 GO
 
--- 2. TẠO BẢNG KHAUTRUNHANVIEN (DÙNG CẤU TRÚC KIỂM TRA AN TOÀN)
+-- 1.2. Bảng KHAUTRUNHANVIEN (Chuẩn hóa 3NF)
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'KHAUTRUNHANVIEN')
 BEGIN
     CREATE TABLE dbo.KHAUTRUNHANVIEN (
-        MaKTNV INT IDENTITY(1,1) NOT NULL,
-        MaNV INT NOT NULL, -- Đồng bộ kiểu INT theo bảng NHANVIEN của TV1
-        Thang INT NOT NULL,
-        Nam INT NOT NULL,
-        TenKhauTru NVARCHAR(100) NOT NULL,
-        SoTien DECIMAL(18,2) NOT NULL CONSTRAINT DF_KHAUTRU_SoTien DEFAULT 0,
+        MaKTNV      INT IDENTITY(1,1) NOT NULL,
+        MaNV        INT NOT NULL,
+        Thang       INT NOT NULL,
+        Nam         INT NOT NULL,
+        TenKhauTru  NVARCHAR(100) NOT NULL,
+        SoTien      DECIMAL(18,2) NOT NULL CONSTRAINT DF_KHAUTRU_SoTien DEFAULT 0,
         NgayGhiNhan DATE NOT NULL CONSTRAINT DF_KHAUTRU_NgayGhiNhan DEFAULT CAST(GETDATE() AS DATE),
-        LyDo NVARCHAR(255) NULL,
+        LyDo        NVARCHAR(255) NULL,
 
-        -- Khóa chính
         CONSTRAINT PK_KHAUTRUNHANVIEN PRIMARY KEY CLUSTERED (MaKTNV),
-
-        -- Khóa ngoại tham chiếu NHANVIEN(MaNV)
         CONSTRAINT FK_KHAUTRU_NHANVIEN FOREIGN KEY (MaNV)
             REFERENCES dbo.NHANVIEN(MaNV) ON DELETE NO ACTION ON UPDATE CASCADE,
-
-        -- Ràng buộc miền giá trị hợp lệ
         CONSTRAINT CK_KHAUTRU_Thang CHECK (Thang BETWEEN 1 AND 12),
         CONSTRAINT CK_KHAUTRU_Nam CHECK (Nam >= 2020),
         CONSTRAINT CK_KHAUTRU_SoTien CHECK (SoTien >= 0)
@@ -64,8 +58,7 @@ BEGIN
 END;
 GO
 
--- 3. TẠO CHỈ MỤC NON-CLUSTERED INDEX (OWNERSHIP CỦA TV3 THEO MA TRẬN PHÂN CÔNG)
--- Lưu ý: Index khấu trừ IX_KHAUTRU_MaNV_ThangNam thuộc ownership của TV4 nên không tạo ở đây
+-- 1.3. Index sở hữu TV3: IX_PHUCAP_MaNV_ThangNam
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = N'IX_PHUCAP_MaNV_ThangNam' AND object_id = OBJECT_ID(N'dbo.PHUCAPNHANVIEN'))
 BEGIN
     CREATE NONCLUSTERED INDEX IX_PHUCAP_MaNV_ThangNam
@@ -74,28 +67,160 @@ BEGIN
 END;
 GO
 
--- 4. BỘ DỮ LIỆU MẪU KIỂM THỬ (SỬ DỤNG MaNV KIỂU INT: 1, 2, 3, 4, 5)
--- Kiểm tra có dữ liệu trước khi chèn mẫu để tránh chèn trùng lặp khi chạy lại script
-IF NOT EXISTS (SELECT 1 FROM dbo.PHUCAPNHANVIEN WHERE Thang = 9 AND Nam = 2026)
+-- ============================================================================
+-- PHẦN 2: ĐỐI TƯỢNG SQL TUẦN 2 THEO MA TRẬN OWNERSHIP (TV3)
+-- ============================================================================
+
+-- 2.1. VIEW SỞ HỮU: vw_TongPhuCapThang (TV3)
+-- Cung cấp tổng hợp phụ cấp theo nhân viên và tháng/năm
+CREATE OR ALTER VIEW dbo.vw_TongPhuCapThang
+AS
+SELECT
+    pc.MaNV,
+    nv.HoTen,
+    pc.Thang,
+    pc.Nam,
+    COUNT(pc.MaPCNV) AS SoKhoanPhuCap,
+    ISNULL(SUM(pc.SoTien), 0) AS TongTienPhuCap
+FROM dbo.PHUCAPNHANVIEN pc
+INNER JOIN dbo.NHANVIEN nv ON pc.MaNV = nv.MaNV
+GROUP BY pc.MaNV, nv.HoTen, pc.Thang, pc.Nam;
+GO
+
+-- 2.2. FUNCTION SỞ HỮU: fn_TongKhauTru (TV3)
+-- Trả về tổng tiền khấu trừ của một nhân viên trong kỳ (Dùng cho TV4 tính lương)
+CREATE OR ALTER FUNCTION dbo.fn_TongKhauTru (
+    @MaNV INT,
+    @Thang INT,
+    @Nam INT
+)
+RETURNS DECIMAL(18,2)
+AS
 BEGIN
-    -- 4.1. Dữ liệu Phụ cấp tháng 09/2026
-    INSERT INTO dbo.PHUCAPNHANVIEN (MaNV, Thang, Nam, TenPhuCap, SoTien, NgayGhiNhan, GhiChu) VALUES
-    (1, 9, 2026, N'Phụ cấp ăn trưa', 730000, '2026-09-01', N'Phụ cấp theo ngày làm việc'),
-    (1, 9, 2026, N'Hỗ trợ xăng xe', 500000, '2026-09-01', N'Đi lại công tác thường xuyên'),
-    (2, 9, 2026, N'Phụ cấp ăn trưa', 730000, '2026-09-01', N'Phụ cấp cố định'),
-    (2, 9, 2026, N'Phụ cấp trách nhiệm', 1500000, '2026-09-05', N'Trưởng nhóm dự án'),
-    (3, 9, 2026, N'Phụ cấp ăn trưa', 730000, '2026-09-01', N'Phụ cấp cố định'),
-    (4, 9, 2026, N'Phụ cấp độc hại', 1000000, '2026-09-10', N'Phòng Lab/Máy chủ');
+    DECLARE @TongKhauTru DECIMAL(18,2) = 0;
+
+    SELECT @TongKhauTru = ISNULL(SUM(SoTien), 0)
+    FROM dbo.KHAUTRUNHANVIEN
+    WHERE MaNV = @MaNV AND Thang = @Thang AND Nam = @Nam;
+
+    RETURN @TongKhauTru;
 END;
 GO
 
-IF NOT EXISTS (SELECT 1 FROM dbo.KHAUTRUNHANVIEN WHERE Thang = 9 AND Nam = 2026)
+-- 2.3. TRIGGER SỞ HỮU: trg_ChamCong_KiemTraGio (TV3)
+-- Ràng buộc kiểm tra giờ ra phải lớn hơn giờ vào trên bảng CHAMCONG
+CREATE OR ALTER TRIGGER dbo.trg_ChamCong_KiemTraGio
+ON dbo.CHAMCONG
+FOR INSERT, UPDATE
+AS
 BEGIN
-    -- 4.2. Dữ liệu Khấu trừ tháng 09/2026
-    INSERT INTO dbo.KHAUTRUNHANVIEN (MaNV, Thang, Nam, TenKhauTru, SoTien, NgayGhiNhan, LyDo) VALUES
-    (1, 9, 2026, N'Tạm ứng lương', 2000000, '2026-09-15', N'Nhân viên xin ứng giữa tháng'),
-    (2, 9, 2026, N'Khấu trừ đi trễ', 150000, '2026-09-20', N'Vi phạm đi trễ 3 lần'),
-    (3, 9, 2026, N'Tạm ứng lương', 1000000, '2026-09-15', N'Tạm ứng lương cá nhân'),
-    (4, 9, 2026, N'Bồi hoàn tài sản', 500000, '2026-09-22', N'Làm hư hỏng thiết bị văn phòng');
+    SET NOCOUNT ON;
+
+    IF EXISTS (
+        SELECT 1
+        FROM inserted
+        WHERE GioVao IS NOT NULL
+          AND GioRa IS NOT NULL
+          AND GioRa <= GioVao
+    )
+    BEGIN
+        RAISERROR (N'Lỗi nghiệp vụ: Giờ kết thúc làm việc (Giờ ra) phải lớn hơn Giờ bắt đầu (Giờ vào)!', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END
 END;
+GO
+-- 2.5. TRANSACTION SỞ HỮU: sp_XoaKyLuongChuaChot (TV3)
+-- Xóa chi tiết bảng lương trước, xóa bảng lương sau; Rollback toàn bộ khi lỗi hoặc kỳ đã chốt
+CREATE OR ALTER PROCEDURE dbo.sp_XoaKyLuongChuaChot
+    @Thang INT,
+    @Nam INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        -- 1. Kiểm tra tồn tại kỳ lương
+        IF NOT EXISTS (SELECT 1 FROM dbo.BANGLUONG WHERE Thang = @Thang AND Nam = @Nam)
+        BEGIN
+            RAISERROR (N'Không tìm thấy dữ liệu bảng lương tháng %d/%d để xóa!', 16, 1, @Thang, @Nam);
+        END
+
+        -- 2. Kiểm tra trạng thái kỳ lương (Chỉ được xóa khi chưa chốt)
+        IF EXISTS (
+            SELECT 1 FROM dbo.BANGLUONG
+            WHERE Thang = @Thang AND Nam = @Nam
+              AND TrangThai IN (N'DA_CHOT', N'Đã chốt', 'DA_CHOT')
+        )
+        BEGIN
+            RAISERROR (N'Kỳ lương tháng %d/%d đã được CHỐT SỔ! Không được phép xóa dữ liệu!', 16, 1, @Thang, @Nam);
+        END
+
+        -- 3. Xóa chi tiết bảng lương trước (xóa bảng con trước)
+        IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.CHITIETBANGLUONG') AND name = N'MaBangLuong')
+        BEGIN
+            DELETE ct
+            FROM dbo.CHITIETBANGLUONG ct
+            INNER JOIN dbo.BANGLUONG bl ON ct.MaBangLuong = bl.MaBangLuong
+            WHERE bl.Thang = @Thang AND bl.Nam = @Nam;
+        END
+        ELSE IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.CHITIETBANGLUONG') AND name = N'MaKyLuong')
+        BEGIN
+            DELETE ct
+            FROM dbo.CHITIETBANGLUONG ct
+            INNER JOIN dbo.BANGLUONG bl ON ct.MaKyLuong = bl.MaKyLuong
+            WHERE bl.Thang = @Thang AND bl.Nam = @Nam;
+        END
+
+        -- 4. Xóa bảng lương sau (xóa bảng cha)
+        DELETE FROM dbo.BANGLUONG WHERE Thang = @Thang AND Nam = @Nam;
+
+        COMMIT TRANSACTION;
+        PRINT N'Đã xóa hoàn tất kỳ lương chưa chốt tháng ' + CAST(@Thang AS VARCHAR) + '/' + CAST(@Nam AS VARCHAR);
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        RAISERROR (@ErrorMessage, 16, 1);
+    END CATCH
+END;
+GO
+
+-- ============================================================================
+-- PHẦN 3: BỘ DỮ LIỆU MẪU DEMO PHỤ CẤP & KHẤU TRỪ THEO KỲ
+-- ============================================================================
+-- Làm sạch dữ liệu demo của kỳ 09/2026 và 10/2026 để tránh trùng lặp
+DELETE FROM dbo.PHUCAPNHANVIEN WHERE Thang IN (9, 10) AND Nam = 2026;
+DELETE FROM dbo.KHAUTRUNHANVIEN WHERE Thang IN (9, 10) AND Nam = 2026;
+GO
+
+-- 3.1. Dữ liệu Phụ cấp tháng 09/2026
+INSERT INTO dbo.PHUCAPNHANVIEN (MaNV, Thang, Nam, TenPhuCap, SoTien, NgayGhiNhan, GhiChu) VALUES
+(1, 9, 2026, N'Phụ cấp ăn trưa', 730000, '2026-09-01', N'Phụ cấp cố định theo tháng'),
+(1, 9, 2026, N'Hỗ trợ xăng xe', 500000, '2026-09-01', N'Công tác ngoại thành'),
+(2, 9, 2026, N'Phụ cấp ăn trưa', 730000, '2026-09-01', N'Phụ cấp cố định'),
+(3, 9, 2026, N'Phụ cấp ăn trưa', 730000, '2026-09-01', N'Phụ cấp cố định'),
+(3, 9, 2026, N'Phụ cấp trách nhiệm', 1500000, '2026-09-05', N'Trưởng nhóm phân hệ lương'),
+(4, 9, 2026, N'Phụ cấp ăn trưa', 730000, '2026-09-01', N'Phụ cấp cố định'),
+(5, 9, 2026, N'Phụ cấp độc hại', 1000000, '2026-09-10', N'Phòng Lab/Máy chủ');
+
+-- 3.2. Dữ liệu Khấu trừ tháng 09/2026
+INSERT INTO dbo.KHAUTRUNHANVIEN (MaNV, Thang, Nam, TenKhauTru, SoTien, NgayGhiNhan, LyDo) VALUES
+(1, 9, 2026, N'Tạm ứng lương', 2000000, '2026-09-15', N'Ứng lương giải quyết việc cá nhân'),
+(2, 9, 2026, N'Khấu trừ đi trễ', 150000, '2026-09-20', N'Đi trễ 3 lần có biên bản'),
+(3, 9, 2026, N'Tạm ứng lương', 1000000, '2026-09-15', N'Ứng lương giữa tháng'),
+(4, 9, 2026, N'Bồi hoàn tài sản', 500000, '2026-09-22', N'Làm hư chuột máy tính');
+
+-- 3.3. Dữ liệu Phụ cấp & Khấu trừ tháng 10/2026 (Kiểm thử đa kỳ)
+INSERT INTO dbo.PHUCAPNHANVIEN (MaNV, Thang, Nam, TenPhuCap, SoTien, NgayGhiNhan, GhiChu) VALUES
+(1, 10, 2026, N'Phụ cấp ăn trưa', 730000, '2026-10-01', N'Kỳ tháng 10'),
+(2, 10, 2026, N'Phụ cấp ăn trưa', 730000, '2026-10-01', N'Kỳ tháng 10'),
+(3, 10, 2026, N'Phụ cấp ăn trưa', 730000, '2026-10-01', N'Kỳ tháng 10');
+
+INSERT INTO dbo.KHAUTRUNHANVIEN (MaNV, Thang, Nam, TenKhauTru, SoTien, NgayGhiNhan, LyDo) VALUES
+(1, 10, 2026, N'Tạm ứng lương', 1500000, '2026-10-15', N'Ứng lương tháng 10');
 GO
