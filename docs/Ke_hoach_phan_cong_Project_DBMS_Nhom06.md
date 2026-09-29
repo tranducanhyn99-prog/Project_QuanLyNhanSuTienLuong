@@ -67,6 +67,9 @@
 | TV4 – Nguyễn Quang Vinh | sp_TinhBangLuongThang | fn_TinhTienCong | trg_BangLuong_KhongSuaKhiDaChot | vw_TongKhauTruThang | IX_KHAUTRU_MaNV_ThangNam | Tính bảng lương tháng |
 | TV5 – Trần Đức Anh | sp_ChotBangLuong | fn_TinhThucNhan | trg_ChiTietLuong_KhongSuaKhiDaChot | vw_BangLuongChiTiet | IX_NHANVIEN_MaPB_MaCV | Chốt bảng lương |
 
+> **LƯU Ý ĐỒNG BỘ HIỆN TRẠNG (TUẦN 2):**  
+> Để xem chi tiết các đối tượng SQL thực tế đã cài đặt trên mã nguồn nhánh `main` (bao gồm `sp_HuyChotBangLuong`, `sp_XoaBangLuongChuaChot`, các đối tượng bổ sung trong `06_BoSung_Rubric_Full.sql` và hướng dẫn viết báo cáo tổng hợp 50–100 trang), xem chi tiết tại: [Huong_Dan_Dong_Bo_Va_Tong_Hop_Bao_Cao_Nhom06.md](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/docs/Huong_Dan_Dong_Bo_Va_Tong_Hop_Bao_Cao_Nhom06.md).
+
 ## 5. Checklist nghiệm thu theo Project/Rubric
 
 | Hạng mục | Yêu cầu tối thiểu | Kế hoạch đáp ứng |
