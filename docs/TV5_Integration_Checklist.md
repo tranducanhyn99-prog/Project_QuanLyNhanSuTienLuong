@@ -30,7 +30,7 @@ Mỗi thành viên tự kiểm tra trước khi tạo PR vào `main`:
 - [ ] Tất cả `Connection`, `Statement`, `ResultSet` được đóng trong `try-with-resources` hoặc `finally`
 - [ ] Không hardcode connection string — đọc từ `config.properties`
 - [ ] Không commit `config.properties` (chỉ commit `config.properties.template`)
-- [ ] Không có file `.class`, `.jar`, `*.bak` trong commit
+- [ ] Không có file `.class`, `*.bak` trong commit (ngoại trừ file driver JDBC trong `lib/` để phục vụ build/chạy tự động)
 
 ### 1.3 Phân quyền
 

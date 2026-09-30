@@ -179,8 +179,8 @@ public class BangLuongDAO {
         String sql;
         boolean hasView = true;
         try (Connection conn = DatabaseConnection.getConnection();
-             Statement st = conn.createStatement();
-             ResultSet rs = st.executeQuery("SELECT OBJECT_ID(N'dbo.vw_BangLuongChiTiet', N'V')")) {
+             PreparedStatement ps = conn.prepareStatement("SELECT OBJECT_ID(N'dbo.vw_BangLuongChiTiet', N'V')");
+             ResultSet rs = ps.executeQuery()) {
             if (rs.next() && rs.getInt(1) == 0) {
                 hasView = false;
             }
