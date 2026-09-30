@@ -297,8 +297,12 @@ public class ChamCongPanel extends JPanel {
                 }
             }
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Không thể tải danh sách nhân viên: " + ex.getMessage(),
-                    "Lỗi tải dữ liệu", JOptionPane.ERROR_MESSAGE);
+            if (isShowing()) {
+                JOptionPane.showMessageDialog(this, "Không thể tải danh sách nhân viên: " + ex.getMessage(),
+                        "Lỗi tải dữ liệu", JOptionPane.ERROR_MESSAGE);
+            } else {
+                System.err.println("Bỏ qua dialog tải nhân viên chấm công: " + ex.getMessage());
+            }
         }
     }
 
@@ -321,8 +325,12 @@ public class ChamCongPanel extends JPanel {
                 });
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi tải nhật ký chấm công: " + ex.getMessage(),
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+            if (isShowing()) {
+                JOptionPane.showMessageDialog(this, "Lỗi tải nhật ký chấm công: " + ex.getMessage(),
+                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+            } else {
+                System.err.println("Bỏ qua dialog tải chi tiết chấm công: " + ex.getMessage());
+            }
         }
     }
 
@@ -348,8 +356,12 @@ public class ChamCongPanel extends JPanel {
             lblTongHopThongKe.setText("Tổng số nhân sự có dữ liệu chấm công: " + list.size()
                     + " (Tháng " + thang + "/" + nam + ")");
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi tải tổng hợp chấm công tháng: " + ex.getMessage(),
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+            if (isShowing()) {
+                JOptionPane.showMessageDialog(this, "Lỗi tải tổng hợp chấm công tháng: " + ex.getMessage(),
+                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+            } else {
+                System.err.println("Bỏ qua dialog tải tổng hợp chấm công: " + ex.getMessage());
+            }
         }
     }
 

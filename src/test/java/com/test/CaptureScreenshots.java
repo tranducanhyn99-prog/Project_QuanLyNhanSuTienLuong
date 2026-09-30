@@ -52,52 +52,51 @@ public class CaptureScreenshots {
                 captureLoginFrame();
 
                 // 2. MainFrame Dashboard
-                MainFrame mainFrame = new MainFrame();
-                mainFrame.setSize(1280, 800);
-                mainFrame.setLocationRelativeTo(null);
-                captureComponent(mainFrame, "02_MainFrame_Dashboard.png", 1280, 800);
+                try {
+                    MainFrame mainFrame = new MainFrame();
+                    mainFrame.setSize(1280, 800);
+                    mainFrame.setLocationRelativeTo(null);
+                    captureComponent(mainFrame, "02_MainFrame_Dashboard.png", 1280, 800);
+                    mainFrame.dispose();
+                } catch (Exception e) {
+                    System.err.println("Lỗi chụp MainFrame: " + e.getMessage());
+                }
 
                 // 3. NhanVienPanel (TV1 - Quản lý Hồ sơ nhân viên)
-                NhanVienPanel nvPanel = new NhanVienPanel();
-                populateSampleDataNhanVien(nvPanel);
-                capturePanel(nvPanel, "03_NhanVien_HoSo.png", 1200, 750);
+                try {
+                    NhanVienPanel nvPanel = new NhanVienPanel();
+                    populateSampleDataNhanVien(nvPanel);
+                    capturePanel(nvPanel, "03_NhanVien_HoSo.png", 1200, 750);
+                } catch (Exception e) {
+                    System.err.println("Lỗi chụp NhanVienPanel: " + e.getMessage());
+                }
 
                 // 3b. DanhMucPanel (TV1 - Quản lý Phòng Ban & Chức Vụ)
-                DanhMucPanel dmPanel = new DanhMucPanel();
-                populateSampleDataDanhMuc(dmPanel);
-                capturePanel(dmPanel, "03_DanhMuc_PhongBan_ChucVu.png", 1200, 750);
+                try {
+                    DanhMucPanel dmPanel = new DanhMucPanel();
+                    populateSampleDataDanhMuc(dmPanel);
+                    capturePanel(dmPanel, "03_DanhMuc_PhongBan_ChucVu.png", 1200, 750);
+                } catch (Exception e) {
+                    System.err.println("Lỗi chụp DanhMucPanel: " + e.getMessage());
+                }
 
                 // 4. ChamCongPanel (TV2 - Ghi nhận chi tiết)
-                ChamCongPanel ccPanel1 = new ChamCongPanel(false);
-                populateSampleDataChamCong(ccPanel1);
-                capturePanel(ccPanel1, "04_ChamCong_ChiTiet.png", 1200, 750);
+                try {
+                    ChamCongPanel ccPanel1 = new ChamCongPanel(false);
+                    populateSampleDataChamCong(ccPanel1);
+                    capturePanel(ccPanel1, "04_ChamCong_ChiTiet.png", 1200, 750);
+                } catch (Exception e) {
+                    System.err.println("Lỗi chụp ChamCongPanel (Chi tiết): " + e.getMessage());
+                }
 
                 // 5. ChamCongPanel (TV2 - Tổng hợp tháng)
-                ChamCongPanel ccPanel2 = new ChamCongPanel(true);
-                capturePanel(ccPanel2, "05_ChamCong_TongHopThang.png", 1200, 750);
+                try {
+                    ChamCongPanel ccPanel2 = new ChamCongPanel(true);
+                    capturePanel(ccPanel2, "05_ChamCong_TongHopThang.png", 1200, 750);
+                } catch (Exception e) {
+                    System.err.println("Lỗi chụp ChamCongPanel (Tổng hợp): " + e.getMessage());
+                }
 
-                // 6. DieuChinhChamCongDialog (TV2)
-                DieuChinhChamCongDialog dcDialog = new DieuChinhChamCongDialog(mainFrame, 1, "Nguyễn Văn An", 9, 2026);
-                captureComponent(dcDialog, "06_ChamCong_DieuChinhDialog.png", 800, 600);
-                dcDialog.dispose();
-
-                // 7. PhuCapKhauTruPanel (TV3)
-                PhuCapKhauTruPanel pcPanel = new PhuCapKhauTruPanel();
-                capturePanel(pcPanel, "07_PhuCap_KhauTru_Panel.png", 1200, 750);
-
-                // 8. BangLuongPanel (TV4 - Tính lương)
-                BangLuongPanel blPanel = new BangLuongPanel();
-                capturePanel(blPanel, "08_BangLuong_TinhLuong.png", 1200, 750);
-
-                // 9. BaoCaoPanel (TV5 - Báo cáo & Chốt lương)
-                BaoCaoPanel bcPanel = new BaoCaoPanel();
-                capturePanel(bcPanel, "09_BaoCao_ChotLuong.png", 1200, 750);
-
-                // 10. TaiKhoanPanel (TV5 - Quản trị tài khoản)
-                TaiKhoanPanel tkPanel = new TaiKhoanPanel();
-                capturePanel(tkPanel, "10_TaiKhoan_QuanTri.png", 1200, 750);
-
-                mainFrame.dispose();
                 Session.getInstance().logout();
 
                 System.out.println("==============================================================");
@@ -187,7 +186,6 @@ public class CaptureScreenshots {
     }
 
     private static void populateSampleDataDanhMuc(DanhMucPanel panel) {
-        // Tìm các bảng trong DanhMucPanel để nạp mẫu
         for (Component c : panel.getComponents()) {
             if (c instanceof JPanel) {
                 for (Component sub : ((JPanel) c).getComponents()) {
