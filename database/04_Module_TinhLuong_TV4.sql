@@ -146,7 +146,25 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    IF EXISTS (SELECT 1 FROM deleted WHERE TrangThai = 'DA_CHOT')
+    -- Ky da chot la bat bien. Ngoai le duy nhat la thao tac mo lai co kiem soat:
+    -- DA_CHOT -> CHUA_CHOT, xoa NgayChot va khong thay doi bat ky du lieu nao khac.
+    -- Quyen UPDATE truc tiep tren bang khong duoc cap cho Payroll Officer; thao tac nay
+    -- duoc thuc hien qua dbo.sp_HuyChotBangLuong.
+    IF EXISTS (
+        SELECT 1
+        FROM deleted d
+        LEFT JOIN inserted i ON i.MaBangLuong = d.MaBangLuong
+        WHERE d.TrangThai = 'DA_CHOT'
+          AND (
+                i.MaBangLuong IS NULL
+                OR i.TrangThai <> 'CHUA_CHOT'
+                OR i.NgayChot IS NOT NULL
+                OR i.Thang <> d.Thang
+                OR i.Nam <> d.Nam
+                OR i.NgayCongChuan <> d.NgayCongChuan
+                OR i.NgayTao <> d.NgayTao
+          )
+    )
     BEGIN
         RAISERROR(N'Khong duoc sua hoac xoa bang luong da chot.', 16, 1);
         RETURN;
@@ -187,7 +205,6 @@ CREATE OR ALTER PROCEDURE dbo.sp_TinhBangLuongThang
 AS
 BEGIN
     SET NOCOUNT ON;
-    SET XACT_ABORT ON;
 
     SET @MaBangLuong = NULL;
 
@@ -201,6 +218,24 @@ BEGIN
     DECLARE @TongKhauTru DECIMAL(18,2);
     DECLARE @ThucNhan DECIMAL(18,2);
     DECLARE @curNhanVien CURSOR;
+    DECLARE @NhanVienNguon TABLE
+    (
+        MaNV INT NOT NULL PRIMARY KEY,
+        LuongCoBan DECIMAL(18,2) NOT NULL
+    );
+    DECLARE @InitialTranCount INT = @@TRANCOUNT;
+    DECLARE @OwnTransaction BIT = 0;
+    DECLARE @SavepointCreated BIT = 0;
+    DECLARE @SourceLockCount BIGINT = 0;
+    DECLARE @CallerXactAbort BIT = CASE WHEN (16384 & @@OPTIONS) = 16384 THEN 1 ELSE 0 END;
+
+    -- Transaction do procedure tu mo dung XACT_ABORT ON. Neu dang tham gia
+    -- transaction cua caller, tam tat de loi statement khong lam doom toan bo
+    -- transaction va savepoint van co the rollback cuc bo.
+    IF @InitialTranCount = 0
+        SET XACT_ABORT ON;
+    ELSE
+        SET XACT_ABORT OFF;
 
     BEGIN TRY
         IF (@Thang IS NULL OR @Thang NOT BETWEEN 1 AND 12)
@@ -215,11 +250,31 @@ BEGIN
         IF OBJECT_ID(N'dbo.CHAMCONG', N'U') IS NULL
             RAISERROR(N'Chua co bang CHAMCONG. Can tich hop du lieu cham cong truoc khi tinh luong.', 16, 1);
 
+        IF @InitialTranCount = 0
+        BEGIN
+            BEGIN TRANSACTION;
+            SET @OwnTransaction = 1;
+        END
+        ELSE
+        BEGIN
+            SAVE TRANSACTION TV4_TinhBangLuong;
+            SET @SavepointCreated = 1;
+        END;
+
+        SELECT @TrangThaiKy = TrangThai
+        FROM dbo.BANGLUONG WITH (UPDLOCK, HOLDLOCK)
+        WHERE Thang = @Thang AND Nam = @Nam;
+
+        IF (@TrangThaiKy = 'DA_CHOT')
+            RAISERROR(N'Kỳ lương này đã được chốt. Không thể tính lại! Vui lòng mở lại (hủy chốt) bảng lương trước nếu cần điều chỉnh.', 16, 1);
+
+        -- Khoa tap du lieu nguon trong transaction de mot lan tinh luong khong
+        -- tron du lieu truoc/sau mot thay doi cham cong, phu cap hoac khau tru.
         EXEC sys.sp_executesql
             N'SELECT @SoDongChamCongOut = COUNT(1)
-              FROM dbo.CHAMCONG
-              WHERE MONTH(NgayChamCong) = @ThangIn
-                AND YEAR(NgayChamCong) = @NamIn;',
+              FROM dbo.CHAMCONG WITH (HOLDLOCK)
+              WHERE NgayChamCong >= DATEFROMPARTS(@NamIn, @ThangIn, 1)
+                AND NgayChamCong < DATEADD(MONTH, 1, DATEFROMPARTS(@NamIn, @ThangIn, 1));',
             N'@ThangIn INT, @NamIn INT, @SoDongChamCongOut INT OUTPUT',
             @ThangIn = @Thang,
             @NamIn = @Nam,
@@ -228,29 +283,52 @@ BEGIN
         IF (@SoDongChamCong = 0)
             RAISERROR(N'Chua co du lieu cham cong cho ky luong nay.', 16, 1);
 
-        IF NOT EXISTS (SELECT 1 FROM dbo.NHANVIEN WHERE TrangThai = N'DANG_LAM_VIEC')
+        -- Materialize tap nhan vien va luong co ban mot lan trong transaction.
+        -- Cursor ben duoi chi doc snapshot nay, khong tron gia tri truoc/sau
+        -- mot UPDATE LuongCoBan/TrangThai dong thoi.
+        INSERT INTO @NhanVienNguon (MaNV, LuongCoBan)
+        SELECT MaNV, LuongCoBan
+        FROM dbo.NHANVIEN WITH (HOLDLOCK)
+        WHERE TrangThai = N'DANG_LAM_VIEC';
+
+        SET @SourceLockCount = @@ROWCOUNT;
+
+        IF @SourceLockCount = 0
             RAISERROR(N'Khong co nhan vien dang lam viec de tinh luong.', 16, 1);
 
-        BEGIN TRANSACTION;
+        IF OBJECT_ID(N'dbo.PHUCAPNHANVIEN', N'U') IS NOT NULL
+        BEGIN
+            EXEC sys.sp_executesql
+                N'SELECT @SourceLockCountOut = COUNT_BIG(1)
+                  FROM dbo.PHUCAPNHANVIEN WITH (HOLDLOCK)
+                  WHERE Thang = @ThangIn AND Nam = @NamIn;',
+                N'@ThangIn INT, @NamIn INT, @SourceLockCountOut BIGINT OUTPUT',
+                @ThangIn = @Thang,
+                @NamIn = @Nam,
+                @SourceLockCountOut = @SourceLockCount OUTPUT;
+        END;
 
-        SELECT @TrangThaiKy = TrangThai
-        FROM dbo.BANGLUONG WITH (UPDLOCK, HOLDLOCK)
-        WHERE Thang = @Thang AND Nam = @Nam;
+        IF OBJECT_ID(N'dbo.KHAUTRUNHANVIEN', N'U') IS NOT NULL
+        BEGIN
+            EXEC sys.sp_executesql
+                N'SELECT @SourceLockCountOut = COUNT_BIG(1)
+                  FROM dbo.KHAUTRUNHANVIEN WITH (HOLDLOCK)
+                  WHERE Thang = @ThangIn AND Nam = @NamIn;',
+                N'@ThangIn INT, @NamIn INT, @SourceLockCountOut BIGINT OUTPUT',
+                @ThangIn = @Thang,
+                @NamIn = @Nam,
+                @SourceLockCountOut = @SourceLockCount OUTPUT;
+        END;
 
         IF (@TrangThaiKy IS NOT NULL)
         BEGIN
-            IF (@TrangThaiKy = 'DA_CHOT')
-                RAISERROR(N'Kỳ lương này đã được chốt. Không thể tính lại! Vui lòng mở lại (hủy chốt) bảng lương trước nếu cần điều chỉnh.', 16, 1);
-            ELSE
-            BEGIN
-                -- Bảng lương đã có nhưng chưa chốt -> Tính lại: xóa chi tiết cũ và nạp lại theo dữ liệu mới nhất
-                SELECT @MaBangLuong = MaBangLuong FROM dbo.BANGLUONG WHERE Thang = @Thang AND Nam = @Nam;
-                DELETE FROM dbo.CHITIETBANGLUONG WHERE MaBangLuong = @MaBangLuong;
-                UPDATE dbo.BANGLUONG
-                SET NgayCongChuan = @NgayCongChuan,
-                    NgayTao = GETDATE()
-                WHERE MaBangLuong = @MaBangLuong;
-            END;
+            -- Bang luong nhap da co: xoa chi tiet cu va nap lai trong cung transaction.
+            SELECT @MaBangLuong = MaBangLuong FROM dbo.BANGLUONG WHERE Thang = @Thang AND Nam = @Nam;
+            DELETE FROM dbo.CHITIETBANGLUONG WHERE MaBangLuong = @MaBangLuong;
+            UPDATE dbo.BANGLUONG
+            SET NgayCongChuan = @NgayCongChuan,
+                NgayTao = GETDATE()
+            WHERE MaBangLuong = @MaBangLuong;
         END
         ELSE
         BEGIN
@@ -262,8 +340,7 @@ BEGIN
 
         SET @curNhanVien = CURSOR LOCAL FAST_FORWARD FOR
             SELECT MaNV, LuongCoBan
-            FROM dbo.NHANVIEN
-            WHERE TrangThai = N'DANG_LAM_VIEC'
+            FROM @NhanVienNguon
             ORDER BY MaNV;
 
         OPEN @curNhanVien;
@@ -275,31 +352,20 @@ BEGIN
             SET @TongPhuCap = 0;
             SET @TongKhauTru = 0;
 
-            IF OBJECT_ID(N'dbo.fn_TinhSoNgayCong', N'FN') IS NOT NULL
-            BEGIN
-                EXEC sys.sp_executesql
-                    N'SELECT @NgayCongOut = ISNULL(CONVERT(INT, dbo.fn_TinhSoNgayCong(@MaNVIn, @ThangIn, @NamIn)), 0);',
-                    N'@MaNVIn INT, @ThangIn INT, @NamIn INT, @NgayCongOut INT OUTPUT',
-                    @MaNVIn = @MaNV,
-                    @ThangIn = @Thang,
-                    @NamIn = @Nam,
-                    @NgayCongOut = @NgayCongThucTe OUTPUT;
-            END
-            ELSE
-            BEGIN
-                EXEC sys.sp_executesql
-                    N'SELECT @NgayCongOut = COUNT(1)
-                      FROM dbo.CHAMCONG
-                      WHERE MaNV = @MaNVIn
-                        AND MONTH(NgayChamCong) = @ThangIn
-                        AND YEAR(NgayChamCong) = @NamIn
-                        AND TrangThai IN (N''CO_MAT'', N''DI_TRE'', N''VE_SOM'');',
-                    N'@MaNVIn INT, @ThangIn INT, @NamIn INT, @NgayCongOut INT OUTPUT',
-                    @MaNVIn = @MaNV,
-                    @ThangIn = @Thang,
-                    @NamIn = @Nam,
-                    @NgayCongOut = @NgayCongThucTe OUTPUT;
-            END;
+            -- Dung truc tiep khoang ngay nua mo de tranh MONTH/YEAR tren cot
+            -- va de duong truy van thuc te co the tan dung index cham cong.
+            EXEC sys.sp_executesql
+                N'SELECT @NgayCongOut = COUNT(1)
+                  FROM dbo.CHAMCONG WITH (HOLDLOCK)
+                  WHERE MaNV = @MaNVIn
+                    AND NgayChamCong >= DATEFROMPARTS(@NamIn, @ThangIn, 1)
+                    AND NgayChamCong < DATEADD(MONTH, 1, DATEFROMPARTS(@NamIn, @ThangIn, 1))
+                    AND TrangThai IN (N''CO_MAT'', N''DI_TRE'', N''VE_SOM'');',
+                N'@MaNVIn INT, @ThangIn INT, @NamIn INT, @NgayCongOut INT OUTPUT',
+                @MaNVIn = @MaNV,
+                @ThangIn = @Thang,
+                @NamIn = @Nam,
+                @NgayCongOut = @NgayCongThucTe OUTPUT;
 
             SET @TienCong = dbo.fn_TinhTienCong(@LuongCoBan, @NgayCongChuan, @NgayCongThucTe);
 
@@ -392,10 +458,22 @@ BEGIN
         CLOSE @curNhanVien;
         DEALLOCATE @curNhanVien;
 
-        COMMIT TRANSACTION;
+        IF @OwnTransaction = 1
+            COMMIT TRANSACTION;
+
+        IF @CallerXactAbort = 1
+            SET XACT_ABORT ON;
+        ELSE
+            SET XACT_ABORT OFF;
     END TRY
     BEGIN CATCH
+        DECLARE @ErrorMessage NVARCHAR(2048) = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
+        DECLARE @ErrorState INT = ERROR_STATE();
         DECLARE @CursorStatus INT = CURSOR_STATUS('variable', '@curNhanVien');
+
+        -- Khong tra ve ID cua header da bi rollback hoac cua lan tinh that bai.
+        SET @MaBangLuong = NULL;
 
         IF @CursorStatus IN (0, 1)
             CLOSE @curNhanVien;
@@ -403,11 +481,21 @@ BEGIN
         IF @CursorStatus IN (-1, 0, 1)
             DEALLOCATE @curNhanVien;
 
-        IF @@TRANCOUNT > 0
+        IF @OwnTransaction = 1 AND XACT_STATE() <> 0
             ROLLBACK TRANSACTION;
+        ELSE IF @SavepointCreated = 1 AND XACT_STATE() = 1
+            ROLLBACK TRANSACTION TV4_TinhBangLuong;
 
-        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
-        RAISERROR(@ErrorMessage, 16, 1);
+        IF @InitialTranCount = 0
+        BEGIN
+            IF @CallerXactAbort = 1 SET XACT_ABORT ON ELSE SET XACT_ABORT OFF;
+            THROW;
+        END;
+
+        -- Giu XACT_ABORT OFF trong luc phat lai loi cho caller. SET option ben
+        -- trong stored procedure tu khoi phuc khi control tro ve caller.
+        RAISERROR(N'%s', @ErrorSeverity, @ErrorState, @ErrorMessage);
+        RETURN;
     END CATCH
 END;
 GO
@@ -455,8 +543,25 @@ AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @TrangThai VARCHAR(15);
+    DECLARE @InitialTranCount INT = @@TRANCOUNT;
+    DECLARE @OwnTransaction BIT = 0;
+    DECLARE @SavepointCreated BIT = 0;
+    DECLARE @CallerXactAbort BIT = CASE WHEN (16384 & @@OPTIONS) = 16384 THEN 1 ELSE 0 END;
+
+    IF @InitialTranCount = 0 SET XACT_ABORT ON ELSE SET XACT_ABORT OFF;
+
     BEGIN TRY
-        BEGIN TRANSACTION;
+        IF @InitialTranCount = 0
+        BEGIN
+            BEGIN TRANSACTION;
+            SET @OwnTransaction = 1;
+        END
+        ELSE
+        BEGIN
+            SAVE TRANSACTION TV4_HuyChot;
+            SET @SavepointCreated = 1;
+        END;
+
         SELECT @TrangThai = TrangThai
         FROM dbo.BANGLUONG WITH (UPDLOCK, HOLDLOCK)
         WHERE MaBangLuong = @MaBangLuong;
@@ -472,12 +577,29 @@ BEGIN
             NgayChot  = NULL
         WHERE MaBangLuong = @MaBangLuong;
 
-        COMMIT TRANSACTION;
+        IF @OwnTransaction = 1
+            COMMIT TRANSACTION;
+
+        IF @CallerXactAbort = 1 SET XACT_ABORT ON ELSE SET XACT_ABORT OFF;
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
-        RAISERROR(@ErrMsg, 16, 1);
+        DECLARE @ErrorMessage NVARCHAR(2048) = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
+        DECLARE @ErrorState INT = ERROR_STATE();
+
+        IF @OwnTransaction = 1 AND XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+        ELSE IF @SavepointCreated = 1 AND XACT_STATE() = 1
+            ROLLBACK TRANSACTION TV4_HuyChot;
+
+        IF @InitialTranCount = 0
+        BEGIN
+            IF @CallerXactAbort = 1 SET XACT_ABORT ON ELSE SET XACT_ABORT OFF;
+            THROW;
+        END;
+
+        RAISERROR(N'%s', @ErrorSeverity, @ErrorState, @ErrorMessage);
+        RETURN;
     END CATCH
 END;
 GO
