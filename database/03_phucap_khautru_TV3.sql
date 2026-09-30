@@ -107,27 +107,26 @@ BEGIN
 END;
 GO
 
--- 2.3. TRIGGER SỞ HỮU: trg_ChamCong_KiemTraGio (TV3)
--- Ràng buộc kiểm tra giờ ra phải lớn hơn giờ vào trên bảng CHAMCONG
-CREATE OR ALTER TRIGGER dbo.trg_ChamCong_KiemTraGio
-ON dbo.CHAMCONG
-FOR INSERT, UPDATE
+-- 2.3. TRIGGER SỞ HỮU: trg_PhuCap_KhongSuaKhiDaChotLuong (TV3)
+-- Ràng buộc toàn vẹn: Không cho phép sửa đổi hoặc xóa phụ cấp khi kỳ lương tương ứng đã chốt (DA_CHOT)
+CREATE OR ALTER TRIGGER dbo.trg_PhuCap_KhongSuaKhiDaChotLuong
+ON dbo.PHUCAPNHANVIEN
+AFTER UPDATE, DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
 
     IF EXISTS (
         SELECT 1
-        FROM inserted
-        WHERE GioVao IS NOT NULL
-          AND GioRa IS NOT NULL
-          AND GioRa <= GioVao
+        FROM deleted d
+        JOIN dbo.BANGLUONG bl ON d.Thang = bl.Thang AND d.Nam = bl.Nam
+        WHERE bl.TrangThai = 'DA_CHOT'
     )
     BEGIN
-        RAISERROR (N'Lỗi nghiệp vụ: Giờ kết thúc làm việc (Giờ ra) phải lớn hơn Giờ bắt đầu (Giờ vào)!', 16, 1);
+        RAISERROR (N'Lỗi nghiệp vụ: Không được phép sửa đổi hoặc xóa khoản phụ cấp khi kỳ lương đã được chốt!', 16, 1);
         ROLLBACK TRANSACTION;
         RETURN;
-    END
+    END;
 END;
 GO
 -- 2.5. TRANSACTION SỞ HỮU: sp_XoaKyLuongChuaChot (TV3)

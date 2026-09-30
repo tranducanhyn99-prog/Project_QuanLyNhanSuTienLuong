@@ -317,7 +317,7 @@ GRANT SELECT ON vw_BangLuongChiTiet          TO role_HRManager;
 GRANT EXECUTE ON fn_TinhSoNgayCong   TO role_HRManager;
 
 -- GRANT quyền module Chấm công (TV2)
-GRANT SELECT, INSERT, UPDATE ON CHAMCONG TO role_HRManager;
+GRANT SELECT, INSERT, UPDATE, DELETE ON CHAMCONG TO role_HRManager;
 GRANT EXECUTE ON sp_GhiNhanChamCong      TO role_HRManager;
 GRANT SELECT ON vw_TongHopChamCongThang  TO role_HRManager;
 
