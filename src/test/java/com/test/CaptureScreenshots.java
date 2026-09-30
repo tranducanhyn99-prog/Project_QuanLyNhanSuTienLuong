@@ -55,9 +55,13 @@ public class CaptureScreenshots {
                 mainFrame.setLocationRelativeTo(null);
                 captureComponent(mainFrame, "02_MainFrame_Dashboard.png", 1280, 800);
 
-                // 3. NhanVienPanel
+                // 3. NhanVienPanel (TV1)
                 NhanVienPanel nvPanel = new NhanVienPanel();
                 capturePanel(nvPanel, "03_NhanVien_HoSo.png", 1150, 700);
+
+                // 3b. DanhMucPanel (TV1 - Quản lý Phòng Ban & Chức Vụ)
+                com.ui.nhanvien.DanhMucPanel dmPanel = new com.ui.nhanvien.DanhMucPanel();
+                capturePanel(dmPanel, "03_DanhMuc_PhongBan_ChucVu.png", 1150, 700);
 
                 // 4. ChamCongPanel (Tab 1: Ghi nhận chi tiết)
                 ChamCongPanel ccPanel1 = new ChamCongPanel(false);

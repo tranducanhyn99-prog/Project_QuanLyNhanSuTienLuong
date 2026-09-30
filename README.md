@@ -68,8 +68,17 @@ Project_QuanLyNhanSuTienLuong/
 - [TV4 – Quản lý Tính lương & Bảng lương](docs/TV4_Tien_Do_Thuc_Hien.md)
 - [TV5 – Bảo mật, Concurrency & Chốt kỳ lương](docs/TV5_Tien_Do_Thuc_Hien.md)
 
-### 3. Báo cáo Chuyên đề Tổng kết
-- [Chương 3 – Kiến trúc Bảo mật 2 tầng, Concurrency & Benchmark Index](docs/Chuong3_Bao_Mat_Va_Concurrency_TV5.md)
+### 3. Báo cáo Chuyên đề Tổng kết & Minh chứng Thực nghiệm
+- [TV1 – Thiết kế CSDL Chuyên sâu, Chuẩn hóa 3NF & Benchmark Index](docs/TV1_BaoCao_ChuyenDe_NhanSu_CuoiKy.md)
+- [TV1 – Bảng Yêu cầu Minh chứng Thực nghiệm Rubric](docs/TV1_Yeu_Cau_Bo_Sung_Minh_Chung.md)
+- [TV1 – Bộ 20 Test Cases Kiểm thử Module Nhân sự](docs/TV1_NhanSu_Test_Cases.md)
+- [TV5 – Chương 3 – Kiến trúc Bảo mật 2 tầng, Concurrency & Benchmark Index](docs/Chuong3_Bao_Mat_Va_Concurrency_TV5.md)
+
+### 4. Scripts Kiểm thử & Tự động hóa
+- `run_tuan3_tv1.ps1`: Chạy toàn bộ kiểm thử Unit/Integration, Benchmark và Chụp màn hình cho **TV1 (Nguyễn Minh Trí)**.
+- `run_tuan3_tv5.ps1`: Chạy toàn bộ kiểm thử Tích hợp hệ thống, RBAC và Chụp 10 màn hình cho **TV5 (Trần Đức Anh)**.
+- `database/test_benchmark_index_TV1.sql`: Đo kiểm hiệu năng Index `IX_NHANVIEN_HoTen` (Scan vs Seek).
+- `database/test_module_nhansu_TV1.sql`: Kiểm thử tự động 6 đối tượng CSDL của TV1 (SP, Transaction, Trigger, Function, View, Index).
 
 ## Quy trình Git/GitHub
 
