@@ -1,5 +1,7 @@
 param (
-    [switch]$SkipScreenshots
+    [switch]$SkipScreenshots,
+    [string]$DbUser = $env:DB_USER,
+    [string]$DbPassword = $env:DB_PASSWORD
 )
 
 $ErrorActionPreference = "Stop"
@@ -66,7 +68,9 @@ Write-Host "[OK] Bien dich 100% thanh cong!" -ForegroundColor Green
 
 # 2. Chay NhanSuModuleTest (TV1)
 Write-Host "`n[2/3] Dang thuc thi Kiem thu chuyen sau Module Nhan su (TV1)..." -ForegroundColor Yellow
-java -cp $cp com.test.NhanSuModuleTest
+$javaArgs = @("-cp", $cp)
+if ($DbUser) { $javaArgs = @("-Ddb.user=$DbUser", "-Ddb.password=$DbPassword") + $javaArgs }
+& java $javaArgs com.test.NhanSuModuleTest
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Kiem thu module Nhan su (TV1) that bai!"
     exit 1
@@ -75,7 +79,7 @@ if ($LASTEXITCODE -ne 0) {
 # 3. Chup anh man hinh tu dong
 if (-not $SkipScreenshots) {
     Write-Host "`n[3/3] Dang tu dong chup anh giao dien cho bao cao cuoi ky..." -ForegroundColor Yellow
-    java -cp $cp com.test.CaptureScreenshots
+    & java $javaArgs com.test.CaptureScreenshots
     if ($LASTEXITCODE -eq 0) {
         Write-Host "[OK] Da chup toan bo anh giao dien vao thu muc screenshots/!" -ForegroundColor Green
     } else {
