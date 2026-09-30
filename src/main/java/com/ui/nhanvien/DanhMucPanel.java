@@ -169,7 +169,11 @@ public class DanhMucPanel extends JPanel {
                 modelPhongBan.addRow(new Object[]{pb.getMaPB(), pb.getTenPB(), pb.getSoDienThoai(), pb.getTrangThai()});
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Lỗi tải danh mục Phòng Ban: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            if (isShowing()) {
+                JOptionPane.showMessageDialog(this, "Lỗi tải danh mục Phòng Ban: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            } else {
+                System.err.println("Bỏ qua dialog khởi tạo Phòng Ban: " + e.getMessage());
+            }
         }
     }
 
@@ -181,7 +185,11 @@ public class DanhMucPanel extends JPanel {
                 modelChucVu.addRow(new Object[]{cv.getMaCV(), cv.getTenCV(), cv.getPhuCapChucVu()});
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Lỗi tải danh mục Chức Vụ: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            if (isShowing()) {
+                JOptionPane.showMessageDialog(this, "Lỗi tải danh mục Chức Vụ: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            } else {
+                System.err.println("Bỏ qua dialog khởi tạo Chức Vụ: " + e.getMessage());
+            }
         }
     }
 

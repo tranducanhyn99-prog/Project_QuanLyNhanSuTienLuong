@@ -16,6 +16,7 @@ public class DatabaseConnection {
         // Nạp tường minh SQL Server JDBC Driver để phát hiện sớm lỗi thiếu thư viện trên classpath
         try {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            DriverManager.setLoginTimeout(2);
         } catch (ClassNotFoundException e) {
             throw new ExceptionInInitializerError(
                 "Không tìm thấy SQL Server JDBC Driver (com.microsoft.sqlserver.jdbc.SQLServerDriver)! "
