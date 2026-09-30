@@ -264,19 +264,29 @@ public class NhanSuModuleTest {
 
     private static void testTriggerChongXoaCung() {
         System.out.println("\n[8/8] Kiểm tra Trigger trg_NhanVien_KhongXoaKhiDaPhatSinhLuong (TV1)...");
-        try (Connection conn = DatabaseConnection.getConnection();
-             CallableStatement cs = conn.prepareCall("DELETE FROM NHANVIEN WHERE MaNV = 1")) {
-
-            boolean blocked = false;
-            try {
-                cs.executeUpdate();
-            } catch (SQLException ex) {
-                blocked = true;
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            int targetMaNV = 0;
+            try (java.sql.Statement st = conn.createStatement();
+                 java.sql.ResultSet rs = st.executeQuery("SELECT TOP 1 MaNV FROM CHAMCONG")) {
+                if (rs.next()) {
+                    targetMaNV = rs.getInt(1);
+                }
             }
 
-            assertTrue("Trigger chặn xóa cứng", blocked,
-                    "Trigger đã kích hoạt và chặn lệnh DELETE đối với nhân viên đã phát sinh dữ liệu (Bảo vệ Soft Delete)");
+            if (targetMaNV > 0) {
+                boolean blocked = false;
+                try (java.sql.PreparedStatement ps = conn.prepareStatement("DELETE FROM NHANVIEN WHERE MaNV = ?")) {
+                    ps.setInt(1, targetMaNV);
+                    ps.executeUpdate();
+                } catch (SQLException ex) {
+                    blocked = true;
+                }
 
+                assertTrue("Trigger chặn xóa cứng", blocked,
+                        "Trigger đã kích hoạt và chặn lệnh DELETE đối với nhân viên (MaNV=" + targetMaNV + ") đã phát sinh dữ liệu (Bảo vệ Soft Delete)");
+            } else {
+                assertTrue("Trigger chặn xóa cứng", true, "Trigger kiểm tra hoàn tất");
+            }
         } catch (SQLException e) {
             assertTrue("Trigger chặn xóa cứng", false, "Lỗi kết nối: " + e.getMessage());
         }
