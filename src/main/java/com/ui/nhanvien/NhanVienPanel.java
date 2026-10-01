@@ -204,7 +204,11 @@ public class NhanVienPanel extends JPanel {
             List<ChucVu> listCV = danhMucService.layTatCaChucVu();
             for (ChucVu cv : listCV) cboChucVu.addItem(cv);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu danh mục: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            if (isShowing()) {
+                JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu danh mục: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            } else {
+                System.err.println("Bỏ qua dialog khởi tạo danh mục: " + e.getMessage());
+            }
         }
     }
 
@@ -229,7 +233,11 @@ public class NhanVienPanel extends JPanel {
                 });
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Lỗi tải danh sách nhân viên: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            if (isShowing()) {
+                JOptionPane.showMessageDialog(this, "Lỗi tải danh sách nhân viên: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            } else {
+                System.err.println("Bỏ qua dialog khởi tạo nhân viên: " + e.getMessage());
+            }
         }
     }
 

@@ -16,6 +16,7 @@ public class DatabaseConnection {
         // Nạp tường minh SQL Server JDBC Driver để phát hiện sớm lỗi thiếu thư viện trên classpath
         try {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            DriverManager.setLoginTimeout(2);
         } catch (ClassNotFoundException e) {
             throw new ExceptionInInitializerError(
                 "Không tìm thấy SQL Server JDBC Driver (com.microsoft.sqlserver.jdbc.SQLServerDriver)! "
@@ -27,22 +28,32 @@ public class DatabaseConnection {
         try (InputStream in = DatabaseConnection.class.getResourceAsStream("/config.properties")) {
             if (in != null) {
                 props.load(in);
-                url = props.getProperty("db.url");
-                user = props.getProperty("db.user");
-                password = props.getProperty("db.password");
-                if (url == null || url.trim().isEmpty()) {
-                    throw new IllegalArgumentException("Thuộc tính 'db.url' chưa được cấu hình trong config.properties.");
-                }
-            } else {
-                throw new ExceptionInInitializerError(
-                    "Không tìm thấy file config.properties trên classpath! "
-                    + "Hãy đảm bảo file config.properties tồn tại trong src/resources và thư mục này nằm trên classpath."
-                );
             }
-        } catch (ExceptionInInitializerError e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ExceptionInInitializerError("Lỗi khi nạp file cấu hình config.properties: " + e.getMessage());
+        } catch (Exception ignored) {}
+
+        // Ưu tiên đọc từ System Properties hoặc Biến môi trường (Environment Variables) để bảo mật
+        url = System.getProperty("db.url");
+        if (url == null || url.trim().isEmpty()) {
+            url = System.getenv("DB_URL");
+        }
+        if (url == null || url.trim().isEmpty()) {
+            url = props.getProperty("db.url", "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhanSuTienLuong;encrypt=false;trustServerCertificate=true");
+        }
+
+        user = System.getProperty("db.user");
+        if (user == null || user.trim().isEmpty()) {
+            user = System.getenv("DB_USER");
+        }
+        if (user == null || user.trim().isEmpty()) {
+            user = props.getProperty("db.user");
+        }
+
+        password = System.getProperty("db.password");
+        if (password == null || password.trim().isEmpty()) {
+            password = System.getenv("DB_PASSWORD");
+        }
+        if (password == null || password.trim().isEmpty()) {
+            password = props.getProperty("db.password");
         }
     }
 
