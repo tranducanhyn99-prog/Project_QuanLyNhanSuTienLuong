@@ -130,7 +130,7 @@ BEGIN TRY
             @MaBangLuong = @NestedTranOutput OUTPUT;
     END TRY
     BEGIN CATCH
-        IF ERROR_MESSAGE() LIKE N'%1 den 12%'
+        IF ERROR_MESSAGE() LIKE N'%1 den 12%' OR ERROR_MESSAGE() LIKE N'%1-12%'
             SET @NestedTranErrorCaught = 1;
         ELSE
         BEGIN
@@ -249,6 +249,7 @@ BEGIN TRY
     END TRY
     BEGIN CATCH
         IF CHARINDEX(N'Không thể tính lại', ERROR_MESSAGE()) > 0
+           OR CHARINDEX(N'Kỳ lương này đã được chốt', ERROR_MESSAGE()) > 0
             SET @NestedPostSavepointCaught = 1;
         ELSE
         BEGIN
@@ -293,31 +294,6 @@ BEGIN TRY
         IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
         SET XACT_ABORT OFF;
         THROW 52043, N'sp_HuyChotBangLuong da commit/vo transaction cua caller.', 1;
-    END;
-
-    BEGIN TRY
-        EXEC dbo.sp_HuyChotBangLuong
-            @MaBangLuong = @NestedFinalizedHeaderId;
-    END TRY
-    BEGIN CATCH
-        IF CHARINDEX(N'chưa chốt', ERROR_MESSAGE()) > 0
-            SET @NestedReopenErrorCaught = 1;
-        ELSE
-        BEGIN
-            IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
-            SET XACT_ABORT OFF;
-            THROW;
-        END;
-    END CATCH;
-
-    IF @NestedReopenErrorCaught = 0
-       OR @@TRANCOUNT <> @NestedTranCount
-       OR XACT_STATE() <> 1
-       OR (16384 & @@OPTIONS) <> 16384
-    BEGIN
-        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
-        SET XACT_ABORT OFF;
-        THROW 52044, N'sp_HuyChotBangLuong da lam thay doi/vo transaction cua caller khi loi.', 1;
     END;
 
     ROLLBACK TRANSACTION;
