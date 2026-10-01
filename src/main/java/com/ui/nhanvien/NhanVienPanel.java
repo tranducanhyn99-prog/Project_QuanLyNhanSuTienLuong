@@ -5,14 +5,30 @@ import com.model.NhanVien;
 import com.model.PhongBan;
 import com.service.DanhMucService;
 import com.service.NhanVienService;
+import com.ui.theme.UITheme;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.border.MatteBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * NhanVienPanel – Quản lý Hồ sơ nhân sự chuẩn Enterprise.
+ *
+ * Giao diện Fluent Design:
+ * - Bảng dữ liệu phẳng chuẩn Enterprise với chiều cao hàng 32px.
+ * - Form nhập liệu chia 3 cột thẳng hàng, thoáng đãng.
+ * - Nút bấm phân cấp màu sắc chuẩn: Thêm (Primary), Cập nhật (Secondary), Xóa (Danger).
+ * - Giữ nguyên 100% logic Stored Procedure, Transaction và Soft Delete trigger.
+ *
+ * @author Nhóm 06 – DBMS Enterprise
+ */
 public class NhanVienPanel extends JPanel {
 
     private final NhanVienService nhanVienService = new NhanVienService();
@@ -45,103 +61,146 @@ public class NhanVienPanel extends JPanel {
     }
 
     private void initComponents() {
-        setLayout(new BorderLayout(5, 5));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setLayout(new BorderLayout(0, 12));
+        setBackground(UITheme.BG_APP);
+        setBorder(new EmptyBorder(16, 20, 20, 20));
 
-        // 1. TOP: THANH TÌM KIẾM
-        JPanel pnlTop = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        pnlTop.setBorder(BorderFactory.createTitledBorder("Tìm kiếm nhân viên (Theo Index Họ Tên)"));
-        pnlTop.add(new JLabel("Họ tên nhân viên:"));
-        txtTimKiem = new JTextField(20);
-        pnlTop.add(txtTimKiem);
-        JButton btnTimKiem = new JButton("Tìm kiếm");
-        JButton btnTaiLai = new JButton("Tải lại tất cả");
-        pnlTop.add(btnTimKiem);
-        pnlTop.add(btnTaiLai);
+        // 1. TOP: THANH TÌM KIẾM PHẲNG
+        JPanel pnlTop = new JPanel(new BorderLayout(14, 0));
+        pnlTop.setBackground(Color.WHITE);
+        pnlTop.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(10, 16, 10, 16)
+        ));
 
+        JPanel searchLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        searchLeft.setOpaque(false);
+
+        JLabel lblTimKiem = new JLabel("Tìm kiếm nhân sự:");
+        lblTimKiem.setFont(UITheme.FONT_BODY_BOLD);
+        lblTimKiem.setForeground(UITheme.TEXT_MAIN);
+
+        txtTimKiem = new JTextField(24);
+        UITheme.styleTextField(txtTimKiem);
+
+        JButton btnTimKiem = new JButton("Tìm kiếm (Index)");
+        UITheme.stylePrimaryButton(btnTimKiem);
+
+        JButton btnTaiLai = new JButton("Tải lại danh sách");
+        UITheme.styleSecondaryButton(btnTaiLai);
+
+        searchLeft.add(lblTimKiem);
+        searchLeft.add(txtTimKiem);
+        searchLeft.add(btnTimKiem);
+        searchLeft.add(btnTaiLai);
+
+        pnlTop.add(searchLeft, BorderLayout.WEST);
         add(pnlTop, BorderLayout.NORTH);
 
-        // 2. CENTER: BẢNG DỮ LIỆU
+        // 2. CENTER: BẢNG DỮ LIỆU CHUẨN ENTERPRISE
         modelNhanVien = new DefaultTableModel(new String[]{
-            "Mã NV", "Họ Tên", "Ngày Sinh", "Phái", "CCCD", "SĐT", "Email", "Lương CB", "Phòng Ban", "Chức Vụ", "Trạng Thái", "Tài Khoản"
+            "Mã NV", "Họ Tên", "Ngày Sinh", "Phái", "CCCD", "SĐT", "Email", "Lương CB (VNĐ)", "Phòng Ban", "Chức Vụ", "Trạng Thái", "Tài Khoản"
         }, 0) {
             @Override
             public boolean isCellEditable(int row, int col) { return false; }
         };
         tblNhanVien = new JTable(modelNhanVien);
-        tblNhanVien.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        tblNhanVien.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
-        tblNhanVien.setRowHeight(24);
-        add(new JScrollPane(tblNhanVien), BorderLayout.CENTER);
+        UITheme.styleTable(tblNhanVien);
 
-        // 3. SOUTH: FORM THÔNG TIN & NÚT BẤM
-        JPanel pnlSouth = new JPanel(new BorderLayout(5, 5));
-        
+        JScrollPane scrollTable = new JScrollPane(tblNhanVien);
+        scrollTable.setBorder(new LineBorder(UITheme.BORDER, 1, true));
+        scrollTable.getViewport().setBackground(Color.WHITE);
+        add(scrollTable, BorderLayout.CENTER);
+
+        // 3. SOUTH: FORM THÔNG TIN & NÚT BẤM (CARD PHẲNG)
+        JPanel pnlSouth = new JPanel(new BorderLayout(0, 10));
+        pnlSouth.setOpaque(false);
+
+        JPanel pnlFormCard = new JPanel(new BorderLayout(0, 10));
+        pnlFormCard.setBackground(Color.WHITE);
+        pnlFormCard.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(14, 16, 14, 16)
+        ));
+
+        pnlFormCard.add(UITheme.createSectionHeader("Thông tin hồ sơ nhân sự"), BorderLayout.NORTH);
+
         JPanel pnlForm = new JPanel(new GridBagLayout());
-        pnlForm.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createEtchedBorder(), "Thông tin hồ sơ nhân sự"));
+        pnlForm.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 8, 5, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // Row 0: Mã NV, Họ Tên, Ngày Sinh
         gbc.gridy = 0;
-        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(new JLabel("Mã Nhân Viên:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0; txtMaNV = new JTextField(); txtMaNV.setEditable(false); pnlForm.add(txtMaNV, gbc);
+        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(createFieldLabel("Mã Nhân Viên:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; txtMaNV = new JTextField(); txtMaNV.setEditable(false); UITheme.styleTextField(txtMaNV); pnlForm.add(txtMaNV, gbc);
 
-        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(new JLabel("Họ và Tên (*):"), gbc);
-        gbc.gridx = 3; gbc.weightx = 1.0; txtHoTen = new JTextField(); pnlForm.add(txtHoTen, gbc);
+        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(createFieldLabel("Họ và Tên (*):"), gbc);
+        gbc.gridx = 3; gbc.weightx = 1.0; txtHoTen = new JTextField(); UITheme.styleTextField(txtHoTen); pnlForm.add(txtHoTen, gbc);
 
-        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(new JLabel("Ngày Sinh (YYYY-MM-DD):"), gbc);
-        gbc.gridx = 5; gbc.weightx = 1.0; txtNgaySinh = new JTextField(); pnlForm.add(txtNgaySinh, gbc);
+        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(createFieldLabel("Ngày Sinh (YYYY-MM-DD):"), gbc);
+        gbc.gridx = 5; gbc.weightx = 1.0; txtNgaySinh = new JTextField(); UITheme.styleTextField(txtNgaySinh); pnlForm.add(txtNgaySinh, gbc);
 
         // Row 1: Giới Tính, CCCD, Số Điện Thoại
         gbc.gridy = 1;
-        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(new JLabel("Giới Tính:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0; cboGioiTinh = new JComboBox<>(new String[]{"Nam", "Nữ", "Khác"}); pnlForm.add(cboGioiTinh, gbc);
+        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(createFieldLabel("Giới Tính:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; cboGioiTinh = new JComboBox<>(new String[]{"Nam", "Nữ", "Khác"}); UITheme.styleComboBox(cboGioiTinh); pnlForm.add(cboGioiTinh, gbc);
 
-        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(new JLabel("CCCD (12 số):"), gbc);
-        gbc.gridx = 3; gbc.weightx = 1.0; txtCCCD = new JTextField(); pnlForm.add(txtCCCD, gbc);
+        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(createFieldLabel("CCCD (12 số):"), gbc);
+        gbc.gridx = 3; gbc.weightx = 1.0; txtCCCD = new JTextField(); UITheme.styleTextField(txtCCCD); pnlForm.add(txtCCCD, gbc);
 
-        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(new JLabel("Số Điện Thoại (10 số):"), gbc);
-        gbc.gridx = 5; gbc.weightx = 1.0; txtSoDienThoai = new JTextField(); pnlForm.add(txtSoDienThoai, gbc);
+        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(createFieldLabel("Số Điện Thoại (10 số):"), gbc);
+        gbc.gridx = 5; gbc.weightx = 1.0; txtSoDienThoai = new JTextField(); UITheme.styleTextField(txtSoDienThoai); pnlForm.add(txtSoDienThoai, gbc);
 
         // Row 2: Email, Địa Chỉ, Ngày Vào Làm
         gbc.gridy = 2;
-        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(new JLabel("Email (*):"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0; txtEmail = new JTextField(); pnlForm.add(txtEmail, gbc);
+        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(createFieldLabel("Email (*):"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; txtEmail = new JTextField(); UITheme.styleTextField(txtEmail); pnlForm.add(txtEmail, gbc);
 
-        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(new JLabel("Địa Chỉ:"), gbc);
-        gbc.gridx = 3; gbc.weightx = 1.0; txtDiaChi = new JTextField(); pnlForm.add(txtDiaChi, gbc);
+        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(createFieldLabel("Địa Chỉ:"), gbc);
+        gbc.gridx = 3; gbc.weightx = 1.0; txtDiaChi = new JTextField(); UITheme.styleTextField(txtDiaChi); pnlForm.add(txtDiaChi, gbc);
 
-        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(new JLabel("Ngày Vào Làm (YYYY-MM-DD):"), gbc);
-        gbc.gridx = 5; gbc.weightx = 1.0; txtNgayVaoLam = new JTextField(); pnlForm.add(txtNgayVaoLam, gbc);
+        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(createFieldLabel("Ngày Vào Làm:"), gbc);
+        gbc.gridx = 5; gbc.weightx = 1.0; txtNgayVaoLam = new JTextField(); UITheme.styleTextField(txtNgayVaoLam); pnlForm.add(txtNgayVaoLam, gbc);
 
         // Row 3: Lương Cơ Bản, Phòng Ban, Chức Vụ
         gbc.gridy = 3;
-        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(new JLabel("Lương Cơ Bản (VNĐ):"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0; txtLuongCoBan = new JTextField(); pnlForm.add(txtLuongCoBan, gbc);
+        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(createFieldLabel("Lương Cơ Bản:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; txtLuongCoBan = new JTextField(); UITheme.styleTextField(txtLuongCoBan); pnlForm.add(txtLuongCoBan, gbc);
 
-        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(new JLabel("Phòng Ban:"), gbc);
-        gbc.gridx = 3; gbc.weightx = 1.0; cboPhongBan = new JComboBox<>(); pnlForm.add(cboPhongBan, gbc);
+        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(createFieldLabel("Phòng Ban:"), gbc);
+        gbc.gridx = 3; gbc.weightx = 1.0; cboPhongBan = new JComboBox<>(); UITheme.styleComboBox(cboPhongBan); pnlForm.add(cboPhongBan, gbc);
 
-        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(new JLabel("Chức Vụ:"), gbc);
-        gbc.gridx = 5; gbc.weightx = 1.0; cboChucVu = new JComboBox<>(); pnlForm.add(cboChucVu, gbc);
+        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(createFieldLabel("Chức Vụ:"), gbc);
+        gbc.gridx = 5; gbc.weightx = 1.0; cboChucVu = new JComboBox<>(); UITheme.styleComboBox(cboChucVu); pnlForm.add(cboChucVu, gbc);
 
         // Row 4: Trạng Thái
         gbc.gridy = 4;
-        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(new JLabel("Trạng Thái:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0; cboTrangThai = new JComboBox<>(new String[]{"DANG_LAM_VIEC", "NGHI_VIEC"}); pnlForm.add(cboTrangThai, gbc);
+        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(createFieldLabel("Trạng Thái:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; cboTrangThai = new JComboBox<>(new String[]{"DANG_LAM_VIEC", "NGHI_VIEC"}); UITheme.styleComboBox(cboTrangThai); pnlForm.add(cboTrangThai, gbc);
 
         // Subpanel: Cấp tài khoản đồng thời
-        pnlTaiKhoan = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
-        pnlTaiKhoan.setBorder(BorderFactory.createTitledBorder("Cấp phát tài khoản đăng nhập (Transaction)"));
-        chkCapTaiKhoan = new JCheckBox("Cấp tài khoản");
+        pnlTaiKhoan = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 4));
+        pnlTaiKhoan.setBackground(new Color(248, 250, 252));
+        pnlTaiKhoan.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(6, 12, 6, 12)
+        ));
+        chkCapTaiKhoan = new JCheckBox("Cấp tài khoản đăng nhập (Transaction Atomicity)");
+        chkCapTaiKhoan.setFont(UITheme.FONT_BODY_BOLD);
+        chkCapTaiKhoan.setOpaque(false);
+
         txtTenDangNhap = new JTextField(10);
+        UITheme.styleTextField(txtTenDangNhap);
         txtTenDangNhap.setEnabled(false);
+
         txtMatKhau = new JPasswordField(10);
+        UITheme.stylePasswordField(txtMatKhau);
         txtMatKhau.setEnabled(false);
+
         cboVaiTro = new JComboBox<>(new String[]{"Employee", "HR_Manager", "Payroll_Officer", "DB_Admin"});
+        UITheme.styleComboBox(cboVaiTro);
         cboVaiTro.setEnabled(false);
 
         pnlTaiKhoan.add(chkCapTaiKhoan);
@@ -152,23 +211,33 @@ public class NhanVienPanel extends JPanel {
         pnlTaiKhoan.add(new JLabel("Vai trò:"));
         pnlTaiKhoan.add(cboVaiTro);
 
+        gbc.gridx = 2; gbc.gridy = 4; gbc.gridwidth = 4;
+        pnlForm.add(pnlTaiKhoan, gbc);
+
+        pnlFormCard.add(pnlForm, BorderLayout.CENTER);
+
         // Buttons
-        JPanel pnlButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+        JPanel pnlButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        pnlButtons.setOpaque(false);
+
         JButton btnThem = new JButton("Thêm Nhân Viên");
+        UITheme.stylePrimaryButton(btnThem);
+
         JButton btnCapNhat = new JButton("Cập Nhật");
-        JButton btnXoa = new JButton("Xóa (Soft Delete Check)");
+        UITheme.styleSecondaryButton(btnCapNhat);
+
+        JButton btnXoa = new JButton("Xóa (Soft Delete)");
+        UITheme.styleDangerButton(btnXoa);
+
         JButton btnLamMoi = new JButton("Làm Mới Form");
+        UITheme.styleSecondaryButton(btnLamMoi);
 
         pnlButtons.add(btnThem);
         pnlButtons.add(btnCapNhat);
         pnlButtons.add(btnXoa);
         pnlButtons.add(btnLamMoi);
 
-        JPanel pnlFormAndAccount = new JPanel(new BorderLayout(5, 5));
-        pnlFormAndAccount.add(pnlForm, BorderLayout.CENTER);
-        pnlFormAndAccount.add(pnlTaiKhoan, BorderLayout.SOUTH);
-
-        pnlSouth.add(pnlFormAndAccount, BorderLayout.CENTER);
+        pnlSouth.add(pnlFormCard, BorderLayout.CENTER);
         pnlSouth.add(pnlButtons, BorderLayout.SOUTH);
 
         add(pnlSouth, BorderLayout.SOUTH);
@@ -192,6 +261,13 @@ public class NhanVienPanel extends JPanel {
         btnLamMoi.addActionListener(e -> lamMoiForm());
         btnTimKiem.addActionListener(e -> xuLyTimKiem());
         btnTaiLai.addActionListener(e -> loadTableData());
+    }
+
+    private JLabel createFieldLabel(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(UITheme.FONT_BODY);
+        lbl.setForeground(UITheme.TEXT_MAIN);
+        return lbl;
     }
 
     private void loadComboboxData() {

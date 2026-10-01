@@ -97,6 +97,47 @@ public class CaptureScreenshots {
                     System.err.println("Lỗi chụp ChamCongPanel (Tổng hợp): " + e.getMessage());
                 }
 
+                // 6. DieuChinhChamCongDialog (TV2 - Drill-down hiệu chỉnh)
+                try {
+                    DieuChinhChamCongDialog dcDialog = new DieuChinhChamCongDialog(null, 1, "Nguyễn Minh Trí", 9, 2026);
+                    captureComponent(dcDialog, "06_ChamCong_DieuChinhDialog.png", 850, 600);
+                    dcDialog.dispose();
+                } catch (Exception e) {
+                    System.err.println("Lỗi chụp DieuChinhChamCongDialog: " + e.getMessage());
+                }
+
+                // 7. PhuCapKhauTruPanel (TV3 - Quản lý Phụ cấp & Khấu trừ)
+                try {
+                    PhuCapKhauTruPanel pcPanel = new PhuCapKhauTruPanel();
+                    capturePanel(pcPanel, "07_PhuCap_KhauTru_Panel.png", 1200, 750);
+                } catch (Exception e) {
+                    System.err.println("Lỗi chụp PhuCapKhauTruPanel: " + e.getMessage());
+                }
+
+                // 8. BangLuongPanel (TV4 - Tính toán Bảng lương)
+                try {
+                    BangLuongPanel blPanel = new BangLuongPanel();
+                    capturePanel(blPanel, "08_BangLuong_TinhLuong.png", 1200, 750);
+                } catch (Exception e) {
+                    System.err.println("Lỗi chụp BangLuongPanel: " + e.getMessage());
+                }
+
+                // 9. BaoCaoPanel (TV5 - Báo cáo & Chốt lương)
+                try {
+                    BaoCaoPanel bcPanel = new BaoCaoPanel();
+                    capturePanel(bcPanel, "09_BaoCao_ChotLuong.png", 1200, 750);
+                } catch (Exception e) {
+                    System.err.println("Lỗi chụp BaoCaoPanel: " + e.getMessage());
+                }
+
+                // 10. TaiKhoanPanel (TV5 - Quản trị phân quyền tài khoản)
+                try {
+                    TaiKhoanPanel tkPanel = new TaiKhoanPanel();
+                    capturePanel(tkPanel, "10_TaiKhoan_QuanTri.png", 1200, 750);
+                } catch (Exception e) {
+                    System.err.println("Lỗi chụp TaiKhoanPanel: " + e.getMessage());
+                }
+
                 Session.getInstance().logout();
 
                 System.out.println("==============================================================");

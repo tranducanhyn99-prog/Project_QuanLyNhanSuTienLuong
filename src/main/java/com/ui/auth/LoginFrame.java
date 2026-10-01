@@ -4,24 +4,28 @@ import com.model.TaiKhoan;
 import com.service.AuthService;
 import com.session.Session;
 import com.ui.main.MainFrame;
+import com.ui.theme.UITheme;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 /**
- * LoginFrame – Màn hình đăng nhập hệ thống.
+ * LoginFrame – Màn hình đăng nhập hệ thống chuẩn Enterprise Desktop.
  *
- * Luồng:
- * 1. Người dùng nhập TenDangNhap + MatKhau
- * 2. Nhấn "Đăng nhập" hoặc Enter
- * 3. AuthService.login() xác thực
- * 4. Thành công → ẩn LoginFrame, mở MainFrame
- * 5. Thất bại → JOptionPane thông báo lỗi
+ * Phong cách Microsoft Fluent Design:
+ * - Khung đăng nhập phẳng, nền xám nhạt thanh lịch.
+ * - Thẻ đăng nhập màu trắng viền mỏng 1px #E2E8F0.
+ * - Font Segoe UI sắc nét, ô nhập liệu thoáng đãng (34px height).
+ * - Nút bấm Primary Blue Accent (#0066CC).
+ * - Giữ nguyên 100% logic xác thực AuthService và lưu Session.
  *
- * @author Trần Đức Anh (TV5 – MSSV 24110155)
+ * @author Nhóm 06 – DBMS Enterprise
  */
 public class LoginFrame extends JFrame {
 
@@ -36,13 +40,12 @@ public class LoginFrame extends JFrame {
     private JLabel         lblStatus;
 
     public LoginFrame() {
+        UITheme.setupGlobalUI();
         initComponents();
         setupLayout();
         setupEvents();
         setupFrame();
     }
-
-    // ─── Khởi tạo components ─────────────────────────────────────────
 
     private void initComponents() {
         txtTenDangNhap = new JTextField(20);
@@ -51,80 +54,98 @@ public class LoginFrame extends JFrame {
         btnThoat       = new JButton("Thoát");
         lblStatus      = new JLabel(" ");
 
-        txtTenDangNhap.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        txtMatKhau.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        btnDangNhap.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnThoat.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        lblStatus.setFont(new Font("Segoe UI", Font.ITALIC, 12));
-        lblStatus.setForeground(Color.RED);
+        UITheme.styleTextField(txtTenDangNhap);
+        UITheme.stylePasswordField(txtMatKhau);
+        UITheme.stylePrimaryButton(btnDangNhap);
+        UITheme.styleSecondaryButton(btnThoat);
+
+        btnDangNhap.setPreferredSize(new Dimension(140, 36));
+        btnThoat.setPreferredSize(new Dimension(100, 36));
+
+        lblStatus.setFont(UITheme.FONT_CAPTION);
+        lblStatus.setForeground(UITheme.DANGER_TEXT);
+        lblStatus.setHorizontalAlignment(SwingConstants.CENTER);
     }
 
-    // ─── Bố cục giao diện ────────────────────────────────────────────
-
     private void setupLayout() {
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+        JPanel root = new JPanel(new GridBagLayout());
+        root.setBackground(UITheme.BG_APP);
 
-        // Tiêu đề
-        JLabel lblTitle = new JLabel(APP_TITLE, SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        // Card trung tâm
+        JPanel card = new JPanel(new BorderLayout(0, 16));
+        card.setBackground(Color.WHITE);
+        card.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(28, 32, 28, 32)
+        ));
+        card.setPreferredSize(new Dimension(420, 360));
 
-        JLabel lblSubTitle = new JLabel("Nhóm 06 – DBMS330284", SwingConstants.CENTER);
-        lblSubTitle.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblSubTitle.setForeground(Color.GRAY);
+        // Header trong card
+        JPanel headerPanel = new JPanel();
+        headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
+        headerPanel.setOpaque(false);
 
-        JPanel pnlHeader = new JPanel(new GridLayout(2, 1));
-        pnlHeader.add(lblTitle);
-        pnlHeader.add(lblSubTitle);
+        JLabel lblBrand = new JLabel("HR & PAYROLL ENTERPRISE");
+        lblBrand.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 15));
+        lblBrand.setForeground(UITheme.PRIMARY);
+        lblBrand.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Form đăng nhập
-        JPanel pnlForm = new JPanel(new GridBagLayout());
-        pnlForm.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createEtchedBorder(), "Đăng nhập"));
+        JLabel lblSub = new JLabel("Đăng nhập tài khoản hệ thống");
+        lblSub.setFont(UITheme.FONT_BODY);
+        lblSub.setForeground(UITheme.TEXT_MUTED);
+        lblSub.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        headerPanel.add(lblBrand);
+        headerPanel.add(Box.createVerticalStrut(4));
+        headerPanel.add(lblSub);
+
+        // Form fields
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.insets = new Insets(6, 4, 6, 4);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         JLabel lblUser = new JLabel("Tên đăng nhập:");
-        lblUser.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblUser.setFont(UITheme.FONT_BODY_BOLD);
+        lblUser.setForeground(UITheme.TEXT_MAIN);
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
-        pnlForm.add(lblUser, gbc);
+        formPanel.add(lblUser, gbc);
 
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0;
-        pnlForm.add(txtTenDangNhap, gbc);
+        formPanel.add(txtTenDangNhap, gbc);
 
         JLabel lblPass = new JLabel("Mật khẩu:");
-        lblPass.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblPass.setFont(UITheme.FONT_BODY_BOLD);
+        lblPass.setForeground(UITheme.TEXT_MAIN);
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
-        pnlForm.add(lblPass, gbc);
+        formPanel.add(lblPass, gbc);
 
         gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 1.0;
-        pnlForm.add(txtMatKhau, gbc);
+        formPanel.add(txtMatKhau, gbc);
 
-        // Thông báo trạng thái
+        // Status Label
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
-        pnlForm.add(lblStatus, gbc);
+        formPanel.add(lblStatus, gbc);
 
-        // Nút bấm
-        JPanel pnlButtons = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
-        pnlButtons.add(btnDangNhap);
-        pnlButtons.add(btnThoat);
+        // Buttons
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        btnPanel.setOpaque(false);
+        btnPanel.add(btnDangNhap);
+        btnPanel.add(btnThoat);
 
-        mainPanel.add(pnlHeader, BorderLayout.NORTH);
-        mainPanel.add(pnlForm, BorderLayout.CENTER);
-        mainPanel.add(pnlButtons, BorderLayout.SOUTH);
+        card.add(headerPanel, BorderLayout.NORTH);
+        card.add(formPanel, BorderLayout.CENTER);
+        card.add(btnPanel, BorderLayout.SOUTH);
 
-        setContentPane(mainPanel);
+        root.add(card);
+        setContentPane(root);
     }
-
-    // ─── Sự kiện ─────────────────────────────────────────────────────
 
     private void setupEvents() {
         btnDangNhap.addActionListener(this::handleLogin);
         btnThoat.addActionListener(e -> System.exit(0));
 
-        // Enter trên ô mật khẩu = nhấn Đăng nhập
         txtMatKhau.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -134,7 +155,6 @@ public class LoginFrame extends JFrame {
             }
         });
 
-        // Enter trên ô username = chuyển focus sang password
         txtTenDangNhap.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -149,12 +169,10 @@ public class LoginFrame extends JFrame {
         String tenDangNhap = txtTenDangNhap.getText();
         String matKhau = new String(txtMatKhau.getPassword());
 
-        // Disable nút để tránh double-click
         btnDangNhap.setEnabled(false);
-        lblStatus.setText("Đang đăng nhập...");
-        lblStatus.setForeground(Color.BLUE);
+        lblStatus.setText("Đang xác thực thông tin...");
+        lblStatus.setForeground(UITheme.INFO_TEXT);
 
-        // Thực hiện trên SwingWorker để không block UI
         SwingWorker<TaiKhoan, Void> worker = new SwingWorker<TaiKhoan, Void>() {
             @Override
             protected TaiKhoan doInBackground() throws Exception {
@@ -165,24 +183,20 @@ public class LoginFrame extends JFrame {
             protected void done() {
                 btnDangNhap.setEnabled(true);
                 try {
-                    // 1. Lấy object TaiKhoan trả về từ AuthService.login()
                     TaiKhoan taiKhoan = get();
                     if (taiKhoan == null) {
-                        lblStatus.setText("Tên đăng nhập hoặc mật khẩu không đúng!");
-                        lblStatus.setForeground(Color.RED);
+                        lblStatus.setText("Tên đăng nhập hoặc mật khẩu không chính xác!");
+                        lblStatus.setForeground(UITheme.DANGER_TEXT);
                         txtMatKhau.setText("");
                         txtMatKhau.requestFocusInWindow();
                         return;
                     }
 
-                    // 2. Lưu thông tin tài khoản vào Session sau khi đăng nhập thành công
-                    // 3. Gọi Session.getInstance().login(...) trước khi mở MainFrame
                     Session.getInstance().login(taiKhoan);
 
                     lblStatus.setText("Đăng nhập thành công!");
-                    lblStatus.setForeground(new Color(0, 128, 0));
+                    lblStatus.setForeground(UITheme.SUCCESS_TEXT);
 
-                    // Mở MainFrame sau khi Session đã có dữ liệu đầy đủ
                     openMainFrame();
                 } catch (Exception ex) {
                     Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
@@ -191,10 +205,9 @@ public class LoginFrame extends JFrame {
                         msg = "Đăng nhập thất bại!";
                     }
                     lblStatus.setText(msg);
-                    lblStatus.setForeground(Color.RED);
+                    lblStatus.setForeground(UITheme.DANGER_TEXT);
                     txtMatKhau.setText("");
                     txtMatKhau.requestFocusInWindow();
-                    System.err.println("[LoginFrame] Lỗi đăng nhập: " + msg);
                 }
             }
         };
@@ -209,17 +222,14 @@ public class LoginFrame extends JFrame {
         });
     }
 
-    // ─── Cấu hình JFrame ─────────────────────────────────────────────
-
     private void setupFrame() {
         setTitle(APP_TITLE + " – Đăng nhập");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(450, 320);
-        setMinimumSize(new Dimension(400, 280));
-        setLocationRelativeTo(null);  // Giữa màn hình
+        setSize(480, 420);
+        setMinimumSize(new Dimension(440, 380));
+        setLocationRelativeTo(null);
         setResizable(false);
 
-        // Focus vào ô tên đăng nhập khi mở
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowOpened(java.awt.event.WindowEvent e) {
@@ -228,36 +238,11 @@ public class LoginFrame extends JFrame {
         });
     }
 
-    // ─── Entry point ─────────────────────────────────────────────────
-
-    /**
-     * Điểm khởi chạy ứng dụng.
-     */
     public static void main(String[] args) {
-        // Thiết lập Look and Feel và Font tiếng Việt chuẩn Segoe UI
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {
-            // Fallback về Metal L&F mặc định
-        }
-
-        Font defaultFont = new Font("Segoe UI", Font.PLAIN, 13);
-        Font boldFont = new Font("Segoe UI", Font.BOLD, 13);
-        UIManager.put("Label.font", defaultFont);
-        UIManager.put("Button.font", boldFont);
-        UIManager.put("TextField.font", defaultFont);
-        UIManager.put("PasswordField.font", defaultFont);
-        UIManager.put("Table.font", defaultFont);
-        UIManager.put("TableHeader.font", boldFont);
-        UIManager.put("ComboBox.font", defaultFont);
-        UIManager.put("TabbedPane.font", defaultFont);
-        UIManager.put("Menu.font", defaultFont);
-        UIManager.put("MenuItem.font", defaultFont);
-        UIManager.put("TitledBorder.font", boldFont);
-
+        UITheme.setupGlobalUI();
         SwingUtilities.invokeLater(() -> {
-            LoginFrame loginFrame = new LoginFrame();
-            loginFrame.setVisible(true);
+            LoginFrame frame = new LoginFrame();
+            frame.setVisible(true);
         });
     }
 }
