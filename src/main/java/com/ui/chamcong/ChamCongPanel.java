@@ -6,8 +6,12 @@ import com.model.TongHopChamCong;
 import com.service.ChamCongService;
 import com.service.NhanVienService;
 import com.session.Session;
+import com.ui.theme.UITheme;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -84,71 +88,96 @@ public class ChamCongPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
         tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        tabbedPane.setFont(UITheme.FONT_BODY_BOLD);
 
         // ─── TAB 1: GHI NHẬN & THEO DÕI CHẤM CÔNG ─────────────────────
         JPanel pnlTab1 = new JPanel(new BorderLayout(8, 8));
-        pnlTab1.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+        pnlTab1.setBackground(UITheme.BG_APP);
+        pnlTab1.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Form nhập bên trái / trên
+        // Form nhập bên trái / trên (Card phẳng)
         JPanel pnlForm = new JPanel(new GridBagLayout());
-        pnlForm.setBorder(BorderFactory.createTitledBorder("Thông tin chấm công (dbo.sp_GhiNhanChamCong)"));
+        pnlForm.setBackground(Color.WHITE);
+        pnlForm.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(12, 16, 12, 16)
+        ));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 6, 4, 6);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // Dòng 0: Nhân viên
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
-        pnlForm.add(new JLabel("Nhân viên (*):"), gbc);
+        JLabel lblNv = new JLabel("Nhân viên (*):");
+        lblNv.setFont(UITheme.FONT_BODY);
+        pnlForm.add(lblNv, gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         cboNhanVien = new JComboBox<>();
+        UITheme.styleComboBox(cboNhanVien);
         pnlForm.add(cboNhanVien, gbc);
 
         // Dòng 1: Ngày chấm công
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
-        pnlForm.add(new JLabel("Ngày chấm công:"), gbc);
+        JLabel lblNgay = new JLabel("Ngày chấm công:");
+        lblNgay.setFont(UITheme.FONT_BODY);
+        pnlForm.add(lblNgay, gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         spnNgayCC = new JSpinner(new SpinnerDateModel(new Date(), null, new Date(), java.util.Calendar.DAY_OF_MONTH));
         spnNgayCC.setEditor(new JSpinner.DateEditor(spnNgayCC, "yyyy-MM-dd"));
+        spnNgayCC.setFont(UITheme.FONT_BODY);
         pnlForm.add(spnNgayCC, gbc);
 
         // Dòng 2: Giờ vào / Giờ ra
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
-        pnlForm.add(new JLabel("Giờ vào (HH:mm):"), gbc);
+        JLabel lblGio = new JLabel("Giờ vào (HH:mm):");
+        lblGio.setFont(UITheme.FONT_BODY);
+        pnlForm.add(lblGio, gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         JPanel pnlGio = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        pnlGio.setOpaque(false);
         spnGioVao = createTimeSpinner(8, 0);
         spnGioRa = createTimeSpinner(17, 0);
+        spnGioVao.setFont(UITheme.FONT_BODY);
+        spnGioRa.setFont(UITheme.FONT_BODY);
         pnlGio.add(spnGioVao);
-        pnlGio.add(new JLabel("  Giờ ra (HH:mm):"));
+        JLabel lblGioRa = new JLabel("  Giờ ra (HH:mm):");
+        lblGioRa.setFont(UITheme.FONT_BODY);
+        pnlGio.add(lblGioRa);
         pnlGio.add(spnGioRa);
         pnlForm.add(pnlGio, gbc);
 
         // Dòng 3: Trạng thái
         gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
-        pnlForm.add(new JLabel("Trạng thái:"), gbc);
+        JLabel lblTt = new JLabel("Trạng thái:");
+        lblTt.setFont(UITheme.FONT_BODY);
+        pnlForm.add(lblTt, gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         cboTrangThai = new JComboBox<>(new String[]{"CO_MAT", "DI_TRE", "VE_SOM", "VANG"});
+        UITheme.styleComboBox(cboTrangThai);
         pnlForm.add(cboTrangThai, gbc);
 
         // Dòng 4: Ghi chú
         gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0;
-        pnlForm.add(new JLabel("Ghi chú:"), gbc);
+        JLabel lblGc = new JLabel("Ghi chú:");
+        lblGc.setFont(UITheme.FONT_BODY);
+        pnlForm.add(lblGc, gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         txtGhiChu = new JTextField(25);
+        UITheme.styleTextField(txtGhiChu);
         pnlForm.add(txtGhiChu, gbc);
 
         // Dòng 5: Các nút hành động
         gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
         JPanel pnlButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        pnlButtons.setOpaque(false);
         btnGhiNhan = new JButton("Ghi nhận chấm công");
-        btnGhiNhan.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnGhiNhan.setBackground(new Color(30, 130, 76));
-        btnGhiNhan.setForeground(Color.WHITE);
+        UITheme.stylePrimaryButton(btnGhiNhan);
 
         btnLamMoiForm = new JButton("Làm mới form");
+        UITheme.styleSecondaryButton(btnLamMoiForm);
 
-        btnDiemDanhHangLoat = new JButton("Điểm danh hôm nay (Lô All-or-Nothing)");
+        btnDiemDanhHangLoat = new JButton("Điểm danh hàng loạt (Transaction)");
+        UITheme.styleSecondaryButton(btnDiemDanhHangLoat);
         btnDiemDanhHangLoat.setToolTipText("Thực thi nhập chấm công cả công ty trong 1 Database Transaction đảm bảo nguyên tử");
 
         pnlButtons.add(btnGhiNhan);
@@ -157,17 +186,26 @@ public class ChamCongPanel extends JPanel {
         pnlForm.add(pnlButtons, gbc);
 
         // Danh sách chi tiết bảng chấm công
-        JPanel pnlDanhSach = new JPanel(new BorderLayout(5, 5));
-        pnlDanhSach.setBorder(BorderFactory.createTitledBorder("Nhật ký chấm công"));
+        JPanel pnlDanhSach = new JPanel(new BorderLayout(0, 8));
+        pnlDanhSach.setBackground(Color.WHITE);
+        pnlDanhSach.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(10, 14, 10, 14)
+        ));
 
-        JPanel pnlFilterChiTiet = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        JPanel pnlFilterChiTiet = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        pnlFilterChiTiet.setOpaque(false);
         LocalDate now = LocalDate.now();
         spnThangLoc = new JSpinner(new SpinnerNumberModel(now.getMonthValue(), 1, 12, 1));
         spnNamLoc = new JSpinner(new SpinnerNumberModel(now.getYear(), 2020, 2100, 1));
+        spnThangLoc.setFont(UITheme.FONT_BODY);
+        spnNamLoc.setFont(UITheme.FONT_BODY);
+
         btnTaiLaiChiTiet = new JButton("Tải nhật ký");
+        UITheme.styleSecondaryButton(btnTaiLaiChiTiet);
+
         btnXoaChamCong = new JButton("Xóa dòng chấm công");
-        btnXoaChamCong.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnXoaChamCong.setForeground(new Color(185, 28, 28));
+        UITheme.styleDangerButton(btnXoaChamCong);
 
         pnlFilterChiTiet.add(new JLabel("Tháng:"));
         pnlFilterChiTiet.add(spnThangLoc);
@@ -187,28 +225,38 @@ public class ChamCongPanel extends JPanel {
             }
         };
         tblChiTiet = new JTable(modelChiTiet);
-        tblChiTiet.setRowHeight(22);
+        UITheme.styleTable(tblChiTiet);
         tblChiTiet.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        pnlDanhSach.add(new JScrollPane(tblChiTiet), BorderLayout.CENTER);
+
+        JScrollPane scrollChiTiet = new JScrollPane(tblChiTiet);
+        scrollChiTiet.setBorder(new LineBorder(UITheme.BORDER, 1, true));
+        pnlDanhSach.add(scrollChiTiet, BorderLayout.CENTER);
 
         JSplitPane splitTab1 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, pnlForm, pnlDanhSach);
         splitTab1.setResizeWeight(0.38);
         pnlTab1.add(splitTab1, BorderLayout.CENTER);
 
         // ─── TAB 2: TỔNG HỢP CHẤM CÔNG THÁNG (VIEW) ───────────────────
-        JPanel pnlTab2 = new JPanel(new BorderLayout(8, 8));
-        pnlTab2.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+        JPanel pnlTab2 = new JPanel(new BorderLayout(0, 10));
+        pnlTab2.setBackground(UITheme.BG_APP);
+        pnlTab2.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        JPanel pnlFilterTongHop = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        pnlFilterTongHop.setBorder(BorderFactory.createTitledBorder("Bộ lọc dữ liệu View vw_TongHopChamCongThang"));
+        JPanel pnlFilterTongHop = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+        pnlFilterTongHop.setBackground(Color.WHITE);
+        pnlFilterTongHop.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(6, 12, 6, 12)
+        ));
         spnThangTongHop = new JSpinner(new SpinnerNumberModel(now.getMonthValue(), 1, 12, 1));
         spnNamTongHop = new JSpinner(new SpinnerNumberModel(now.getYear(), 2020, 2100, 1));
+        spnThangTongHop.setFont(UITheme.FONT_BODY);
+        spnNamTongHop.setFont(UITheme.FONT_BODY);
+
         btnXemTongHop = new JButton("Xem tổng hợp tháng");
-        btnXemTongHop.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        UITheme.stylePrimaryButton(btnXemTongHop);
 
         btnDieuChinhCong = new JButton("Xem & Điều chỉnh ngày công NV");
-        btnDieuChinhCong.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnDieuChinhCong.setForeground(new Color(30, 64, 175));
+        UITheme.styleSecondaryButton(btnDieuChinhCong);
         btnDieuChinhCong.setToolTipText("Xem toàn bộ ngày công của nhân viên đã chọn trong tháng và thêm/sửa/xóa ngày công");
 
         pnlFilterTongHop.add(new JLabel("Tháng:"));
@@ -229,25 +277,18 @@ public class ChamCongPanel extends JPanel {
             }
         };
         tblTongHop = new JTable(modelTongHop);
-        tblTongHop.setRowHeight(24);
+        UITheme.styleTable(tblTongHop);
         tblTongHop.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // Căn giữa các cột số
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
-        for (int i = 0; i < tblTongHop.getColumnCount(); i++) {
-            if (i != 1) {
-                tblTongHop.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
-            }
-        }
-
         JScrollPane scrollTongHop = new JScrollPane(tblTongHop);
-        scrollTongHop.setBorder(BorderFactory.createTitledBorder("Bảng tổng hợp công theo nhân viên"));
+        scrollTongHop.setBorder(new LineBorder(UITheme.BORDER, 1, true));
+        scrollTongHop.getViewport().setBackground(Color.WHITE);
         pnlTab2.add(scrollTongHop, BorderLayout.CENTER);
 
         lblTongHopThongKe = new JLabel("Tổng số nhân sự có dữ liệu chấm công: 0");
-        lblTongHopThongKe.setFont(new Font("Segoe UI", Font.ITALIC, 12));
-        lblTongHopThongKe.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        lblTongHopThongKe.setFont(UITheme.FONT_CAPTION);
+        lblTongHopThongKe.setForeground(UITheme.TEXT_MUTED);
+        lblTongHopThongKe.setBorder(new EmptyBorder(4, 8, 4, 8));
         pnlTab2.add(lblTongHopThongKe, BorderLayout.SOUTH);
 
         // Add tabs

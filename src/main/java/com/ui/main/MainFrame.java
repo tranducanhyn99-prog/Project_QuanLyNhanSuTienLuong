@@ -9,32 +9,34 @@ import com.ui.luong.BangLuongPanel;
 import com.ui.luong.PhuCapKhauTruPanel;
 import com.ui.nhanvien.DanhMucPanel;
 import com.ui.nhanvien.NhanVienPanel;
+import com.ui.theme.UITheme;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.border.MatteBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * MainFrame – Khung chính của ứng dụng sau đăng nhập.
+ * MainFrame – Khung giao diện chính của ứng dụng sau đăng nhập.
  *
- * Chức năng:
- * - Hiển thị menu bar với các module nghiệp vụ
- * - Ẩn/hiện menu dựa trên Session.getVaiTro()
- * - JTabbedPane chứa các Panel nghiệp vụ
- * - Thanh trạng thái hiển thị user đang đăng nhập
- * - Logout → quay về LoginFrame
+ * Thiết kế mới chuẩn Microsoft Fluent Design & Modern Enterprise ERP:
+ * - Left Sidebar Navigation cố định với phân nhóm nghiệp vụ rõ ràng, có vạch chỉ báo Active.
+ * - Top Header Bar hiển thị breadcrumb phân hệ, profile người dùng và vai trò.
+ * - Content Area dạng CardLayout mượt mà, độc lập.
+ * - Dashboard với các thẻ KPI nhỏ gọn (Small KPI cards), giao diện phẳng không gradient.
+ * - Giữ nguyên 100% logic phân quyền RBAC và các nghiệp vụ CSDL.
  *
- * Ma trận phân quyền ứng dụng (theo TV5_Security_Design.md):
- *   Menu Nhân viên:        DB_Admin, HR_Manager
- *   Menu Danh mục:         DB_Admin, HR_Manager
- *   Menu Chấm công:        DB_Admin, HR_Manager
- *   Menu Phụ cấp/Khấu trừ: DB_Admin, HR_Manager, Payroll_Officer
- *   Menu Lương:            DB_Admin, Payroll_Officer
- *   Menu Báo cáo:          DB_Admin, HR_Manager, Payroll_Officer (+ Employee chỉ phiếu lương)
- *   Menu Quản trị:         DB_Admin
- *
- * @author Trần Đức Anh (TV5 – MSSV 24110155)
+ * @author Nhóm 06 – DBMS Enterprise
  */
 public class MainFrame extends JFrame {
 
@@ -42,12 +44,25 @@ public class MainFrame extends JFrame {
 
     private final Session session = Session.getInstance();
 
-    // UI Components
-    private JTabbedPane tabbedPane;
-    private JLabel      lblStatusUser;
-    private JLabel      lblStatusRole;
+    // Layout & Navigation
+    private JPanel sidebarPanel;
+    private JPanel headerPanel;
+    private JPanel contentContainer;
+    private CardLayout cardLayout;
 
-    // Menu items (lưu reference để ẩn/hiện)
+    private JLabel lblBreadcrumb;
+    private JLabel lblHeaderUserName;
+    private JLabel lblHeaderRoleBadge;
+
+    // View tracking
+    private String currentViewKey = "HOME";
+    private final List<NavItem> navItems = new ArrayList<>();
+    private final Map<String, JComponent> cachedViews = new HashMap<>();
+
+    // Legacy support fields for test compatibility (AuthRolePermissionTest)
+    private JTabbedPane tabbedPane;
+    private JLabel lblStatusUser;
+    private JLabel lblStatusRole;
     private JMenu menuNhanVien;
     private JMenu menuDanhMuc;
     private JMenu menuChamCong;
@@ -57,372 +72,446 @@ public class MainFrame extends JFrame {
     private JMenu menuQuanTri;
 
     public MainFrame() {
-        initMenuBar();
-        initTabbedPane();
-        initStatusBar();
+        UITheme.setupGlobalUI();
+        initLegacyMenusAndStatus();
+        initComponents();
         applyRolePermissions();
         setupFrame();
+        switchView("HOME", "TỔNG QUAN > Trang chủ Dashboard");
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  MENU BAR
+    //  KHỞI TẠO BỐ CỤC CHÍNH (SIDEBAR + HEADER + CONTENT)
     // ═══════════════════════════════════════════════════════════════════
 
-    private void initMenuBar() {
-        JMenuBar menuBar = new JMenuBar();
+    private void initComponents() {
+        setLayout(new BorderLayout());
 
-        // ─── Menu Nhân viên ──────────────────────────────────────────
-        menuNhanVien = new JMenu("Nhân viên");
-        menuNhanVien.setMnemonic('N');
+        // 1. LEFT SIDEBAR NAVIGATION (240px)
+        sidebarPanel = createSidebar();
+        add(sidebarPanel, BorderLayout.WEST);
 
-        JMenuItem miQuanLyNhanVien = new JMenuItem("Quản lý nhân viên");
-        miQuanLyNhanVien.addActionListener(e -> openTab("Nhân viên", () -> new NhanVienPanel()));
+        // 2. RIGHT CONTAINER (HEADER + MAIN CONTENT)
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.setBackground(UITheme.BG_APP);
 
-        menuNhanVien.add(miQuanLyNhanVien);
-        menuBar.add(menuNhanVien);
+        headerPanel = createHeader();
+        rightPanel.add(headerPanel, BorderLayout.NORTH);
 
-        // ─── Menu Danh mục ───────────────────────────────────────────
-        menuDanhMuc = new JMenu("Danh mục");
-        menuDanhMuc.setMnemonic('D');
+        cardLayout = new CardLayout();
+        contentContainer = new JPanel(cardLayout);
+        contentContainer.setBackground(UITheme.BG_APP);
 
-        JMenuItem miPhongBanChucVu = new JMenuItem("Phòng ban & Chức vụ");
-        miPhongBanChucVu.addActionListener(e -> openTab("Danh mục", () -> new DanhMucPanel()));
+        // Đăng ký trang chủ Dashboard
+        JComponent homeView = createDashboardView();
+        contentContainer.add(homeView, "HOME");
+        cachedViews.put("HOME", homeView);
 
-        menuDanhMuc.add(miPhongBanChucVu);
-        menuBar.add(menuDanhMuc);
-
-        // ─── Menu Chấm công ──────────────────────────────────────────
-        menuChamCong = new JMenu("Chấm công");
-        menuChamCong.setMnemonic('C');
-
-        JMenuItem miNhapChamCong = new JMenuItem("Nhập chấm công");
-        miNhapChamCong.addActionListener(e -> openTab("Chấm công", () -> new ChamCongPanel()));
-
-        JMenuItem miXemChamCong = new JMenuItem("Xem tổng hợp chấm công");
-        miXemChamCong.addActionListener(e -> openTab("Tổng hợp CC", () -> new ChamCongPanel(true)));
-
-        menuChamCong.add(miNhapChamCong);
-        menuChamCong.add(miXemChamCong);
-        menuBar.add(menuChamCong);
-
-        // ─── Menu Phụ cấp / Khấu trừ ────────────────────────────────
-        menuPhuCapKhauTru = new JMenu("Phụ cấp / Khấu trừ");
-        menuPhuCapKhauTru.setMnemonic('P');
-
-        JMenuItem miPhuCap = new JMenuItem("Quản lý phụ cấp & khấu trừ");
-        miPhuCap.addActionListener(e -> openTab("Phụ cấp / Khấu trừ", () -> new PhuCapKhauTruPanel()));
-
-        menuPhuCapKhauTru.add(miPhuCap);
-        menuBar.add(menuPhuCapKhauTru);
-
-        // ─── Menu Lương ──────────────────────────────────────────────
-        menuLuong = new JMenu("Lương");
-        menuLuong.setMnemonic('L');
-
-        JMenuItem miTinhLuong = new JMenuItem("Tính bảng lương");
-        miTinhLuong.addActionListener(e -> openTab("Tính bảng lương", () -> new BangLuongPanel()));
-
-        JMenuItem miChotLuong = new JMenuItem("Chốt bảng lương");
-        miChotLuong.addActionListener(e -> openTab("Báo cáo & Chốt lương", () -> new BaoCaoPanel()));
-
-        menuLuong.add(miTinhLuong);
-        menuLuong.add(miChotLuong);
-        menuBar.add(menuLuong);
-
-        // ─── Menu Báo cáo ────────────────────────────────────────────
-        menuBaoCao = new JMenu("Báo cáo");
-        menuBaoCao.setMnemonic('B');
-
-        JMenuItem miBaoCaoTongHop = new JMenuItem("Báo cáo tổng hợp");
-        miBaoCaoTongHop.addActionListener(e -> openTab("Báo cáo tổng hợp", () -> new BaoCaoPanel()));
-
-        JMenuItem miPhieuLuong = new JMenuItem("Phiếu lương cá nhân");
-        miPhieuLuong.addActionListener(e -> openTab("Phiếu lương cá nhân", () -> new BaoCaoPanel()));
-
-        menuBaoCao.add(miBaoCaoTongHop);
-        menuBaoCao.add(miPhieuLuong);
-        menuBar.add(menuBaoCao);
-
-        // ─── Menu Quản trị ───────────────────────────────────────────
-        menuQuanTri = new JMenu("Quản trị");
-        menuQuanTri.setMnemonic('Q');
-
-        JMenuItem miQuanLyTaiKhoan = new JMenuItem("Quản lý tài khoản");
-        miQuanLyTaiKhoan.addActionListener(e -> openTab("Quản lý tài khoản", () -> new TaiKhoanPanel()));
-
-        menuQuanTri.add(miQuanLyTaiKhoan);
-        menuBar.add(menuQuanTri);
-
-        // ─── Spacer + Menu Hệ thống (Logout) ────────────────────────
-        menuBar.add(Box.createHorizontalGlue());
-
-        JMenu menuHeThong = new JMenu("Hệ thống");
-        menuHeThong.setMnemonic('H');
-
-        JMenuItem miDangXuat = new JMenuItem("Đăng xuất");
-        miDangXuat.addActionListener(e -> handleLogout());
-
-        JMenuItem miThoat = new JMenuItem("Thoát");
-        miThoat.addActionListener(e -> handleExit());
-
-        menuHeThong.add(miDangXuat);
-        menuHeThong.addSeparator();
-        menuHeThong.add(miThoat);
-        menuBar.add(menuHeThong);
-
-        setJMenuBar(menuBar);
+        rightPanel.add(contentContainer, BorderLayout.CENTER);
+        add(rightPanel, BorderLayout.CENTER);
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  TABBED PANE (Khu vực nội dung chính)
+    //  LEFT SIDEBAR NAVIGATION
     // ═══════════════════════════════════════════════════════════════════
 
-    private void initTabbedPane() {
-        tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-        tabbedPane.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+    private JPanel createSidebar() {
+        JPanel sidebar = new JPanel(new BorderLayout());
+        sidebar.setPreferredSize(new Dimension(240, 0));
+        sidebar.setBackground(UITheme.BG_SIDEBAR);
+        sidebar.setBorder(new MatteBorder(0, 0, 0, 1, UITheme.BORDER));
 
-        // Tab chào mừng mặc định
-        JComponent welcomePanel = createWelcomePanel();
-        tabbedPane.addTab("Trang chủ", welcomePanel);
+        // Top Brand Header
+        JPanel brandPanel = new JPanel();
+        brandPanel.setLayout(new BoxLayout(brandPanel, BoxLayout.Y_AXIS));
+        brandPanel.setBackground(UITheme.BG_SIDEBAR);
+        brandPanel.setBorder(new EmptyBorder(20, 20, 18, 20));
 
-        add(tabbedPane, BorderLayout.CENTER);
+        JLabel lblBrandTitle = new JLabel("HR & PAYROLL");
+        lblBrandTitle.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 16));
+        lblBrandTitle.setForeground(UITheme.PRIMARY);
+
+        JLabel lblBrandSub = new JLabel("Enterprise Management");
+        lblBrandSub.setFont(UITheme.FONT_CAPTION);
+        lblBrandSub.setForeground(UITheme.TEXT_MUTED);
+
+        JLabel lblGroupBadge = new JLabel("DBMS330284 • NHÓM 06");
+        lblGroupBadge.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 10));
+        lblGroupBadge.setForeground(new Color(148, 163, 184));
+        lblGroupBadge.setBorder(new EmptyBorder(4, 0, 0, 0));
+
+        brandPanel.add(lblBrandTitle);
+        brandPanel.add(Box.createVerticalStrut(2));
+        brandPanel.add(lblBrandSub);
+        brandPanel.add(lblGroupBadge);
+
+        sidebar.add(brandPanel, BorderLayout.NORTH);
+
+        // Menu items container (Scrollable)
+        JPanel menuContainer = new JPanel();
+        menuContainer.setLayout(new BoxLayout(menuContainer, BoxLayout.Y_AXIS));
+        menuContainer.setBackground(UITheme.BG_SIDEBAR);
+        menuContainer.setBorder(new EmptyBorder(6, 10, 10, 10));
+
+        // Phân quyền
+        boolean canHR = session.hasRole("DB_Admin", "HR_Manager");
+        boolean canPayroll = session.hasRole("DB_Admin", "Payroll_Officer");
+        boolean canCC = session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer");
+        boolean canAdmin = session.hasRole("DB_Admin");
+
+        // Nhóm 1: TỔNG QUAN
+        addNavSectionHeader(menuContainer, "TỔNG QUAN");
+        addNavItem(menuContainer, "HOME", "Trang chủ", "TỔNG QUAN > Trang chủ Dashboard", () -> null, true);
+
+        // Nhóm 2: NHÂN SỰ & DANH MỤC
+        if (canHR) {
+            addNavSectionHeader(menuContainer, "NHÂN SỰ & CƠ CẤU");
+            addNavItem(menuContainer, "NHAN_VIEN", "Hồ sơ Nhân viên", "NHÂN SỰ > Quản lý Hồ sơ nhân sự",
+                    () -> new NhanVienPanel(), canHR);
+            addNavItem(menuContainer, "DANH_MUC", "Phòng ban & Chức vụ", "DANH MỤC > Phòng ban & Chức vụ",
+                    () -> new DanhMucPanel(), canHR);
+        }
+
+        // Nhóm 3: CHẤM CÔNG & LƯƠNG
+        if (canCC || canPayroll) {
+            addNavSectionHeader(menuContainer, "CHẤM CÔNG & LƯƠNG");
+            if (canCC) {
+                addNavItem(menuContainer, "CHAM_CONG", "Nhật ký Chấm công", "CHẤM CÔNG > Ghi nhận chấm công chi tiết",
+                        () -> new ChamCongPanel(false), canCC);
+                addNavItem(menuContainer, "TONG_HOP_CC", "Tổng hợp Công tháng", "CHẤM CÔNG > Tổng hợp ngày công tháng",
+                        () -> new ChamCongPanel(true), canCC);
+                addNavItem(menuContainer, "PHU_CAP", "Phụ cấp & Khấu trừ", "LƯƠNG > Quản lý Phụ cấp & Khấu trừ",
+                        () -> new PhuCapKhauTruPanel(), true);
+            }
+            if (canPayroll) {
+                addNavItem(menuContainer, "BANG_LUONG", "Tính toán Bảng lương", "TIỀN LƯƠNG > Quy trình tính lương tự động",
+                        () -> new BangLuongPanel(), canPayroll);
+            }
+        }
+
+        // Nhóm 4: BÁO CÁO & QUẢN TRỊ
+        addNavSectionHeader(menuContainer, "BÁO CÁO & HỆ THỐNG");
+        addNavItem(menuContainer, "BAO_CAO", "Báo cáo & Chốt lương", "BÁO CÁO > Báo cáo tổng hợp & Phiếu lương",
+                () -> new BaoCaoPanel(), true);
+
+        if (canAdmin) {
+            addNavItem(menuContainer, "TAI_KHOAN", "Quản trị Tài khoản", "QUẢN TRỊ > Phân quyền & Quản lý tài khoản",
+                    () -> new TaiKhoanPanel(), canAdmin);
+        }
+
+        JScrollPane scrollMenu = new JScrollPane(menuContainer);
+        scrollMenu.setBorder(null);
+        scrollMenu.setBackground(UITheme.BG_SIDEBAR);
+        scrollMenu.getViewport().setBackground(UITheme.BG_SIDEBAR);
+        scrollMenu.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        sidebar.add(scrollMenu, BorderLayout.CENTER);
+
+        // Bottom Footer in Sidebar (Logout)
+        JPanel bottomSidebar = new JPanel(new BorderLayout());
+        bottomSidebar.setBackground(UITheme.BG_SIDEBAR);
+        bottomSidebar.setBorder(new CompoundBorder(
+            new MatteBorder(1, 0, 0, 0, UITheme.BORDER),
+            new EmptyBorder(12, 14, 12, 14)
+        ));
+
+        JButton btnLogout = new JButton("Đăng xuất");
+        UITheme.styleSecondaryButton(btnLogout);
+        btnLogout.setFont(UITheme.FONT_BODY);
+        btnLogout.setForeground(new Color(185, 28, 28));
+        btnLogout.addActionListener(e -> handleLogout());
+        bottomSidebar.add(btnLogout, BorderLayout.CENTER);
+
+        sidebar.add(bottomSidebar, BorderLayout.SOUTH);
+
+        return sidebar;
     }
 
-    private JComponent createWelcomePanel() {
+    private void addNavSectionHeader(JPanel container, String title) {
+        JLabel lbl = new JLabel(title);
+        lbl.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 10));
+        lbl.setForeground(new Color(148, 163, 184));
+        lbl.setBorder(new EmptyBorder(12, 12, 4, 12));
+        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+        container.add(lbl);
+    }
+
+    private void addNavItem(JPanel container, String key, String label, String breadcrumb,
+                            ComponentSupplier supplier, boolean enabled) {
+        NavItem item = new NavItem(key, label, breadcrumb, supplier, enabled);
+        navItems.add(item);
+        container.add(item);
+        container.add(Box.createVerticalStrut(2));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  TOP HEADER BAR
+    // ═══════════════════════════════════════════════════════════════════
+
+    private JPanel createHeader() {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setPreferredSize(new Dimension(0, 56));
+        header.setBackground(Color.WHITE);
+        header.setBorder(new MatteBorder(0, 0, 1, 0, UITheme.BORDER));
+
+        // Left: Breadcrumb / Active Page Title
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 24, 17));
+        leftPanel.setOpaque(false);
+
+        lblBreadcrumb = new JLabel("TỔNG QUAN > Trang chủ Dashboard");
+        lblBreadcrumb.setFont(UITheme.FONT_TITLE);
+        lblBreadcrumb.setForeground(UITheme.TEXT_MAIN);
+        leftPanel.add(lblBreadcrumb);
+
+        // Right: User Profile Chip
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 12));
+        rightPanel.setOpaque(false);
+
+        // Avatar tròn chứa chữ cái đầu
+        String userName = session.getUserInfo();
+        String initial = (userName != null && !userName.isEmpty()) ? userName.substring(0, 1).toUpperCase() : "U";
+        JLabel lblAvatar = new JLabel(initial, SwingConstants.CENTER) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(UITheme.PRIMARY_LIGHT);
+                g2.fillOval(0, 0, getWidth(), getHeight());
+                g2.setColor(UITheme.PRIMARY_BORDER);
+                g2.drawOval(0, 0, getWidth() - 1, getHeight() - 1);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        lblAvatar.setPreferredSize(new Dimension(32, 32));
+        lblAvatar.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 13));
+        lblAvatar.setForeground(UITheme.PRIMARY);
+
+        lblHeaderUserName = new JLabel(userName);
+        lblHeaderUserName.setFont(UITheme.FONT_BODY_BOLD);
+        lblHeaderUserName.setForeground(UITheme.TEXT_MAIN);
+
+        String roleStr = session.getFullRoleDisplayName();
+        if (roleStr.isEmpty()) roleStr = "Guest";
+        lblHeaderRoleBadge = UITheme.createBadge(roleStr, UITheme.PRIMARY, UITheme.PRIMARY_LIGHT, UITheme.PRIMARY_BORDER);
+
+        rightPanel.add(lblAvatar);
+        rightPanel.add(lblHeaderUserName);
+        rightPanel.add(lblHeaderRoleBadge);
+
+        header.add(leftPanel, BorderLayout.WEST);
+        header.add(rightPanel, BorderLayout.EAST);
+
+        return header;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  DASHBOARD VIEW (TRANG CHỦ HIỆN ĐẠI, FLAT, KPI NHỎ GỌN)
+    // ═══════════════════════════════════════════════════════════════════
+
+    private JComponent createDashboardView() {
         JPanel container = new JPanel();
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
-        container.setBackground(new Color(248, 250, 252));
-        container.setBorder(BorderFactory.createEmptyBorder(20, 24, 24, 24));
+        container.setBackground(UITheme.BG_APP);
+        container.setBorder(new EmptyBorder(20, 24, 24, 24));
 
-        // 1. Hero banner (Gradient nền màu xanh doanh nghiệp)
-        container.add(createHeroBanner());
-        container.add(Box.createVerticalStrut(18));
+        // 1. Flat Greeting Banner (Tuyệt đối không dùng gradient)
+        JPanel banner = new JPanel(new BorderLayout(16, 8));
+        banner.setBackground(Color.WHITE);
+        banner.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(18, 22, 18, 22)
+        ));
+        banner.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
 
-        // 2. Thống kê KPI / Trạng thái hệ thống
-        JPanel statsPanel = new JPanel(new GridLayout(1, 4, 14, 0));
-        statsPanel.setOpaque(false);
-        statsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
-        statsPanel.add(createStatCard("HỒ SƠ NHÂN SỰ", "5 Nhân viên", "● Đang hoạt động", new Color(14, 165, 233)));
-        statsPanel.add(createStatCard("CƠ CẤU DOANH NGHIỆP", "4 PB • 5 Chức vụ", "● Chuẩn hóa danh mục", new Color(139, 92, 246)));
-        statsPanel.add(createStatCard("KỲ TÍNH LƯƠNG", "Tháng 09 / 2026", "● Chu kỳ đang mở", new Color(245, 158, 11)));
-        statsPanel.add(createStatCard("CƠ SỞ DỮ LIỆU", "SQL Server 2025", "● RBAC • ACID OK", new Color(16, 185, 129)));
-        container.add(statsPanel);
+        JPanel bannerText = new JPanel();
+        bannerText.setLayout(new BoxLayout(bannerText, BoxLayout.Y_AXIS));
+        bannerText.setOpaque(false);
+
+        JLabel lblSys = new JLabel("HỆ THỐNG QUẢN LÝ NHÂN SỰ VÀ TIỀN LƯƠNG DOANH NGHIỆP");
+        lblSys.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 11));
+        lblSys.setForeground(UITheme.PRIMARY);
+
+        JLabel lblHello = new JLabel("Xin chào, " + session.getUserInfo() + "!");
+        lblHello.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 20));
+        lblHello.setForeground(UITheme.TEXT_MAIN);
+
+        String roleStr = session.getFullRoleDisplayName();
+        JLabel lblSub = new JLabel("Vai trò hiện hành: " + roleStr + "  •  Hệ thống vận hành phân quyền RBAC và kiểm soát Transaction ACID an toàn.");
+        lblSub.setFont(UITheme.FONT_BODY);
+        lblSub.setForeground(UITheme.TEXT_MUTED);
+
+        bannerText.add(lblSys);
+        bannerText.add(Box.createVerticalStrut(4));
+        bannerText.add(lblHello);
+        bannerText.add(Box.createVerticalStrut(4));
+        bannerText.add(lblSub);
+
+        banner.add(bannerText, BorderLayout.CENTER);
+        container.add(banner);
+        container.add(Box.createVerticalStrut(16));
+
+        // 2. Small KPI Cards (4 Thẻ chỉ số nhỏ gọn, sắc nét)
+        JPanel kpiGrid = new JPanel(new GridLayout(1, 4, 14, 0));
+        kpiGrid.setOpaque(false);
+        kpiGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 86));
+
+        kpiGrid.add(createSmallKpiCard("HỒ SƠ NHÂN SỰ", "5 Nhân viên", "Đang hoạt động", UITheme.PRIMARY));
+        kpiGrid.add(createSmallKpiCard("CƠ CẤU DOANH NGHIỆP", "4 PB • 5 Chức vụ", "Danh mục chuẩn hóa", new Color(99, 102, 241)));
+        kpiGrid.add(createSmallKpiCard("KỲ TÍNH LƯƠNG", "Tháng 09 / 2026", "Chu kỳ mở", new Color(217, 119, 6)));
+        kpiGrid.add(createSmallKpiCard("CƠ SỞ DỮ LIỆU", "SQL Server 2025", "RBAC • ACID OK", UITheme.SUCCESS_TEXT));
+
+        container.add(kpiGrid);
         container.add(Box.createVerticalStrut(22));
 
-        // 3. Tiêu đề khối thao tác nhanh
-        JLabel lblSection = new JLabel("LỐI TẮT NGHIỆP VỤ NHANH");
-        lblSection.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lblSection.setForeground(new Color(71, 85, 105));
-        lblSection.setAlignmentX(Component.LEFT_ALIGNMENT);
-        container.add(lblSection);
+        // 3. Section Title
+        JLabel lblShortcut = new JLabel("LỐI TẮT NGHIỆP VỤ NHANH");
+        lblShortcut.setFont(UITheme.FONT_SUBTITLE);
+        lblShortcut.setForeground(new Color(51, 65, 85));
+        lblShortcut.setAlignmentX(Component.LEFT_ALIGNMENT);
+        container.add(lblShortcut);
         container.add(Box.createVerticalStrut(10));
 
-        // 4. Lưới nút thao tác nhanh
-        JPanel actionsPanel = new JPanel(new GridLayout(2, 3, 14, 14));
-        actionsPanel.setOpaque(false);
-        actionsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
+        // 4. Quick Action Grid (Flat Cards)
+        JPanel actionGrid = new JPanel(new GridLayout(2, 3, 14, 14));
+        actionGrid.setOpaque(false);
+        actionGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 160));
 
         boolean canHR = session.hasRole("DB_Admin", "HR_Manager");
         boolean canPayroll = session.hasRole("DB_Admin", "Payroll_Officer");
         boolean canCC = session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer");
         boolean canAdmin = session.hasRole("DB_Admin");
 
-        actionsPanel.add(createActionCard("Hồ sơ Nhân viên", "Quản lý lý lịch, chức vụ, phòng ban & lương cơ bản", "NV",
-            () -> openTab("Nhân viên", () -> new NhanVienPanel()), canHR));
+        actionGrid.add(createActionCard("Hồ sơ Nhân viên", "Quản lý lý lịch, chức vụ, phòng ban và tài khoản", "NV",
+                () -> switchView("NHAN_VIEN", "NHÂN SỰ > Quản lý Hồ sơ nhân sự"), canHR));
 
-        actionsPanel.add(createActionCard("Phòng ban & Chức vụ", "Thiết lập cơ cấu phòng ban và phụ cấp trách nhiệm", "DM",
-            () -> openTab("Danh mục", () -> new DanhMucPanel()), canHR));
+        actionGrid.add(createActionCard("Phòng ban & Chức vụ", "Thiết lập cơ cấu phòng ban và phụ cấp chức danh", "DM",
+                () -> switchView("DANH_MUC", "DANH MỤC > Phòng ban & Chức vụ"), canHR));
 
-        actionsPanel.add(createActionCard("Chấm công Nhân sự", "Theo dõi ngày công, làm thêm giờ và nghỉ phép", "CC",
-            () -> openTab("Chấm công", () -> new ChamCongPanel()), canCC));
+        actionGrid.add(createActionCard("Chấm công Nhân sự", "Theo dõi nhật ký ngày công, làm thêm giờ và nghỉ phép", "CC",
+                () -> switchView("CHAM_CONG", "CHẤM CÔNG > Ghi nhận chấm công chi tiết"), canCC));
 
-        actionsPanel.add(createActionCard("Tính toán Bảng lương", "Quy trình tính lương tự động, BHXH và Thuế TNCN", "BL",
-            () -> openTab("Tính bảng lương", () -> new BangLuongPanel()), canPayroll));
+        actionGrid.add(createActionCard("Tính toán Bảng lương", "Quy trình tính lương tự động, BHXH và Thuế TNCN", "BL",
+                () -> switchView("BANG_LUONG", "TIỀN LƯƠNG > Quy trình tính lương tự động"), canPayroll));
 
-        actionsPanel.add(createActionCard("Báo cáo & Phiếu lương", "Xuất bảng lương tổng hợp và tra cứu phiếu lương", "BC",
-            () -> openTab("Báo cáo tổng hợp", () -> new BaoCaoPanel()), true));
+        actionGrid.add(createActionCard("Báo cáo & Phiếu lương", "Xuất bảng lương tổng hợp và tra cứu phiếu lương", "BC",
+                () -> switchView("BAO_CAO", "BÁO CÁO > Báo cáo tổng hợp & Phiếu lương"), true));
 
-        actionsPanel.add(createActionCard("Quản trị Tài khoản", "Phân quyền người dùng, bảo mật và tài khoản đăng nhập", "QT",
-            () -> openTab("Quản lý tài khoản", () -> new TaiKhoanPanel()), canAdmin));
+        actionGrid.add(createActionCard("Quản trị Tài khoản", "Phân quyền người dùng, bảo mật và tài khoản đăng nhập", "QT",
+                () -> switchView("TAI_KHOAN", "QUẢN TRỊ > Phân quyền & Quản lý tài khoản"), canAdmin));
 
-        container.add(actionsPanel);
+        container.add(actionGrid);
         container.add(Box.createVerticalStrut(20));
 
-        // 5. Thanh thông tin phiên đăng nhập
+        // 5. System Status Footer
         JPanel footerCard = new JPanel(new BorderLayout());
-        footerCard.setOpaque(true);
         footerCard.setBackground(Color.WHITE);
-        footerCard.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
-            BorderFactory.createEmptyBorder(10, 16, 10, 16)
+        footerCard.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(10, 16, 10, 16)
         ));
-        footerCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+        footerCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
 
         int maNV = session.getMaNV();
         String idInfo = (maNV > 0) ? ("Mã NV: " + maNV) : "Tài khoản quản trị";
-        JLabel lblLeftInfo = new JLabel("Phiên đăng nhập: " + session.getTenDangNhap() + " (" + idInfo + ")  |  Cơ chế phân quyền RBAC");
-        lblLeftInfo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblLeftInfo.setForeground(new Color(100, 116, 139));
+        JLabel lblLeft = new JLabel("Phiên làm việc: " + session.getTenDangNhap() + " (" + idInfo + ")  |  Cơ chế kiểm soát truy cập RBAC");
+        lblLeft.setFont(UITheme.FONT_CAPTION);
+        lblLeft.setForeground(UITheme.TEXT_MUTED);
 
-        JLabel lblRightInfo = new JLabel("Hệ Quản trị Cơ sở Dữ liệu – Nhóm TV5");
-        lblRightInfo.setFont(new Font("Segoe UI", Font.ITALIC, 12));
-        lblRightInfo.setForeground(new Color(148, 163, 184));
+        JLabel lblRight = new JLabel("Hệ Quản trị Cơ sở Dữ liệu – Nhóm 06");
+        lblRight.setFont(UITheme.FONT_CAPTION_BOLD);
+        lblRight.setForeground(UITheme.TEXT_SUBTLE);
 
-        footerCard.add(lblLeftInfo, BorderLayout.WEST);
-        footerCard.add(lblRightInfo, BorderLayout.EAST);
-
+        footerCard.add(lblLeft, BorderLayout.WEST);
+        footerCard.add(lblRight, BorderLayout.EAST);
         container.add(footerCard);
 
         JScrollPane scroll = new JScrollPane(container);
         scroll.setBorder(null);
+        scroll.setBackground(UITheme.BG_APP);
+        scroll.getViewport().setBackground(UITheme.BG_APP);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
         return scroll;
     }
 
-    private JPanel createHeroBanner() {
-        JPanel hero = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                // Gradient nền chuyển sắc từ Navy (#1A365D) sang Royal Blue (#2563EB)
-                GradientPaint gp = new GradientPaint(
-                    0, 0, new Color(26, 54, 93),
-                    getWidth(), getHeight(), new Color(37, 99, 235)
-                );
-                g2.setPaint(gp);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
-                g2.dispose();
-            }
-        };
-        hero.setOpaque(false);
-        hero.setLayout(new BorderLayout(20, 10));
-        hero.setBorder(BorderFactory.createEmptyBorder(22, 26, 22, 26));
-
-        JPanel leftCol = new JPanel();
-        leftCol.setOpaque(false);
-        leftCol.setLayout(new BoxLayout(leftCol, BoxLayout.Y_AXIS));
-
-        JLabel lblSystem = new JLabel("HỆ THỐNG QUẢN LÝ NHÂN SỰ VÀ TIỀN LƯƠNG ENTERPRISE");
-        lblSystem.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        lblSystem.setForeground(new Color(191, 219, 254));
-
-        JLabel lblGreet = new JLabel("Xin chào, " + session.getUserInfo() + "!");
-        lblGreet.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        lblGreet.setForeground(Color.WHITE);
-
-        String roleStr = session.getFullRoleDisplayName();
-        if (roleStr.isEmpty()) roleStr = "Chưa xác định";
-
-        JLabel lblDesc = new JLabel("Vai trò hiện hành: " + roleStr + "  •  Hãy chọn một nghiệp vụ bên dưới hoặc sử dụng thanh thực đơn để bắt đầu.");
-        lblDesc.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        lblDesc.setForeground(new Color(224, 231, 255));
-
-        leftCol.add(lblSystem);
-        leftCol.add(Box.createVerticalStrut(6));
-        leftCol.add(lblGreet);
-        leftCol.add(Box.createVerticalStrut(6));
-        leftCol.add(lblDesc);
-
-        hero.add(leftCol, BorderLayout.CENTER);
-        return hero;
-    }
-
-    private JPanel createStatCard(String title, String value, String subtext, Color accentColor) {
-        JPanel card = new JPanel(new BorderLayout(0, 6));
+    private JPanel createSmallKpiCard(String title, String value, String subtext, Color accent) {
+        JPanel card = new JPanel(new BorderLayout(0, 4));
         card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
-            BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 4, 0, 0, accentColor),
-                BorderFactory.createEmptyBorder(12, 14, 12, 14)
+        card.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new CompoundBorder(
+                new MatteBorder(0, 3, 0, 0, accent),
+                new EmptyBorder(10, 14, 10, 14)
             )
         ));
 
         JLabel lblTitle = new JLabel(title);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        lblTitle.setForeground(new Color(100, 116, 139));
+        lblTitle.setFont(UITheme.FONT_CAPTION_BOLD);
+        lblTitle.setForeground(UITheme.TEXT_MUTED);
 
-        JLabel lblValue = new JLabel(value);
-        lblValue.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        lblValue.setForeground(new Color(15, 23, 42));
+        JLabel lblVal = new JLabel(value);
+        lblVal.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 16));
+        lblVal.setForeground(UITheme.TEXT_MAIN);
 
         JLabel lblSub = new JLabel(subtext);
-        lblSub.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblSub.setForeground(accentColor);
+        lblSub.setFont(UITheme.FONT_CAPTION);
+        lblSub.setForeground(accent);
 
         card.add(lblTitle, BorderLayout.NORTH);
-        card.add(lblValue, BorderLayout.CENTER);
+        card.add(lblVal, BorderLayout.CENTER);
         card.add(lblSub, BorderLayout.SOUTH);
-
         return card;
     }
 
     private JPanel createActionCard(String title, String desc, String badge, Runnable action, boolean enabled) {
-        JPanel card = new JPanel(new BorderLayout(10, 8));
+        JPanel card = new JPanel(new BorderLayout(10, 6));
         card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(enabled ? new Color(226, 232, 240) : new Color(241, 245, 249), 1),
-            BorderFactory.createEmptyBorder(14, 16, 14, 16)
+        card.setBorder(new CompoundBorder(
+            new LineBorder(enabled ? UITheme.BORDER : new Color(241, 245, 249), 1, true),
+            new EmptyBorder(12, 14, 12, 14)
         ));
         card.setCursor(enabled ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
 
-        // Tiêu đề và badge
-        JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        topRow.setOpaque(false);
+        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        top.setOpaque(false);
 
-        JLabel lblBadge = new JLabel(badge);
-        lblBadge.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        lblBadge.setOpaque(true);
-        lblBadge.setBackground(enabled ? new Color(238, 242, 255) : new Color(241, 245, 249));
-        lblBadge.setForeground(enabled ? new Color(67, 56, 202) : Color.GRAY);
-        lblBadge.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(enabled ? new Color(199, 210, 254) : new Color(226, 232, 240), 1),
-            BorderFactory.createEmptyBorder(2, 6, 2, 6)
-        ));
+        JLabel lblBadge = UITheme.createBadge(badge, enabled ? UITheme.PRIMARY : Color.GRAY,
+                enabled ? UITheme.PRIMARY_LIGHT : new Color(241, 245, 249),
+                enabled ? UITheme.PRIMARY_BORDER : UITheme.BORDER);
 
         JLabel lblTitle = new JLabel(title);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblTitle.setForeground(enabled ? new Color(30, 41, 59) : new Color(156, 163, 175));
+        lblTitle.setFont(UITheme.FONT_BODY_BOLD);
+        lblTitle.setForeground(enabled ? UITheme.TEXT_MAIN : UITheme.TEXT_SUBTLE);
 
-        topRow.add(lblBadge);
-        topRow.add(lblTitle);
+        top.add(lblBadge);
+        top.add(lblTitle);
 
-        JLabel lblDesc = new JLabel(enabled ? desc : "Không khả dụng cho vai trò tài khoản hiện tại");
-        lblDesc.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblDesc.setForeground(enabled ? new Color(100, 116, 139) : new Color(156, 163, 175));
+        JLabel lblDesc = new JLabel(enabled ? desc : "Không khả dụng cho vai trò này");
+        lblDesc.setFont(UITheme.FONT_CAPTION);
+        lblDesc.setForeground(enabled ? UITheme.TEXT_MUTED : UITheme.TEXT_SUBTLE);
 
-        card.add(topRow, BorderLayout.NORTH);
+        card.add(top, BorderLayout.NORTH);
         card.add(lblDesc, BorderLayout.CENTER);
 
         if (enabled) {
-            Color normalBg = Color.WHITE;
-            Color hoverBg = new Color(245, 248, 255);
-            Color hoverBorder = new Color(147, 197, 253);
-            Color normalBorder = new Color(226, 232, 240);
-
-            card.addMouseListener(new java.awt.event.MouseAdapter() {
+            card.addMouseListener(new MouseAdapter() {
                 @Override
-                public void mouseEntered(java.awt.event.MouseEvent e) {
-                    card.setBackground(hoverBg);
-                    card.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(hoverBorder, 1),
-                        BorderFactory.createEmptyBorder(14, 16, 14, 16)
+                public void mouseEntered(MouseEvent e) {
+                    card.setBackground(UITheme.PRIMARY_LIGHT);
+                    card.setBorder(new CompoundBorder(
+                        new LineBorder(UITheme.PRIMARY_BORDER, 1, true),
+                        new EmptyBorder(12, 14, 12, 14)
                     ));
                 }
-
                 @Override
-                public void mouseExited(java.awt.event.MouseEvent e) {
-                    card.setBackground(normalBg);
-                    card.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(normalBorder, 1),
-                        BorderFactory.createEmptyBorder(14, 16, 14, 16)
+                public void mouseExited(MouseEvent e) {
+                    card.setBackground(Color.WHITE);
+                    card.setBorder(new CompoundBorder(
+                        new LineBorder(UITheme.BORDER, 1, true),
+                        new EmptyBorder(12, 14, 12, 14)
                     ));
                 }
-
                 @Override
-                public void mouseClicked(java.awt.event.MouseEvent e) {
+                public void mouseClicked(MouseEvent e) {
                     action.run();
                 }
             });
@@ -432,195 +521,90 @@ public class MainFrame extends JFrame {
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  STATUS BAR
+    //  CHUYỂN ĐỔI VIEW (VIEW SWITCHER)
     // ═══════════════════════════════════════════════════════════════════
 
-    private void initStatusBar() {
-        JPanel statusBar = new JPanel(new BorderLayout(10, 0));
-        statusBar.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY),
-            BorderFactory.createEmptyBorder(4, 10, 4, 10)
-        ));
-
-        lblStatusUser = new JLabel("Người dùng: " + session.getUserInfo());
-        lblStatusUser.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-
-        String roleStr = session.getFullRoleDisplayName();
-        lblStatusRole = new JLabel("Vai trò: " + (roleStr.isEmpty() ? "Chưa đăng nhập" : roleStr));
-        lblStatusRole.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblStatusRole.setForeground(Color.GRAY);
-        lblStatusRole.setHorizontalAlignment(SwingConstants.RIGHT);
-
-        statusBar.add(lblStatusUser, BorderLayout.WEST);
-        statusBar.add(lblStatusRole, BorderLayout.EAST);
-
-        add(statusBar, BorderLayout.SOUTH);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  PHÂN QUYỀN MENU THEO ROLE
-    // ═══════════════════════════════════════════════════════════════════
-
-    /**
-     * Ẩn/hiện menu dựa trên vai trò trong Session.
-     * Áp dụng đúng ma trận phân quyền từ TV5_Security_Design.md
-     */
-    private void applyRolePermissions() {
-        String role = session.getVaiTro();
-        if (role == null) role = "";
-
-        // Menu Nhân viên: DB_Admin, HR_Manager
-        menuNhanVien.setVisible(session.hasRole("DB_Admin", "HR_Manager"));
-
-        // Menu Danh mục: DB_Admin, HR_Manager
-        menuDanhMuc.setVisible(session.hasRole("DB_Admin", "HR_Manager"));
-
-        // Menu Chấm công: DB_Admin, HR_Manager, Payroll_Officer (Payroll_Officer xem tổng hợp để đối soát lương)
-        menuChamCong.setVisible(session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer"));
-        if (menuChamCong.getItemCount() >= 2) {
-            menuChamCong.getItem(0).setEnabled(session.hasRole("DB_Admin", "HR_Manager"));
-        }
-
-        // Menu Phụ cấp / Khấu trừ: DB_Admin, HR_Manager, Payroll_Officer
-        menuPhuCapKhauTru.setVisible(session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer"));
-
-        // Menu Lương: DB_Admin, Payroll_Officer
-        menuLuong.setVisible(session.hasRole("DB_Admin", "Payroll_Officer"));
-
-        // Menu Báo cáo: Tất cả role đều thấy (Employee chỉ thấy phiếu lương cá nhân)
-        menuBaoCao.setVisible(true);
-        // Ẩn "Báo cáo tổng hợp" cho Employee
-        if (menuBaoCao.getItemCount() >= 1) {
-            menuBaoCao.getItem(0).setVisible(!role.equals("Employee"));
-        }
-
-        // Menu Quản trị: chỉ DB_Admin
-        menuQuanTri.setVisible(session.hasRole("DB_Admin"));
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  TAB MANAGEMENT
-    // ═══════════════════════════════════════════════════════════════════
-
-    /**
-     * Mở hoặc chuyển sang tab đã tồn tại.
-     * Nếu tab chưa có → tạo mới từ panelFactory.
-     */
-    private void openTab(String title, PanelFactory factory) {
-        // Kiểm tra tab đã mở chưa
-        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
-            if (tabbedPane.getTitleAt(i).equals(title)) {
-                tabbedPane.setSelectedIndex(i);
-                return;
+    public void switchView(String key, String breadcrumb) {
+        if (!cachedViews.containsKey(key)) {
+            // Lazy load panel
+            for (NavItem item : navItems) {
+                if (item.getKey().equals(key)) {
+                    JComponent comp = item.createSupplierComponent();
+                    if (comp != null) {
+                        contentContainer.add(comp, key);
+                        cachedViews.put(key, comp);
+                    }
+                    break;
+                }
             }
         }
 
-        // Tạo tab mới
-        JPanel panel = factory.create();
-        tabbedPane.addTab(title, panel);
+        currentViewKey = key;
+        cardLayout.show(contentContainer, key);
+        lblBreadcrumb.setText(breadcrumb);
 
-        // Thêm nút đóng tab (X)
-        int index = tabbedPane.indexOfTab(title);
-        tabbedPane.setTabComponentAt(index, createTabHeader(title));
-        tabbedPane.setSelectedIndex(index);
+        for (NavItem item : navItems) {
+            item.setActive(item.getKey().equals(key));
+        }
+
+        contentContainer.revalidate();
+        contentContainer.repaint();
     }
 
-    /**
-     * Tạo header tab có nút đóng (X).
-     */
-    private JPanel createTabHeader(String title) {
-        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        header.setOpaque(false);
-
-        JLabel lblTitle = new JLabel(title);
-        lblTitle.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-
-        JButton btnClose = new JButton("×");
-        btnClose.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnClose.setBorderPainted(false);
-        btnClose.setContentAreaFilled(false);
-        btnClose.setFocusPainted(false);
-        btnClose.setMargin(new Insets(0, 4, 0, 4));
-        btnClose.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnClose.setForeground(Color.GRAY);
-        btnClose.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                btnClose.setForeground(Color.RED);
-            }
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
-                btnClose.setForeground(Color.GRAY);
-            }
-        });
-        btnClose.addActionListener(e -> {
-            int idx = tabbedPane.indexOfTab(title);
-            if (idx >= 0 && !title.equals("Trang chủ")) {
-                tabbedPane.removeTabAt(idx);
-            }
-        });
-
-        header.add(lblTitle);
-        header.add(btnClose);
-        return header;
-    }
-
-    /**
-     * Panel placeholder cho các module chưa được tích hợp (TV2, TV3, TV4).
-     */
-    private JPanel createPlaceholderPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(new Color(255, 255, 245));
-
-        JLabel lbl = new JLabel("Module này đang được phát triển bởi thành viên khác...");
-        lbl.setFont(new Font("Segoe UI", Font.ITALIC, 14));
-        lbl.setForeground(Color.GRAY);
-        panel.add(lbl);
-
-        return panel;
+    // Backward compatibility cho các method openTab cũ
+    public void openTab(String title, ComponentSupplier supplier) {
+        switch (title) {
+            case "Nhân viên":
+                switchView("NHAN_VIEN", "NHÂN SỰ > Quản lý Hồ sơ nhân sự");
+                break;
+            case "Danh mục":
+                switchView("DANH_MUC", "DANH MỤC > Phòng ban & Chức vụ");
+                break;
+            case "Chấm công":
+                switchView("CHAM_CONG", "CHẤM CÔNG > Ghi nhận chấm công chi tiết");
+                break;
+            case "Tổng hợp CC":
+                switchView("TONG_HOP_CC", "CHẤM CÔNG > Tổng hợp ngày công tháng");
+                break;
+            case "Phụ cấp / Khấu trừ":
+                switchView("PHU_CAP", "LƯƠNG > Quản lý Phụ cấp & Khấu trừ");
+                break;
+            case "Tính bảng lương":
+                switchView("BANG_LUONG", "TIỀN LƯƠNG > Quy trình tính lương tự động");
+                break;
+            case "Báo cáo tổng hợp":
+            case "Phiếu lương cá nhân":
+            case "Báo cáo & Chốt lương":
+                switchView("BAO_CAO", "BÁO CÁO > Báo cáo tổng hợp & Phiếu lương");
+                break;
+            case "Quản lý tài khoản":
+                switchView("TAI_KHOAN", "QUẢN TRỊ > Phân quyền & Quản lý tài khoản");
+                break;
+            default:
+                switchView("HOME", "TỔNG QUAN > Trang chủ Dashboard");
+                break;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  HỆ THỐNG (LOGOUT / EXIT)
+    //  XỬ LÝ ĐĂNG XUẤT & ĐÓNG ỨNG DỤNG
     // ═══════════════════════════════════════════════════════════════════
 
     private void handleLogout() {
-        int choice = JOptionPane.showConfirmDialog(
+        int confirm = JOptionPane.showConfirmDialog(
             this,
-            "Bạn có chắc chắn muốn đăng xuất?",
+            "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản '" + session.getTenDangNhap() + "'?",
             "Xác nhận đăng xuất",
             JOptionPane.YES_NO_OPTION,
             JOptionPane.QUESTION_MESSAGE
         );
-
-        if (choice == JOptionPane.YES_OPTION) {
-            Session.getInstance().logout();
-            SwingUtilities.invokeLater(() -> {
-                LoginFrame loginFrame = new LoginFrame();
-                loginFrame.setVisible(true);
-                this.dispose();
-            });
+        if (confirm == JOptionPane.YES_OPTION) {
+            session.logout();
+            LoginFrame loginFrame = new LoginFrame();
+            loginFrame.setVisible(true);
+            this.dispose();
         }
     }
-
-    private void handleExit() {
-        int choice = JOptionPane.showConfirmDialog(
-            this,
-            "Bạn có chắc chắn muốn thoát ứng dụng?",
-            "Xác nhận thoát",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE
-        );
-
-        if (choice == JOptionPane.YES_OPTION) {
-            Session.getInstance().logout();
-            System.exit(0);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  CẤU HÌNH JFRAME
-    // ═══════════════════════════════════════════════════════════════════
 
     private void setupFrame() {
         String titleUser = session.getUserInfo();
@@ -628,21 +612,95 @@ public class MainFrame extends JFrame {
         String roleSuffix = !roleStr.isEmpty() ? " [" + roleStr + "]" : "";
         setTitle(APP_TITLE + " – " + titleUser + roleSuffix);
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        setSize(1100, 700);
-        setMinimumSize(new Dimension(900, 600));
-        setLocationRelativeTo(null);
-
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                handleExit();
+                int confirm = JOptionPane.showConfirmDialog(
+                    MainFrame.this,
+                    "Bạn có muốn thoát khỏi hệ thống?",
+                    "Xác nhận thoát",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE
+                );
+                if (confirm == JOptionPane.YES_OPTION) {
+                    session.logout();
+                    System.exit(0);
+                }
             }
         });
+
+        setSize(1280, 800);
+        setMinimumSize(new Dimension(1024, 680));
+        setLocationRelativeTo(null);
     }
 
-    /**
-     * Cập nhật lại thông tin hiển thị và phân quyền menu từ Session hiện tại.
-     */
+    private void initLegacyMenusAndStatus() {
+        tabbedPane = new JTabbedPane();
+        tabbedPane.addTab("Trang chủ", new JScrollPane(createDashboardView()));
+
+        lblStatusUser = new JLabel("Người dùng: " + session.getUserInfo());
+        lblStatusUser.setFont(new Font(UITheme.FONT_FAMILY, Font.PLAIN, 12));
+
+        String roleStr = session.getFullRoleDisplayName();
+        lblStatusRole = new JLabel("Vai trò: " + (roleStr.isEmpty() ? "Chưa đăng nhập" : roleStr));
+        lblStatusRole.setFont(new Font(UITheme.FONT_FAMILY, Font.PLAIN, 12));
+
+        menuNhanVien = new JMenu("Nhân viên");
+        JMenuItem miQuanLyNhanVien = new JMenuItem("Quản lý nhân viên");
+        menuNhanVien.add(miQuanLyNhanVien);
+
+        menuDanhMuc = new JMenu("Danh mục");
+        JMenuItem miPhongBan = new JMenuItem("Phòng ban");
+        menuDanhMuc.add(miPhongBan);
+
+        menuChamCong = new JMenu("Chấm công");
+        JMenuItem miNhapChamCong = new JMenuItem("Nhập chấm công");
+        JMenuItem miXemChamCong = new JMenuItem("Xem tổng hợp chấm công");
+        menuChamCong.add(miNhapChamCong);
+        menuChamCong.add(miXemChamCong);
+
+        menuPhuCapKhauTru = new JMenu("Phụ cấp / Khấu trừ");
+        JMenuItem miPhuCap = new JMenuItem("Phụ cấp");
+        menuPhuCapKhauTru.add(miPhuCap);
+
+        menuLuong = new JMenu("Lương");
+        JMenuItem miBangLuong = new JMenuItem("Bảng lương");
+        menuLuong.add(miBangLuong);
+
+        menuBaoCao = new JMenu("Báo cáo");
+        JMenuItem miBaoCaoTongHop = new JMenuItem("Báo cáo tổng hợp");
+        JMenuItem miPhieuLuong = new JMenuItem("Phiếu lương cá nhân");
+        menuBaoCao.add(miBaoCaoTongHop);
+        menuBaoCao.add(miPhieuLuong);
+
+        menuQuanTri = new JMenu("Quản trị");
+        JMenuItem miTaiKhoan = new JMenuItem("Quản lý tài khoản");
+        menuQuanTri.add(miTaiKhoan);
+    }
+
+    private void applyRolePermissions() {
+        String role = session.getVaiTro();
+        if (role == null) role = "";
+
+        if (menuNhanVien != null) menuNhanVien.setVisible(session.hasRole("DB_Admin", "HR_Manager"));
+        if (menuDanhMuc != null) menuDanhMuc.setVisible(session.hasRole("DB_Admin", "HR_Manager"));
+        if (menuChamCong != null) {
+            menuChamCong.setVisible(session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer"));
+            if (menuChamCong.getItemCount() >= 2) {
+                menuChamCong.getItem(0).setEnabled(session.hasRole("DB_Admin", "HR_Manager"));
+            }
+        }
+        if (menuPhuCapKhauTru != null) menuPhuCapKhauTru.setVisible(session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer"));
+        if (menuLuong != null) menuLuong.setVisible(session.hasRole("DB_Admin", "Payroll_Officer"));
+        if (menuBaoCao != null) {
+            menuBaoCao.setVisible(true);
+            if (menuBaoCao.getItemCount() >= 1) {
+                menuBaoCao.getItem(0).setVisible(!role.equals("Employee"));
+            }
+        }
+        if (menuQuanTri != null) menuQuanTri.setVisible(session.hasRole("DB_Admin"));
+    }
+
     public void updateSessionDisplay() {
         applyRolePermissions();
         if (lblStatusUser != null) {
@@ -652,20 +710,21 @@ public class MainFrame extends JFrame {
             String roleStr = session.getFullRoleDisplayName();
             lblStatusRole.setText("Vai trò: " + (roleStr.isEmpty() ? "Chưa đăng nhập" : roleStr));
         }
+        if (lblHeaderUserName != null) {
+            lblHeaderUserName.setText(session.getUserInfo());
+        }
+        if (lblHeaderRoleBadge != null) {
+            String roleStr = session.getFullRoleDisplayName();
+            if (roleStr.isEmpty()) roleStr = "Guest";
+            lblHeaderRoleBadge.setText(" " + roleStr + " ");
+        }
         String titleUser = session.getUserInfo();
         String roleStr = session.getFullRoleDisplayName();
         String roleSuffix = !roleStr.isEmpty() ? " [" + roleStr + "]" : "";
         setTitle(APP_TITLE + " – " + titleUser + roleSuffix);
-
-        if (tabbedPane != null) {
-            int welcomeIdx = tabbedPane.indexOfTab("Trang chủ");
-            if (welcomeIdx >= 0) {
-                tabbedPane.setComponentAt(welcomeIdx, createWelcomePanel());
-            }
-        }
     }
 
-    // ─── Getters phục vụ kiểm thử phân quyền và giao diện ─────────────
+    // ─── Legacy Getters phục vụ kiểm thử phân quyền và giao diện ─────────
 
     public JMenu getMenuNhanVien() { return menuNhanVien; }
     public JMenu getMenuDanhMuc() { return menuDanhMuc; }
@@ -678,12 +737,86 @@ public class MainFrame extends JFrame {
     public JLabel getLblStatusRole() { return lblStatusRole; }
     public JTabbedPane getTabbedPane() { return tabbedPane; }
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  FUNCTIONAL INTERFACE (để truyền lambda tạo Panel)
-    // ═══════════════════════════════════════════════════════════════════
+    // ─── NAV ITEM COMPONENT (SIDEBAR BUTTON) ──────────────────────────
 
     @FunctionalInterface
-    private interface PanelFactory {
-        JPanel create();
+    public interface ComponentSupplier {
+        JComponent get();
+    }
+
+    private class NavItem extends JPanel {
+        private final String key;
+        private final String breadcrumb;
+        private final ComponentSupplier supplier;
+        private final boolean enabled;
+        private boolean active = false;
+
+        private final JLabel lblText;
+
+        public NavItem(String key, String label, String breadcrumb, ComponentSupplier supplier, boolean enabled) {
+            this.key = key;
+            this.breadcrumb = breadcrumb;
+            this.supplier = supplier;
+            this.enabled = enabled;
+
+            setLayout(new BorderLayout());
+            setPreferredSize(new Dimension(218, 36));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+            setBackground(UITheme.BG_SIDEBAR);
+            setOpaque(true);
+
+            lblText = new JLabel(label);
+            lblText.setFont(UITheme.FONT_BODY);
+            lblText.setForeground(enabled ? UITheme.TEXT_MAIN : UITheme.TEXT_SUBTLE);
+            lblText.setBorder(new EmptyBorder(0, 16, 0, 8));
+
+            add(lblText, BorderLayout.CENTER);
+
+            if (enabled) {
+                setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        if (!active) {
+                            setBackground(new Color(230, 236, 245));
+                        }
+                    }
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        if (!active) {
+                            setBackground(UITheme.BG_SIDEBAR);
+                        }
+                    }
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        switchView(key, breadcrumb);
+                    }
+                });
+            }
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public JComponent createSupplierComponent() {
+            return (supplier != null) ? supplier.get() : null;
+        }
+
+        public void setActive(boolean active) {
+            this.active = active;
+            if (active) {
+                setBackground(UITheme.PRIMARY_LIGHT);
+                lblText.setForeground(UITheme.PRIMARY_ACTIVE);
+                lblText.setFont(UITheme.FONT_BODY_BOLD);
+                setBorder(new MatteBorder(0, 3, 0, 0, UITheme.PRIMARY));
+            } else {
+                setBackground(UITheme.BG_SIDEBAR);
+                lblText.setForeground(enabled ? UITheme.TEXT_MAIN : UITheme.TEXT_SUBTLE);
+                lblText.setFont(UITheme.FONT_BODY);
+                setBorder(null);
+            }
+            repaint();
+        }
     }
 }

@@ -5,8 +5,12 @@ import com.model.KhauTruNhanVien;
 import com.model.NhanVien;
 import com.model.PhuCapNhanVien;
 import com.service.PhuCapKhauTruService;
+import com.ui.theme.UITheme;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.math.BigDecimal;
@@ -52,12 +56,17 @@ public class PhuCapKhauTruPanel extends JPanel {
     }
 
     private void initComponents() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setLayout(new BorderLayout(0, 10));
+        setBackground(UITheme.BG_APP);
+        setBorder(new EmptyBorder(16, 20, 20, 20));
 
         // 1. Toolbar Kỳ Làm Việc (Tháng / Năm)
-        JPanel pnlTop = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 5));
-        pnlTop.setBorder(BorderFactory.createTitledBorder("Chọn Kỳ Phát Sinh Lương"));
+        JPanel pnlTop = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 8));
+        pnlTop.setBackground(Color.WHITE);
+        pnlTop.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(8, 14, 8, 14)
+        ));
 
         cbThang = new JComboBox<>();
         for (int i = 1; i <= 12; i++) cbThang.addItem(i);
@@ -67,14 +76,23 @@ public class PhuCapKhauTruPanel extends JPanel {
 
         cbThang.setSelectedItem(9);
         cbNam.setSelectedItem(2026);
+        UITheme.styleComboBox(cbThang);
+        UITheme.styleComboBox(cbNam);
 
         btnLoc = new JButton("Lọc dữ liệu kỳ");
-        btnXoaKyLuong = new JButton("Xóa kỳ lương chưa chốt (Transaction)");
-        btnXoaKyLuong.setForeground(new Color(180, 0, 0));
+        UITheme.stylePrimaryButton(btnLoc);
 
-        pnlTop.add(new JLabel("Tháng:"));
+        btnXoaKyLuong = new JButton("Xóa kỳ lương chưa chốt (Transaction)");
+        UITheme.styleDangerButton(btnXoaKyLuong);
+
+        JLabel lblThang = new JLabel("Tháng:");
+        lblThang.setFont(UITheme.FONT_BODY);
+        JLabel lblNam = new JLabel("Năm:");
+        lblNam.setFont(UITheme.FONT_BODY);
+
+        pnlTop.add(lblThang);
         pnlTop.add(cbThang);
-        pnlTop.add(new JLabel("Năm:"));
+        pnlTop.add(lblNam);
         pnlTop.add(cbNam);
         pnlTop.add(btnLoc);
         pnlTop.add(btnXoaKyLuong);
@@ -83,6 +101,7 @@ public class PhuCapKhauTruPanel extends JPanel {
 
         // 2. TabbedPane trung tâm
         JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(UITheme.FONT_BODY_BOLD);
         tabbedPane.addTab("1. Phụ Cấp Nhân Viên", createPhuCapPanel());
         tabbedPane.addTab("2. Khấu Trừ Nhân Viên", createKhauTruPanel());
         tabbedPane.addTab("3. Tổng Hợp Kỳ (View & Function)", createTongHopPanel());
@@ -94,26 +113,44 @@ public class PhuCapKhauTruPanel extends JPanel {
     }
 
     private JPanel createPhuCapPanel() {
-        JPanel pnl = new JPanel(new BorderLayout(10, 10));
+        JPanel pnl = new JPanel(new BorderLayout(0, 10));
+        pnl.setBackground(UITheme.BG_APP);
+        pnl.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         // Bảng danh sách
-        String[] cols = {"Mã PC", "Mã NV", "Họ Tên", "Khoản Phụ Cấp", "Số Tiền", "Ngày Ghi", "Ghi Chú"};
+        String[] cols = {"Mã PC", "Mã NV", "Họ Tên", "Khoản Phụ Cấp", "Số Tiền (VNĐ)", "Ngày Ghi", "Ghi Chú"};
         modelPhuCap = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tblPhuCap = new JTable(modelPhuCap);
-        pnl.add(new JScrollPane(tblPhuCap), BorderLayout.CENTER);
+        UITheme.styleTable(tblPhuCap);
+
+        JScrollPane scroll = new JScrollPane(tblPhuCap);
+        scroll.setBorder(new LineBorder(UITheme.BORDER, 1, true));
+        scroll.getViewport().setBackground(Color.WHITE);
+        pnl.add(scroll, BorderLayout.CENTER);
 
         // Form nhập liệu
         JPanel pnlForm = new JPanel(new GridLayout(2, 5, 10, 5));
-        pnlForm.setBorder(BorderFactory.createTitledBorder("Thêm Mới Phụ Cấp"));
+        pnlForm.setBackground(Color.WHITE);
+        pnlForm.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(12, 14, 12, 14)
+        ));
 
         cbNhanVienPC = new JComboBox<>();
+        UITheme.styleComboBox(cbNhanVienPC);
         txtTenPhuCap = new JTextField("Phụ cấp ăn trưa");
+        UITheme.styleTextField(txtTenPhuCap);
         txtSoTienPC = new JTextField("730000");
+        UITheme.styleTextField(txtSoTienPC);
         txtGhiChuPC = new JTextField("Phụ cấp định kỳ");
+        UITheme.styleTextField(txtGhiChuPC);
+
         btnThemPC = new JButton("Thêm phụ cấp");
+        UITheme.stylePrimaryButton(btnThemPC);
         btnXoaPC = new JButton("Xóa chọn");
+        UITheme.styleDangerButton(btnXoaPC);
 
         pnlForm.add(new JLabel("Nhân viên:"));
         pnlForm.add(new JLabel("Tên khoản phụ cấp:"));
@@ -127,6 +164,7 @@ public class PhuCapKhauTruPanel extends JPanel {
         pnlForm.add(txtGhiChuPC);
 
         JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        pnlBtn.setOpaque(false);
         pnlBtn.add(btnThemPC);
         pnlBtn.add(btnXoaPC);
         pnlForm.add(pnlBtn);
@@ -140,24 +178,42 @@ public class PhuCapKhauTruPanel extends JPanel {
     }
 
     private JPanel createKhauTruPanel() {
-        JPanel pnl = new JPanel(new BorderLayout(10, 10));
+        JPanel pnl = new JPanel(new BorderLayout(0, 10));
+        pnl.setBackground(UITheme.BG_APP);
+        pnl.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        String[] cols = {"Mã KT", "Mã NV", "Họ Tên", "Khoản Khấu Trừ", "Số Tiền", "Ngày Ghi", "Lý Do"};
+        String[] cols = {"Mã KT", "Mã NV", "Họ Tên", "Khoản Khấu Trừ", "Số Tiền (VNĐ)", "Ngày Ghi", "Lý Do"};
         modelKhauTru = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tblKhauTru = new JTable(modelKhauTru);
-        pnl.add(new JScrollPane(tblKhauTru), BorderLayout.CENTER);
+        UITheme.styleTable(tblKhauTru);
+
+        JScrollPane scroll = new JScrollPane(tblKhauTru);
+        scroll.setBorder(new LineBorder(UITheme.BORDER, 1, true));
+        scroll.getViewport().setBackground(Color.WHITE);
+        pnl.add(scroll, BorderLayout.CENTER);
 
         JPanel pnlForm = new JPanel(new GridLayout(2, 5, 10, 5));
-        pnlForm.setBorder(BorderFactory.createTitledBorder("Thêm Mới Khấu Trừ"));
+        pnlForm.setBackground(Color.WHITE);
+        pnlForm.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(12, 14, 12, 14)
+        ));
 
         cbNhanVienKT = new JComboBox<>();
+        UITheme.styleComboBox(cbNhanVienKT);
         txtTenKhauTru = new JTextField("Tạm ứng lương");
+        UITheme.styleTextField(txtTenKhauTru);
         txtSoTienKT = new JTextField("1000000");
+        UITheme.styleTextField(txtSoTienKT);
         txtLyDoKT = new JTextField("Ứng lương cá nhân");
+        UITheme.styleTextField(txtLyDoKT);
+
         btnThemKT = new JButton("Thêm khấu trừ");
+        UITheme.stylePrimaryButton(btnThemKT);
         btnXoaKT = new JButton("Xóa chọn");
+        UITheme.styleDangerButton(btnXoaKT);
 
         pnlForm.add(new JLabel("Nhân viên:"));
         pnlForm.add(new JLabel("Tên khoản khấu trừ:"));
@@ -171,6 +227,7 @@ public class PhuCapKhauTruPanel extends JPanel {
         pnlForm.add(txtLyDoKT);
 
         JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        pnlBtn.setOpaque(false);
         pnlBtn.add(btnThemKT);
         pnlBtn.add(btnXoaKT);
         pnlForm.add(pnlBtn);
@@ -184,13 +241,21 @@ public class PhuCapKhauTruPanel extends JPanel {
     }
 
     private JPanel createTongHopPanel() {
-        JPanel pnl = new JPanel(new BorderLayout(10, 10));
+        JPanel pnl = new JPanel(new BorderLayout(0, 10));
+        pnl.setBackground(UITheme.BG_APP);
+        pnl.setBorder(new EmptyBorder(10, 10, 10, 10));
+
         String[] cols = {"Mã NV", "Họ Tên", "Kỳ (Tháng/Năm)", "Số Khoản PC", "Tổng Tiền Phụ Cấp (View)", "Tổng Khấu Trừ (Function)"};
         modelTongHop = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tblTongHop = new JTable(modelTongHop);
-        pnl.add(new JScrollPane(tblTongHop), BorderLayout.CENTER);
+        UITheme.styleTable(tblTongHop);
+
+        JScrollPane scroll = new JScrollPane(tblTongHop);
+        scroll.setBorder(new LineBorder(UITheme.BORDER, 1, true));
+        scroll.getViewport().setBackground(Color.WHITE);
+        pnl.add(scroll, BorderLayout.CENTER);
         return pnl;
     }
 
@@ -226,7 +291,11 @@ public class PhuCapKhauTruPanel extends JPanel {
                 });
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi tải Phụ cấp: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            if (isShowing()) {
+                JOptionPane.showMessageDialog(this, "Lỗi tải Phụ cấp: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            } else {
+                System.err.println("Bỏ qua dialog tải Phụ cấp: " + ex.getMessage());
+            }
         }
 
         // 2. Load Khấu Trừ
@@ -240,7 +309,11 @@ public class PhuCapKhauTruPanel extends JPanel {
                 });
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi tải Khấu trừ: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            if (isShowing()) {
+                JOptionPane.showMessageDialog(this, "Lỗi tải Khấu trừ: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            } else {
+                System.err.println("Bỏ qua dialog tải Khấu trừ: " + ex.getMessage());
+            }
         }
 
         // 3. Load Tổng Hợp từ View & Function

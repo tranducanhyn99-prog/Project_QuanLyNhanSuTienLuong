@@ -4,8 +4,12 @@ import com.model.BangLuong;
 import com.model.ChiTietBangLuong;
 import com.service.PayrollService;
 import com.session.Session;
+import com.ui.theme.UITheme;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -61,19 +65,18 @@ public class BaoCaoPanel extends JPanel {
 
     private void initComponents() {
         cboKyLuong = new JComboBox<>();
-        cboKyLuong.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        UITheme.styleComboBox(cboKyLuong);
 
         String[] columns;
         if (session.hasRole("Employee") && !session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer")) {
-            // Employee chỉ xem phiếu lương cá nhân
             columns = new String[]{
-                "Kỳ lương", "Lương CB", "Ngày công chuẩn", "Ngày công TT",
-                "Tiền công", "Phụ cấp", "Khấu trừ", "Thực nhận", "Trạng thái"
+                "Kỳ lương", "Lương CB (VNĐ)", "Ngày công chuẩn", "Ngày công TT",
+                "Tiền công (VNĐ)", "Phụ cấp (VNĐ)", "Khấu trừ (VNĐ)", "Thực nhận (VNĐ)", "Trạng thái"
             };
         } else {
             columns = new String[]{
-                "Mã NV", "Họ tên", "Phòng ban", "Chức vụ", "Lương CB",
-                "NC Chuẩn", "NC Thực tế", "Tiền công", "Phụ cấp", "Khấu trừ", "Thực nhận"
+                "Mã NV", "Họ tên", "Phòng ban", "Chức vụ", "Lương CB (VNĐ)",
+                "NC Chuẩn", "NC Thực tế", "Tiền công (VNĐ)", "Phụ cấp (VNĐ)", "Khấu trừ (VNĐ)", "Thực nhận (VNĐ)"
             };
         }
 
@@ -85,113 +88,52 @@ public class BaoCaoPanel extends JPanel {
         };
 
         tblBaoCao = new JTable(modelBaoCao);
-        tblBaoCao.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        tblBaoCao.setRowHeight(25);
-        tblBaoCao.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        UITheme.styleTable(tblBaoCao);
 
-        // Căn phải cho cột số tiền
-        DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
-        rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
-        for (int i = 0; i < tblBaoCao.getColumnCount(); i++) {
-            String colName = tblBaoCao.getColumnName(i);
-            if (colName.contains("Lương") || colName.contains("Tiền") ||
-                colName.contains("Phụ cấp") || colName.contains("Khấu trừ") ||
-                colName.contains("Thực nhận") || colName.contains("NC")) {
-                tblBaoCao.getColumnModel().getColumn(i).setCellRenderer(rightRenderer);
-            }
-        }
-
-        lblTongThucNhan = new JLabel("Tổng thực nhận: 0");
-        lblTongThucNhan.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblTongThucNhan = new JLabel("Tổng thực nhận: 0 VNĐ");
+        lblTongThucNhan.setFont(UITheme.FONT_BODY_BOLD);
+        lblTongThucNhan.setForeground(UITheme.PRIMARY);
 
         lblTrangThai = new JLabel("");
-        lblTrangThai.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblTrangThai.setFont(UITheme.FONT_BODY_BOLD);
 
-        // Nút Chốt bảng lương: vẽ đồ họa trực tiếp đảm bảo nền ĐỎ nổi bật, chữ trắng sắc nét
-        btnChotLuong = new JButton("Chốt bảng lương") {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                if (!isEnabled()) {
-                    g2.setColor(new Color(226, 232, 240));
-                } else if (getModel().isPressed()) {
-                    g2.setColor(new Color(153, 27, 27)); // Crimson đậm khi nhấn
-                } else if (getModel().isRollover()) {
-                    g2.setColor(new Color(185, 28, 28)); // Đỏ sáng khi di chuột
-                } else {
-                    g2.setColor(new Color(220, 38, 38)); // Đỏ nổi bật
-                }
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        btnChotLuong.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnChotLuong.setForeground(Color.WHITE);
-        btnChotLuong.setFocusPainted(false);
-        btnChotLuong.setContentAreaFilled(false);
-        btnChotLuong.setBorderPainted(false);
-        btnChotLuong.setOpaque(false);
-        btnChotLuong.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnChotLuong.setPreferredSize(new Dimension(150, 34));
+        btnChotLuong = new JButton("Chốt bảng lương");
+        UITheme.styleDangerButton(btnChotLuong);
+        btnChotLuong.setPreferredSize(new Dimension(150, 32));
 
-        // Nút Mở lại bảng lương (Hủy chốt): vẽ nền Cam Hổ Phách sang trọng
-        btnHuyChot = new JButton("Mở lại bảng lương (Hủy chốt)") {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                if (!isEnabled()) {
-                    g2.setColor(new Color(226, 232, 240));
-                } else if (getModel().isPressed()) {
-                    g2.setColor(new Color(180, 83, 9));
-                } else if (getModel().isRollover()) {
-                    g2.setColor(new Color(217, 119, 6));
-                } else {
-                    g2.setColor(new Color(245, 158, 11));
-                }
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        btnHuyChot.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnHuyChot.setForeground(Color.WHITE);
-        btnHuyChot.setFocusPainted(false);
-        btnHuyChot.setContentAreaFilled(false);
-        btnHuyChot.setBorderPainted(false);
-        btnHuyChot.setOpaque(false);
-        btnHuyChot.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnHuyChot.setPreferredSize(new Dimension(215, 34));
+        btnHuyChot = new JButton("Mở lại bảng lương (Hủy chốt)");
+        UITheme.stylePrimaryButton(btnHuyChot);
+        btnHuyChot.setPreferredSize(new Dimension(215, 32));
         btnHuyChot.setVisible(false);
 
-        // Nút Xóa kỳ lương nháp
         btnXoaKyBaoCao = new JButton("Xóa kỳ lương (chưa chốt)");
-        btnXoaKyBaoCao.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnXoaKyBaoCao.setForeground(new Color(185, 28, 28));
-        btnXoaKyBaoCao.setPreferredSize(new Dimension(185, 34));
-        btnXoaKyBaoCao.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        UITheme.styleDangerButton(btnXoaKyBaoCao);
+        btnXoaKyBaoCao.setPreferredSize(new Dimension(185, 32));
 
         btnLamMoi = new JButton("Làm mới");
-        btnLamMoi.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        UITheme.styleSecondaryButton(btnLamMoi);
     }
 
     private void setupLayout() {
-        setLayout(new BorderLayout(8, 8));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setLayout(new BorderLayout(0, 10));
+        setBackground(UITheme.BG_APP);
+        setBorder(new EmptyBorder(16, 20, 20, 20));
 
         boolean isEmployee = session.hasRole("Employee")
                 && !session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer");
 
         // ─── TOP: Bộ lọc kỳ lương ───────────────────────────────────
-        JPanel pnlTop = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        pnlTop.setBorder(BorderFactory.createTitledBorder(
-            isEmployee ? "Phiếu lương cá nhân" : "Báo cáo bảng lương chi tiết"
+        JPanel pnlTop = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+        pnlTop.setBackground(Color.WHITE);
+        pnlTop.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(8, 14, 8, 14)
         ));
 
         if (!isEmployee) {
-            pnlTop.add(new JLabel("Chọn kỳ lương:"));
+            JLabel lblChon = new JLabel("Chọn kỳ lương:");
+            lblChon.setFont(UITheme.FONT_BODY);
+            pnlTop.add(lblChon);
             pnlTop.add(cboKyLuong);
         }
         pnlTop.add(btnLamMoi);
@@ -204,18 +146,24 @@ public class BaoCaoPanel extends JPanel {
 
         // ─── CENTER: Bảng dữ liệu ──────────────────────────────────
         JScrollPane scrollPane = new JScrollPane(tblBaoCao);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("Chi tiết"));
+        scrollPane.setBorder(new LineBorder(UITheme.BORDER, 1, true));
+        scrollPane.getViewport().setBackground(Color.WHITE);
         add(scrollPane, BorderLayout.CENTER);
 
         // ─── BOTTOM: Tổng cộng + Nút chốt ──────────────────────────
-        JPanel pnlBottom = new JPanel(new BorderLayout(10, 5));
-        pnlBottom.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
+        JPanel pnlBottom = new JPanel(new BorderLayout(10, 0));
+        pnlBottom.setBackground(Color.WHITE);
+        pnlBottom.setBorder(new CompoundBorder(
+            new LineBorder(UITheme.BORDER, 1, true),
+            new EmptyBorder(10, 16, 10, 16)
+        ));
 
         pnlBottom.add(lblTongThucNhan, BorderLayout.WEST);
 
         // Khối thao tác (Chốt, Hủy chốt, Xóa kỳ nháp) chỉ hiện cho DB_Admin/Payroll_Officer
         if (session.hasRole("DB_Admin", "Payroll_Officer")) {
             JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+            pnlActions.setOpaque(false);
             pnlActions.add(btnXoaKyBaoCao);
             pnlActions.add(btnHuyChot);
             pnlActions.add(btnChotLuong);
@@ -600,6 +548,10 @@ public class BaoCaoPanel extends JPanel {
     }
 
     private void showError(String message) {
-        JOptionPane.showMessageDialog(this, message, "Lỗi", JOptionPane.ERROR_MESSAGE);
+        if (isShowing()) {
+            JOptionPane.showMessageDialog(this, message, "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } else {
+            System.err.println("Bỏ qua dialog thông báo lỗi báo cáo: " + message);
+        }
     }
 }
