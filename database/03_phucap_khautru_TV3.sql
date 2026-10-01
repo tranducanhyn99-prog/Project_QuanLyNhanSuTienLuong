@@ -141,43 +141,38 @@ BEGIN
 
     BEGIN TRANSACTION;
     BEGIN TRY
-        -- 1. Kiểm tra tồn tại kỳ lương
-        IF NOT EXISTS (SELECT 1 FROM dbo.BANGLUONG WHERE Thang = @Thang AND Nam = @Nam)
+        -- 1. Tìm MaBangLuong và TrangThai dựa trên Thang, Nam
+        DECLARE @MaBangLuong INT;
+        DECLARE @TrangThai VARCHAR(15);
+
+        SELECT
+            @MaBangLuong = MaBangLuong,
+            @TrangThai   = TrangThai
+        FROM dbo.BANGLUONG
+        WHERE Thang = @Thang AND Nam = @Nam;
+
+        -- 2. Kiểm tra tồn tại kỳ lương
+        IF @MaBangLuong IS NULL
         BEGIN
             RAISERROR (N'Không tìm thấy dữ liệu bảng lương tháng %d/%d để xóa!', 16, 1, @Thang, @Nam);
-        END
+        END;
 
-        -- 2. Kiểm tra trạng thái kỳ lương (Chỉ được xóa khi chưa chốt)
-        IF EXISTS (
-            SELECT 1 FROM dbo.BANGLUONG
-            WHERE Thang = @Thang AND Nam = @Nam
-              AND TrangThai IN (N'DA_CHOT', N'Đã chốt', 'DA_CHOT')
-        )
+        -- 3. Kiểm tra trạng thái kỳ lương (Chỉ cho phép xóa khi CHUA_CHOT)
+        IF @TrangThai = 'DA_CHOT'
         BEGIN
             RAISERROR (N'Kỳ lương tháng %d/%d đã được CHỐT SỔ! Không được phép xóa dữ liệu!', 16, 1, @Thang, @Nam);
-        END
+        END;
 
-        -- 3. Xóa chi tiết bảng lương trước (xóa bảng con trước)
-        IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.CHITIETBANGLUONG') AND name = N'MaBangLuong')
-        BEGIN
-            DELETE ct
-            FROM dbo.CHITIETBANGLUONG ct
-            INNER JOIN dbo.BANGLUONG bl ON ct.MaBangLuong = bl.MaBangLuong
-            WHERE bl.Thang = @Thang AND bl.Nam = @Nam;
-        END
-        ELSE IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.CHITIETBANGLUONG') AND name = N'MaKyLuong')
-        BEGIN
-            DELETE ct
-            FROM dbo.CHITIETBANGLUONG ct
-            INNER JOIN dbo.BANGLUONG bl ON ct.MaKyLuong = bl.MaKyLuong
-            WHERE bl.Thang = @Thang AND bl.Nam = @Nam;
-        END
+        -- 4. Xóa các dòng con trong CHITIETBANGLUONG trước
+        DELETE FROM dbo.CHITIETBANGLUONG
+        WHERE MaBangLuong = @MaBangLuong;
 
-        -- 4. Xóa bảng lương sau (xóa bảng cha)
-        DELETE FROM dbo.BANGLUONG WHERE Thang = @Thang AND Nam = @Nam;
+        -- 5. Xóa dòng cha trong BANGLUONG sau
+        DELETE FROM dbo.BANGLUONG
+        WHERE MaBangLuong = @MaBangLuong;
 
         COMMIT TRANSACTION;
-        PRINT N'Đã xóa hoàn tất kỳ lương chưa chốt tháng ' + CAST(@Thang AS VARCHAR) + '/' + CAST(@Nam AS VARCHAR);
+        PRINT N'Đã xóa hoàn tất kỳ lương chưa chốt tháng ' + CAST(@Thang AS VARCHAR(2)) + '/' + CAST(@Nam AS VARCHAR(4));
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
@@ -186,6 +181,128 @@ BEGIN
         DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
         RAISERROR (@ErrorMessage, 16, 1);
     END CATCH
+END;
+GO
+
+-- 2.6. PROCEDURE Ghi nhận chấm công: sp_GhiNhanChamCong (TV3)
+CREATE OR ALTER PROCEDURE dbo.sp_GhiNhanChamCong
+    @MaNV         INT,
+    @NgayChamCong DATE,
+    @GioVao       TIME(0),
+    @GioRa        TIME(0) = NULL,
+    @TrangThai    NVARCHAR(20),
+    @GhiChu       NVARCHAR(255) = NULL,
+    @MaChamCong   INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- 1. Kiểm tra tham số bắt buộc không được NULL hoặc không hợp lệ
+    IF @MaNV IS NULL OR @MaNV <= 0
+    BEGIN
+        RAISERROR (N'Mã nhân viên không hợp lệ!', 16, 1);
+        RETURN;
+    END;
+
+    IF @NgayChamCong IS NULL
+    BEGIN
+        RAISERROR (N'Ngày chấm công không được để trống!', 16, 1);
+        RETURN;
+    END;
+
+    IF @GioVao IS NULL
+    BEGIN
+        RAISERROR (N'Giờ vào làm không được để trống!', 16, 1);
+        RETURN;
+    END;
+
+    -- 2. Kiểm tra ngày chấm công không vượt quá ngày hiện tại
+    IF @NgayChamCong > CAST(GETDATE() AS DATE)
+    BEGIN
+        RAISERROR (N'Ngày chấm công không được vượt quá ngày hiện tại!', 16, 1);
+        RETURN;
+    END;
+
+    -- 3. Kiểm tra miền giá trị hợp lệ của cột TrangThai
+    IF @TrangThai IS NULL OR @TrangThai NOT IN (N'CO_MAT', N'DI_TRE', N'VE_SOM', N'VANG')
+    BEGIN
+        RAISERROR (N'Trạng thái chấm công không hợp lệ!', 16, 1);
+        RETURN;
+    END;
+
+    -- 4. Kiểm tra độ dài ghi chú không vượt quá 255 ký tự
+    IF @GhiChu IS NOT NULL AND LEN(@GhiChu) > 255
+    BEGIN
+        RAISERROR (N'Ghi chú không được vượt quá 255 ký tự!', 16, 1);
+        RETURN;
+    END;
+
+    -- 5. Kiểm tra logic giờ ra về phải lớn hơn giờ vào làm
+    IF @GioRa IS NOT NULL AND @GioRa <= @GioVao
+    BEGIN
+        RAISERROR (N'Giờ ra về phải lớn hơn giờ vào làm!', 16, 1);
+        RETURN;
+    END;
+
+    -- 6. Kiểm tra tồn tại nhân viên và trạng thái hoạt động (giá trị thực tế TV1: DANG_LAM_VIEC / NGHI_VIEC)
+    DECLARE @TrangThaiNV NVARCHAR(20);
+    SELECT @TrangThaiNV = TrangThai
+    FROM dbo.NHANVIEN
+    WHERE MaNV = @MaNV;
+
+    IF @TrangThaiNV IS NULL
+    BEGIN
+        RAISERROR (N'Nhân viên không tồn tại trong hệ thống!', 16, 1);
+        RETURN;
+    END;
+
+    IF @TrangThaiNV <> N'DANG_LAM_VIEC'
+    BEGIN
+        RAISERROR (N'Không thể ghi nhận chấm công cho nhân viên đã nghỉ việc hoặc không hoạt động!', 16, 1);
+        RETURN;
+    END;
+
+    -- 7. Kiểm tra trùng lặp bản ghi chấm công trong ngày (bảo vệ trước khi insert)
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.CHAMCONG
+        WHERE MaNV = @MaNV
+          AND NgayChamCong = @NgayChamCong
+    )
+    BEGIN
+        RAISERROR (N'Nhân viên đã có bản ghi chấm công trong ngày này!', 16, 1);
+        RETURN;
+    END;
+
+    -- 8. Ghi nhận chấm công (không sở hữu transaction để caller điều phối)
+    INSERT INTO dbo.CHAMCONG (MaNV, NgayChamCong, GioVao, GioRa, TrangThai, GhiChu)
+    VALUES (@MaNV, @NgayChamCong, @GioVao, @GioRa, @TrangThai, @GhiChu);
+
+    -- 9. Trả về mã chấm công vừa sinh qua tham số OUTPUT
+    SET @MaChamCong = SCOPE_IDENTITY();
+END;
+GO
+
+-- 2.7. TRIGGER Kiểm tra giờ chấm công: trg_ChamCong_KiemTraGio (TV3)
+CREATE OR ALTER TRIGGER dbo.trg_ChamCong_KiemTraGio
+ON dbo.CHAMCONG
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Kiểm tra set-based: từ chối nếu có bất kỳ dòng nào có GioRa <= GioVao
+    IF EXISTS (
+        SELECT 1
+        FROM inserted
+        WHERE GioRa IS NOT NULL
+          AND GioRa <= GioVao
+    )
+    BEGIN
+        RAISERROR (N'Lỗi: Giờ ra về phải lớn hơn giờ vào làm.', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
 END;
 GO
 
