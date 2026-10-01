@@ -819,4 +819,15 @@ public class MainFrame extends JFrame {
             repaint();
         }
     }
+
+    public static void main(String[] args) {
+        UITheme.setupGlobalUI();
+        if (!Session.getInstance().isLoggedIn()) {
+            Session.getInstance().login(new com.model.TaiKhoan(1, 1, "admin", "DB_Admin", "Trần Đức Anh", "HOAT_DONG"));
+        }
+        SwingUtilities.invokeLater(() -> {
+            MainFrame frame = new MainFrame();
+            frame.setVisible(true);
+        });
+    }
 }
