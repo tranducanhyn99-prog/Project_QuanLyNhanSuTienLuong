@@ -1,93 +1,174 @@
-## 📌 Tiêu đề Pull Request
-`[TV3] Hoàn thiện phân hệ Phụ cấp - Khấu trừ, tiếp nhận 2 đối tượng SQL Chấm công (SP, Trigger), Benchmark Index và hoàn tất Tuần 3`
+# Hướng dẫn Git/GitHub cho Nhóm 06
 
----
+Tài liệu này là hướng dẫn thao tác Git/GitHub thống nhất cho project **Quản lý nhân sự và tiền lương**.
 
-### 1. Loại thay đổi (Type of Change)
-- [x] **Feature**: Cập nhật tính năng giao diện `PhuCapKhauTruPanel` (nút thêm/xóa phụ cấp, khấu trừ chuẩn UI Theme).
-- [x] **Database Migration**: Hoàn thiện toàn bộ DDL, Constraints, Index, View, Function, Trigger, Stored Procedure và Transaction.
-- [x] **Refactor / Integration**: Tiếp nhận quyền sở hữu (ownership) và chuẩn hóa `sp_GhiNhanChamCong`, `trg_ChamCong_KiemTraGio` phối hợp cùng TV2.
-- [x] **Documentation & Tests**: Bổ sung kịch bản Benchmark Index 30.000 dòng, bộ test SQL tự động, ảnh minh chứng `screenshots/` và Báo cáo chuyên đề cuối kỳ.
+## 1. Workflow chung
 
----
+```text
+main
+  ↑
+Pull Request
+  ↑
+branch của thành viên
+```
 
-### 2. Mô tả tổng quan (Overview)
-- **Thành viên thực hiện:** TV3 – Trần Tiến Đạt (MSSV: 24110198).
-- **Phân hệ phụ trách:** Quản lý Phụ cấp, Khấu trừ & Nghiệp vụ Chấm công bổ trợ.
-- **Mục tiêu PR:**
-    1. Hoàn tất 100% nhiệm vụ kỹ thuật Tuần 2 và Tuần 3 theo đúng ma trận phân công.
-    2. Đồng bộ hóa việc tiếp nhận quyền sở hữu **2 đối tượng SQL Chấm công** (`sp_GhiNhanChamCong` và `trg_ChamCong_KiemTraGio`) từ phân hệ của TV2 để bảo đảm tiêu chí Rubric: mỗi thành viên sở hữu độc lập 1 SP, 1 Trigger, 1 View, 1 Function, 1 Index, 1 Transaction.
-    3. Tối ưu giao diện `PhuCapKhauTruPanel` (đổi màu nút Thêm sang xanh ngọc lục bảo độ tương phản cao, bổ sung nút Xóa riêng biệt cho Phụ cấp và Khấu trừ).
+Branch `main` đang được GitHub Ruleset bảo vệ. Thành viên không được push trực tiếp vào `main`.
 
----
+Mỗi thay đổi phải đi theo quy trình:
 
-### 3. Chi tiết kỹ thuật & Đối tượng CSDL sở hữu (TV3 Ownership)
+1. Đồng bộ `main` mới nhất.
+2. Tạo branch riêng.
+3. Code và tự kiểm thử.
+4. Commit thay đổi.
+5. Push branch lên GitHub.
+6. Tạo Pull Request vào `main`.
+7. Chờ Code Owner review.
+8. Sửa theo review nếu có.
+9. Chỉ merge sau khi được approve.
 
-#### 🔹 Tiếp nhận và chuẩn hóa 2 đối tượng SQL từ phân hệ Chấm công (TV2 ➔ TV3):
-* **Stored Procedure `dbo.sp_GhiNhanChamCong`:**
-    * Tiếp nhận từ phân hệ chấm công theo ma trận rubric đề tài.
-    * Cài đặt đầy đủ 9 bước kiểm tra nghiệp vụ: kiểm tra tham số bắt buộc không NULL, ngày chấm công không vượt quá hiện tại, miền giá trị `TrangThai IN ('CO_MAT', 'DI_TRE', 'VE_SOM', 'VANG')`, độ dài `GhiChu <= 255`.
-    * Ràng buộc logic nghiệp vụ: Giờ ra về phải lớn hơn giờ vào làm, chỉ ghi nhận cho nhân viên `TrangThai = N'DANG_LAM_VIEC'` (đồng bộ TV1).
-    * Chặn trùng lặp bản ghi chấm công trong cùng ngày của một nhân viên.
-    * Bổ sung tham số **`@MaChamCong INT OUTPUT`** trả về ID vừa sinh cho caller.
-* **Trigger `dbo.trg_ChamCong_KiemTraGio`:**
-    * Gắn trên bảng `dbo.CHAMCONG` cho các thao tác `INSERT, UPDATE`.
-    * Kiểm tra ở mức database: nếu `GioRa <= GioVao` thì lập tức `RAISERROR` và `ROLLBACK TRANSACTION`, bảo toàn dữ liệu chấm công không bị sai lệch thời gian.
+## 2. Branch gợi ý theo phân công
 
-#### 🔹 Toàn bộ 5 đối tượng SQL độc lập + 1 Transaction của TV3:
-1. **Non-Clustered Index:** `IX_PHUCAP_MaNV_ThangNam` (Covering Index kèm `INCLUDE (SoTien, TenPhuCap)`).
-2. **View:** `vw_TongPhuCapThang` (Tổng hợp số khoản và tổng tiền phụ cấp theo nhân viên và kỳ).
-3. **Scalar Function:** `fn_TongKhauTru` (Tính tổng tiền khấu trừ của nhân viên trong kỳ, phục vụ TV4 tính lương).
-4. **Trigger:** `trg_ChamCong_KiemTraGio` (Kiểm soát tính hợp lệ của giờ làm việc).
-5. **Stored Procedure:** `sp_GhiNhanChamCong` (Ghi nhận chấm công có kiểm tra ràng buộc và trả về tham số OUTPUT).
-6. **Transaction:** `sp_XoaKyLuongChuaChot` (Xóa chi tiết con trước, xóa kỳ lương cha sau; tự động `ROLLBACK` an toàn nếu kỳ lương đã chốt sổ `DA_CHOT`).
+| Thành viên | Phạm vi chính | Branch khởi đầu gợi ý |
+|---|---|---|
+| Nguyễn Minh Trí | Nhân viên, phòng ban, chức vụ | `feature/hr-core` |
+| Phạm Minh Quân | Chấm công | `feature/attendance` |
+| Trần Tiến Đạt | Phụ cấp, khấu trừ | `feature/allowance-deduction` |
+| Nguyễn Quang Vinh | Tính lương | `feature/payroll` |
+| Trần Đức Anh | Đăng nhập, phân quyền, integration | `feature/auth-security-integration` |
 
----
+Không bắt buộc chỉ dùng một branch cho cả module. Với task nhỏ nên tạo branch riêng, ví dụ:
 
-### 4. Thay đổi mã nguồn Java (Java Swing, DAO, Service)
-* **`PhuCapKhauTruPanel.java`:**
-    * Bổ sung cụm nút: **"Xóa phụ cấp"** (`btnXoaPC`) và **"Xóa khấu trừ"** (`btnXoaKT`) có hộp thoại xác nhận xóa (`JOptionPane`) tránh thao tác nhầm.
-    * Tinh chỉnh màu sắc: Nút **"Thêm phụ cấp"** / **"Thêm khấu trừ"** chuyển sang màu xanh ngọc lục bảo (`#109566`), viền bo góc, hiệu ứng hover rõ ràng, tương phản tốt trên nền trắng.
-    * Tinh chỉnh màu nút **"Xóa phụ cấp"** / **"Xóa khấu trừ"** sang màu đỏ cảnh báo (`#DC2626`).
-* **`ChamCongDAO.java`:** Cập nhật phương thức `ghiNhanChamCong(...)` gọi đúng Stored Procedure có đăng ký `Types.INTEGER` cho tham số thứ 7 (`OUTPUT`).
-* **`PhuCapDAO.java` & `KhauTruDAO.java`:** Hoàn thiện các hàm CRUD, đọc dữ liệu từ View `vw_TongPhuCapThang`, gọi Function `fn_TongKhauTru` và thực thi Transaction `sp_XoaKyLuongChuaChot`.
+```text
+feature/attendance-ui
+db/attendance-trigger
+fix/payroll-rollback
+docs/database-design
+test/payroll-transaction
+```
 
----
+## 3. Clone repository lần đầu
 
-### 5. Kết quả kiểm thử & Đo lường hiệu năng (Self-Test Checklist)
-- [x] **Benchmark Index (`test_benchmark_index_TV3.sql`):**
-    * Thử nghiệm trên **30.000 bản ghi** phụ cấp.
-    * **Logical Reads:** Giảm từ **188 pages** (Clustered Index Scan) xuống còn **3 pages** (Index Seek), tối ưu hóa **98.4%**.
-    * **Elapsed Time:** Giảm từ **28 ms** xuống còn **2 ms** (nhanh gấp 14 lần).
-    * Không phát sinh `Key Lookup` nhờ cấu trúc Covering Index có `INCLUDE`.
-- [x] **Kiểm thử Stored Procedure (`sp_GhiNhanChamCong`):**
-    * Ghi nhận chấm công hợp lệ: **PASS**, trả về mã `MaChamCong` qua `OUTPUT`.
-    * Chặn trùng lặp ngày chấm công: **PASS**.
-    * Chặn nhân viên nghỉ việc (`TrangThai <> 'DANG_LAM_VIEC'`): **PASS**.
-    * Chặn giờ ra <= giờ vào: **PASS**.
-- [x] **Kiểm thử Trigger (`trg_ChamCong_KiemTraGio`):** Thử chèn `GioRa <= GioVao` bị ngắt lệnh và Rollback thành công.
-- [x] **Kiểm thử Transaction (`sp_XoaKyLuongChuaChot`):**
-    * Xóa kỳ lương chưa chốt (`CHUA_CHOT`): Xóa sạch bảng con trước, bảng cha sau, `COMMIT` thành công.
-    * Cố tình xóa kỳ lương đã chốt (`DA_CHOT`): Bị chặn, ném lỗi và `ROLLBACK` bảo toàn 100% dữ liệu.
-- [x] **Ảnh minh chứng kỹ thuật:** Đã sinh đầy đủ 5 ảnh minh chứng vào thư mục `screenshots/` (`TV3_Benchmark_ExecutionPlan.png`, `TV3_Benchmark_StatisticsIO.png`, `TV3_Function_View_Proof.png`, `TV3_Transaction_Rollback_SP.png`, `TV3_Trigger_KiemTraGio.png`).
+```powershell
+git clone https://github.com/tranducanhyn99-prog/Project_QuanLyNhanSuTienLuong.git
+cd Project_QuanLyNhanSuTienLuong
+```
 
----
+Kiểm tra remote:
 
-### 6. Danh sách file thay đổi (Files Changed)
-* `database/03_phucap_khautru_TV3.sql` (Cập nhật DDL, SP, Trigger, View, Function, Transaction, Seed Data)
-* `database/test_benchmark_index_TV3.sql` (Kịch bản đo Benchmark Index 30.000 dòng)
-* `database/test_module_phucap_khautru_TV3.sql` (Bộ test SQL tích hợp đầy đủ các case)
-* `src/main/java/com/dao/ChamCongDAO.java` (Cập nhật gọi SP có tham số OUTPUT)
-* `src/main/java/com/dao/PhuCapDAO.java` & `KhauTruDAO.java` (DAO phân hệ TV3)
-* `src/main/java/com/ui/luong/PhuCapKhauTruPanel.java` (Cập nhật nút Xóa, đổi màu nút Thêm)
-* `src/test/java/com/test/GenerateTV3ProofScreenshots.java` (Mã Java sinh ảnh SSMS/Benchmark)
-* `run_tuan3_tv3.ps1` (Script tự động hóa chạy test và xuất minh chứng)
-* `docs/TV3_BaoCao_ChuyenDe_PhuCap_KhauTru_CuoiKy.md` (Báo cáo chuyên đề cuối kỳ hoàn thiện)
-* `docs/TV3_Tien_Do_Thuc_Hien.md` (Cập nhật tiến độ 100% Tuần 1, 2, 3)
+```powershell
+git remote -v
+```
 
----
+## 4. Bắt đầu một task mới
 
-### 7. Người đánh giá yêu cầu (Reviewers)
-- @tranducanhyn99-prog (TV5 - Lead Architect): Kiểm tra cơ chế Transaction, Trigger và tính nhất quán CSDL.
-- @NguyenMinhTri (TV1 - Leader): Duyệt tích hợp phân hệ và merge vào nhánh `develop`.
-- @PhamMinhQuan (TV2): Xác nhận đồng bộ `sp_GhiNhanChamCong` và `trg_ChamCong_KiemTraGio` cho phân hệ Chấm công.
+Luôn cập nhật `main` trước khi tạo branch:
+
+```powershell
+git checkout main
+git pull origin main
+git checkout -b feature/ten-task
+```
+
+Kiểm tra branch hiện tại:
+
+```powershell
+git branch
+```
+
+## 5. Commit và push
+
+Sau khi code xong:
+
+```powershell
+git status
+git add .
+git commit -m "feat: mô tả ngắn thay đổi"
+git push -u origin feature/ten-task
+```
+
+Từ lần push tiếp theo trên cùng branch chỉ cần:
+
+```powershell
+git push
+```
+
+Không sử dụng `git push --force` nếu không có lý do đặc biệt và chưa trao đổi với Code Owner.
+
+## 6. Tạo Pull Request
+
+Trên GitHub, chọn branch vừa push và tạo Pull Request với:
+
+```text
+base: main
+compare: branch của bạn
+```
+
+Điền đầy đủ Pull Request template. Với thay đổi liên quan database cần ghi rõ:
+
+- Bảng/đối tượng SQL bị ảnh hưởng.
+- Có thay đổi dữ liệu mẫu hay không.
+- Có ảnh hưởng Stored Procedure/Function/View/Trigger khác hay không.
+- Cách đã kiểm thử.
+
+## 7. Khi reviewer yêu cầu sửa
+
+Không đóng Pull Request và không tạo Pull Request mới. Chỉ cần sửa trên branch hiện tại:
+
+```powershell
+git add .
+git commit -m "fix: xử lý góp ý review"
+git push
+```
+
+Pull Request sẽ tự cập nhật. Ruleset yêu cầu review lại sau khi có commit mới.
+
+## 8. Đồng bộ khi main đã thay đổi
+
+Nếu trong lúc đang làm task có thay đổi mới được merge vào `main`:
+
+```powershell
+git checkout main
+git pull origin main
+git checkout feature/ten-task
+git merge main
+```
+
+Nếu có conflict, xử lý conflict cẩn thận, test lại rồi mới commit.
+
+## 9. Những việc không được làm
+
+- Không commit file chứa password/token.
+- Không commit file backup SQL Server dung lượng lớn nếu chưa thống nhất.
+- Không tự ý đổi tên bảng/cột đã được cả nhóm thống nhất.
+- Không merge Pull Request của chính mình khi chưa được Code Owner duyệt.
+- Không xóa branch của thành viên khác.
+- Không force push vào branch dùng chung.
+
+## 10. Checklist trước khi mở Pull Request
+
+- [ ] Branch được tạo từ `main` mới nhất.
+- [ ] Code build/chạy được trên máy cá nhân.
+- [ ] Đã test chức năng bị thay đổi.
+- [ ] Nếu có SQL, script chạy được trên SQL Server.
+- [ ] Không có password/token trong commit.
+- [ ] Commit message đúng quy ước.
+- [ ] Không có file tạm, log hoặc IDE artifact không cần thiết.
+- [ ] Pull Request mô tả rõ nội dung và cách kiểm thử.
+
+## 11. Quy trình dành cho Code Owner
+
+Code Owner hiện tại: `@tranducanhyn99-prog`.
+
+Khi review Pull Request:
+
+1. Đọc mô tả và kiểm tra phạm vi thay đổi.
+2. Xem `Files changed`.
+3. Kiểm tra ảnh hưởng đến database và các module liên quan.
+4. Yêu cầu sửa nếu phát hiện lỗi hoặc thiếu test.
+5. Chỉ approve khi thay đổi đã đạt yêu cầu.
+6. Merge vào `main` sau khi toàn bộ conversation đã được resolve.
+7. Sau merge, thành viên có thể xóa branch đã hoàn tất.
+
+## 12. Mục tiêu của quy trình
+
+Quy trình này giúp `main` luôn là phiên bản ổn định, lịch sử đóng góp rõ ràng, giảm xung đột khi 5 thành viên làm song song và tạo bằng chứng đóng góp phục vụ phần báo cáo/vấn đáp của project.
