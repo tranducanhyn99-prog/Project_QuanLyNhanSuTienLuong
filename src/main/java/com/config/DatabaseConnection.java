@@ -8,9 +8,54 @@ import java.util.Properties;
 
 public class DatabaseConnection {
 
-    private static String url="jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhanSuTienLuong;encrypt=false;trustServerCertificate=true;characterEncoding=UTF-8";
-    private static String user="sa";
-    private static String password="123456";
+    private static String url;
+    private static String user;
+    private static String password;
+
+    static {
+        // Nạp tường minh SQL Server JDBC Driver để phát hiện sớm lỗi thiếu thư viện trên classpath
+        try {
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            DriverManager.setLoginTimeout(2);
+        } catch (ClassNotFoundException e) {
+            throw new ExceptionInInitializerError(
+                    "Không tìm thấy SQL Server JDBC Driver (com.microsoft.sqlserver.jdbc.SQLServerDriver)! "
+                            + "Vui lòng kiểm tra classpath hoặc biến môi trường MSSQL_JDBC_JAR."
+            );
+        }
+
+        Properties props = new Properties();
+        try (InputStream in = DatabaseConnection.class.getResourceAsStream("/config.properties")) {
+            if (in != null) {
+                props.load(in);
+            }
+        } catch (Exception ignored) {}
+
+        // Ưu tiên đọc từ System Properties hoặc Biến môi trường (Environment Variables) để bảo mật
+        url = System.getProperty("db.url");
+        if (url == null || url.trim().isEmpty()) {
+            url = System.getenv("DB_URL");
+        }
+        if (url == null || url.trim().isEmpty()) {
+            url = props.getProperty("db.url", "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhanSuTienLuong;encrypt=false;trustServerCertificate=true");
+        }
+
+        user = System.getProperty("db.user");
+        if (user == null || user.trim().isEmpty()) {
+            user = System.getenv("DB_USER");
+        }
+        if (user == null || user.trim().isEmpty()) {
+            user = props.getProperty("db.user");
+        }
+
+        password = System.getProperty("db.password");
+        if (password == null || password.trim().isEmpty()) {
+            password = System.getenv("DB_PASSWORD");
+        }
+        if (password == null || password.trim().isEmpty()) {
+            password = props.getProperty("db.password");
+        }
+    }
 
     public static Connection getConnection() throws SQLException {
         try {
