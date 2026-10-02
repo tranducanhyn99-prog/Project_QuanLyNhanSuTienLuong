@@ -23,14 +23,14 @@ Phân hệ Phụ cấp & Khấu trừ giữ vai trò cầu nối quyết định
 
 Theo đúng ma trận phân công đối tượng SQL của Nhóm 06:
 
-| STT | Đối tượng SQL | Tên đối tượng | Mục đích nghiệp vụ |
-| :---: | :--- | :--- | :--- |
-| 1 | **Non-Clustered Index** | `IX_PHUCAP_MaNV_ThangNam` | Tăng tốc độ tra cứu phụ cấp theo nhân viên và kỳ lương. |
-| 2 | **View** | `vw_TongPhuCapThang` | Tổng hợp tự động số khoản và tổng tiền phụ cấp theo nhân viên/kỳ. |
-| 3 | **Scalar Function** | `fn_TongKhauTru` | Trả về tổng tiền khấu trừ của một nhân viên trong kỳ tính lương. |
-| 4 | **Trigger** | `trg_ChamCong_KiemTraGio` | Kiểm soát giờ ra phải lớn hơn giờ vào trên bảng `CHAMCONG`. |
-| 5 | **Stored Procedure** | `sp_GhiNhanChamCong` | Ghi nhận/cập nhật chấm công theo cặp nhân viên - ngày. |
-| 6 | **Transaction** | `sp_XoaKyLuongChuaChot` | Xóa bảng lương chưa chốt, rollback an toàn khi kỳ đã chốt hoặc gặp lỗi. |
+| STT | Đối tượng SQL           | Tên đối tượng | Mục đích nghiệp vụ                                                            |
+|:---:|:------------------------| :--- |:------------------------------------------------------------------------------|
+|  1  | **Non-Clustered Index** | `IX_PHUCAP_MaNV_ThangNam` | Tăng tốc độ tra cứu phụ cấp theo nhân viên và kỳ lương.                       |
+|  2  | **View**                | `vw_TongPhuCapThang` | Tổng hợp tự động số khoản và tổng tiền phụ cấp theo nhân viên/kỳ.             |
+|  3  | **Scalar Function**     | `fn_TongKhauTru` | Trả về tổng tiền khấu trừ của một nhân viên trong kỳ tính lương.              |
+|  4  | **Trigger**             | `trg_PhuCap_KhongSuaKhiDaChotLuong` | Chặn thêm, sửa, xóa phụ cấp khi kỳ lương trong BANGLUONG đã `DA_CHOT`.        |
+|  5  | **Stored Procedure**    | `sp_ThemPhuCapNhanVien` | Thêm phụ cấp vào bảng `PHUCAPNHANVIEN` với mã nhân viên và số tiền tương ứng. |
+|  6  | **Transaction**         | `sp_XoaKyLuongChuaChot` | Xóa bảng lương chưa chốt, rollback an toàn khi kỳ đã chốt hoặc gặp lỗi.       |
 
 ---
 
@@ -49,8 +49,8 @@ Thử nghiệm được thực hiện trên tập dữ liệu mô phỏng 30.000
 | **Key Lookup** | Không | **Không (Covering Index)** | Do có `INCLUDE` |
 
 #### 2. Minh chứng hình ảnh Benchmark
-* Ảnh Execution Plan: `screenshots/TV3_Benchmark_ExecutionPlan.png`
-* Ảnh Statistics IO/Time: `screenshots/TV3_Benchmark_StatisticsIO.png`
+* Ảnh Execution Plan: `screenshots/TV3/TV3_Benchmark_ExecutionPlan.png`
+* Ảnh Statistics IO/Time: `screenshots/TV3/TV3_Benchmark_StatisticsIO.png`
 
 ---
 

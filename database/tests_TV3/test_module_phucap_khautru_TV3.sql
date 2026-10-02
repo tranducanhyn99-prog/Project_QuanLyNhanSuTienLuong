@@ -58,16 +58,20 @@ BEGIN CATCH
 END CATCH;
 GO
 
--- TEST 4: KIỂM THỬ TRIGGER trg_ChamCong_KiemTraGio
-PRINT N'>>> TEST 4: Trigger trg_ChamCong_KiemTraGio';
+-- TEST 4: KIỂM THỬ TRIGGER trg_PhuCap_KhongSuaKhiDaChotLuong (SỞ HỮU TV3)
+PRINT N'>>> TEST 4: Trigger trg_PhuCap_KhongSuaKhiDaChotLuong';
 BEGIN TRY
-    INSERT INTO dbo.CHAMCONG (MaNV, NgayChamCong, GioVao, GioRa, TrangThai, GhiChu)
-    VALUES (1, '2026-10-05', '08:30:00', '07:15:00', N'CO_MAT', N'Test giờ ra < giờ vào');
-    PRINT N'LỖI: Trigger không chặn giờ ra nhỏ hơn giờ vào!';
+    -- Giả định kỳ 09/2026 đã chốt lương, cố tình xóa một dòng phụ cấp thuộc kỳ này
+    UPDATE dbo.BANGLUONG SET TrangThai = 'DA_CHOT' WHERE Thang = 9 AND Nam = 2026;
+
+    DELETE FROM dbo.PHUCAPNHANVIEN WHERE Thang = 9 AND Nam = 2026 AND MaNV = 1;
+    PRINT N'LỖI: Trigger không chặn sửa/xóa phụ cấp khi kỳ lương đã chốt!';
 END TRY
 BEGIN CATCH
-    PRINT N'-> PASS 4: Trigger đã chặn thành công dữ liệu giờ sai: ' + ERROR_MESSAGE();
+    PRINT N'-> PASS 4: Trigger đã chặn thành công sửa/xóa phụ cấp kỳ đã chốt: ' + ERROR_MESSAGE();
 END CATCH;
+-- Trả lại trạng thái cho kỳ 09/2026
+UPDATE dbo.BANGLUONG SET TrangThai = 'CHUA_CHOT' WHERE Thang = 9 AND Nam = 2026;
 GO
 
 -- TEST 5: KIỂM THỬ STORED PROCEDURE sp_GhiNhanChamCong (PHỐI HỢP TV2)
@@ -107,7 +111,7 @@ BEGIN CATCH
 END CATCH;
 
 -- Truy vấn kiểm chứng bản ghi thực tế trong CSDL
-SELECT MaCC, MaNV, NgayChamCong, GioVao, GioRa, TrangThai, GhiChu
+SELECT MaChamCong, MaNV, NgayChamCong, GioVao, GioRa, TrangThai, GhiChu
 FROM dbo.CHAMCONG
 WHERE MaNV = 3 AND NgayChamCong = @NgayTest;
 
@@ -135,9 +139,9 @@ END CATCH;
 -- 5.3. Kiểm thử quy tắc 6: Chặn ghi nhận chấm công cho nhân viên đã nghỉ việc
 -- ----------------------------------------------------------------------------
 BEGIN TRY
-    -- MaNV = 6 (Lê Thị Thu Thảo) có trạng thái NGHI_VIEC
+    -- MaNV = 10 (Bùi Thu Thảo) có trạng thái NGHI_VIEC
     EXEC dbo.sp_GhiNhanChamCong
-        @MaNV         = 6,
+        @MaNV         = 10,
         @NgayChamCong = @NgayTest,
         @GioVao       = '08:00:00',
         @GioRa        = '17:00:00',
@@ -177,17 +181,17 @@ GO
 -- TEST 6: KIỂM THỬ TRANSACTION sp_XoaKyLuongChuaChot
 PRINT N'>>> TEST 6: Transaction xóa kỳ lương chưa chốt (Rollback & Commit)';
 
--- 6.1. Chuẩn bị dữ liệu kỳ lương test chưa chốt
-IF NOT EXISTS (SELECT 1 FROM dbo.BANGLUONG WHERE Thang = 11 AND Nam = 2026)
-BEGIN
-    INSERT INTO dbo.BANGLUONG (MaBangLuong, Thang, Nam, NgayLap, TrangThai)
-    VALUES ('BL_2026_11', 11, 2026, GETDATE(), N'CHUA_CHOT');
+-- 6.1: Chuẩn bị dữ liệu kỳ lương test chưa chốt (khớp schema TV4/TV5)
+DELETE FROM dbo.CHITIETBANGLUONG WHERE MaBangLuong IN (SELECT MaBangLuong FROM dbo.BANGLUONG WHERE Thang = 11 AND Nam = 2026);
+DELETE FROM dbo.BANGLUONG WHERE Thang = 11 AND Nam = 2026;
 
-    INSERT INTO dbo.CHITIETBANGLUONG (MaBangLuong, MaNV, ThucLinh)
-    VALUES ('BL_2026_11', 1, 15000000), ('BL_2026_11', 2, 12000000);
-END;
+INSERT INTO dbo.BANGLUONG (Thang, Nam, NgayCongChuan, TrangThai, NgayTao)
+VALUES (11, 2026, 26, 'CHUA_CHOT', GETDATE());
 
--- Thực hiện xóa kỳ chưa chốt -> Kỳ vọng thành công
+DECLARE @NewMBL INT = SCOPE_IDENTITY();
+INSERT INTO dbo.CHITIETBANGLUONG (MaBangLuong, MaNV, LuongCoBan, NgayCongThucTe, TienCong, TongPhuCap, TongKhauTru, ThucNhan)
+VALUES (@NewMBL, 1, 10000000, 26, 10000000, 500000, 200000, 10300000);
+
 EXEC dbo.sp_XoaKyLuongChuaChot @Thang = 11, @Nam = 2026;
 PRINT N'-> PASS 6.1: Đã xóa thành công bảng lương và chi tiết lương của kỳ chưa chốt.';
 
@@ -196,7 +200,7 @@ BEGIN TRY
     -- Giả lập kỳ 12/2026 đã chốt
     IF NOT EXISTS (SELECT 1 FROM dbo.BANGLUONG WHERE Thang = 12 AND Nam = 2026)
     BEGIN
-        INSERT INTO dbo.BANGLUONG (MaBangLuong, Thang, Nam, NgayLap, TrangThai)
+        INSERT INTO dbo.BANGLUONG (MaBangLuong, Thang, Nam, NgayTao, TrangThai)
         VALUES ('BL_2026_12', 12, 2026, GETDATE(), N'DA_CHOT');
     END;
 
