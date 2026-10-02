@@ -64,8 +64,8 @@ public class PhuCapKhauTruPanel extends JPanel {
         JPanel pnlTop = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 8));
         pnlTop.setBackground(Color.WHITE);
         pnlTop.setBorder(new CompoundBorder(
-            new LineBorder(UITheme.BORDER, 1, true),
-            new EmptyBorder(8, 14, 8, 14)
+                new LineBorder(UITheme.BORDER, 1, true),
+                new EmptyBorder(8, 14, 8, 14)
         ));
 
         cbThang = new JComboBox<>();
@@ -79,8 +79,8 @@ public class PhuCapKhauTruPanel extends JPanel {
         UITheme.styleComboBox(cbThang);
         UITheme.styleComboBox(cbNam);
 
-        btnLoc = new JButton("Lọc dữ liệu kỳ");
-        UITheme.stylePrimaryButton(btnLoc);
+        // Khắc phục nút Lọc dữ liệu kỳ không bị chữ trắng trên nền trắng
+        btnLoc = createPrimaryButton("Lọc dữ liệu kỳ");
 
         btnXoaKyLuong = new JButton("Xóa kỳ lương chưa chốt (Transaction)");
         UITheme.styleDangerButton(btnXoaKyLuong);
@@ -107,7 +107,6 @@ public class PhuCapKhauTruPanel extends JPanel {
         tabbedPane.addTab("3. Tổng Hợp Kỳ (View & Function)", createTongHopPanel());
         add(tabbedPane, BorderLayout.CENTER);
 
-        // Listeners
         btnLoc.addActionListener(e -> loadAllData());
         btnXoaKyLuong.addActionListener(e -> handleXoaKyLuong());
     }
@@ -117,7 +116,7 @@ public class PhuCapKhauTruPanel extends JPanel {
         pnl.setBackground(UITheme.BG_APP);
         pnl.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Bảng danh sách
+        // Bảng danh sách phụ cấp
         String[] cols = {"Mã PC", "Mã NV", "Họ Tên", "Khoản Phụ Cấp", "Số Tiền (VNĐ)", "Ngày Ghi", "Ghi Chú"};
         modelPhuCap = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
@@ -131,12 +130,16 @@ public class PhuCapKhauTruPanel extends JPanel {
         pnl.add(scroll, BorderLayout.CENTER);
 
         // Form nhập liệu
-        JPanel pnlForm = new JPanel(new GridLayout(2, 5, 10, 5));
+        JPanel pnlForm = new JPanel(new BorderLayout(14, 0));
         pnlForm.setBackground(Color.WHITE);
         pnlForm.setBorder(new CompoundBorder(
-            new LineBorder(UITheme.BORDER, 1, true),
-            new EmptyBorder(12, 14, 12, 14)
+                new LineBorder(UITheme.BORDER, 1, true),
+                new EmptyBorder(12, 14, 12, 14)
         ));
+
+        // Cột nhập thông tin (4 trường dữ liệu)
+        JPanel pnlInputs = new JPanel(new GridLayout(2, 4, 12, 6));
+        pnlInputs.setOpaque(false);
 
         cbNhanVienPC = new JComboBox<>();
         UITheme.styleComboBox(cbNhanVienPC);
@@ -147,28 +150,49 @@ public class PhuCapKhauTruPanel extends JPanel {
         txtGhiChuPC = new JTextField("Phụ cấp định kỳ");
         UITheme.styleTextField(txtGhiChuPC);
 
-        btnThemPC = new JButton("Thêm phụ cấp");
-        UITheme.stylePrimaryButton(btnThemPC);
-        btnXoaPC = new JButton("Xóa chọn");
+        JLabel lblNv = new JLabel("Nhân viên:");
+        lblNv.setFont(UITheme.FONT_BODY);
+        JLabel lblTen = new JLabel("Tên khoản phụ cấp:");
+        lblTen.setFont(UITheme.FONT_BODY);
+        JLabel lblTien = new JLabel("Số tiền (VNĐ):");
+        lblTien.setFont(UITheme.FONT_BODY);
+        JLabel lblGhiChu = new JLabel("Ghi chú:");
+        lblGhiChu.setFont(UITheme.FONT_BODY);
+
+        pnlInputs.add(lblNv);
+        pnlInputs.add(lblTen);
+        pnlInputs.add(lblTien);
+        pnlInputs.add(lblGhiChu);
+
+        pnlInputs.add(cbNhanVienPC);
+        pnlInputs.add(txtTenPhuCap);
+        pnlInputs.add(txtSoTienPC);
+        pnlInputs.add(txtGhiChuPC);
+
+        // Cột nút thao tác bên phải
+        JPanel pnlActions = new JPanel(new GridLayout(2, 1, 0, 6));
+        pnlActions.setOpaque(false);
+
+        JLabel lblActions = new JLabel("Thao tác:");
+        lblActions.setFont(UITheme.FONT_BODY);
+        pnlActions.add(lblActions);
+
+        // Tạo nút Thêm phụ cấp nền xanh ngọc lục bảo chữ trắng (Solid Button)
+        btnThemPC = createSuccessButton("Thêm phụ cấp");
+        btnThemPC.setToolTipText("Thêm mới một khoản phụ cấp cho nhân viên đã chọn");
+
+        btnXoaPC = new JButton("Xóa phụ cấp");
         UITheme.styleDangerButton(btnXoaPC);
+        btnXoaPC.setToolTipText("Xóa khoản phụ cấp đang được chọn trên bảng");
 
-        pnlForm.add(new JLabel("Nhân viên:"));
-        pnlForm.add(new JLabel("Tên khoản phụ cấp:"));
-        pnlForm.add(new JLabel("Số tiền (VNĐ):"));
-        pnlForm.add(new JLabel("Ghi chú:"));
-        pnlForm.add(new JLabel("Thao tác:"));
-
-        pnlForm.add(cbNhanVienPC);
-        pnlForm.add(txtTenPhuCap);
-        pnlForm.add(txtSoTienPC);
-        pnlForm.add(txtGhiChuPC);
-
-        JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         pnlBtn.setOpaque(false);
         pnlBtn.add(btnThemPC);
         pnlBtn.add(btnXoaPC);
-        pnlForm.add(pnlBtn);
+        pnlActions.add(pnlBtn);
 
+        pnlForm.add(pnlInputs, BorderLayout.CENTER);
+        pnlForm.add(pnlActions, BorderLayout.EAST);
         pnl.add(pnlForm, BorderLayout.SOUTH);
 
         btnThemPC.addActionListener(e -> handleThemPhuCap());
@@ -182,6 +206,7 @@ public class PhuCapKhauTruPanel extends JPanel {
         pnl.setBackground(UITheme.BG_APP);
         pnl.setBorder(new EmptyBorder(10, 10, 10, 10));
 
+        // Bảng danh sách khấu trừ
         String[] cols = {"Mã KT", "Mã NV", "Họ Tên", "Khoản Khấu Trừ", "Số Tiền (VNĐ)", "Ngày Ghi", "Lý Do"};
         modelKhauTru = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
@@ -194,12 +219,16 @@ public class PhuCapKhauTruPanel extends JPanel {
         scroll.getViewport().setBackground(Color.WHITE);
         pnl.add(scroll, BorderLayout.CENTER);
 
-        JPanel pnlForm = new JPanel(new GridLayout(2, 5, 10, 5));
+        JPanel pnlForm = new JPanel(new BorderLayout(14, 0));
         pnlForm.setBackground(Color.WHITE);
         pnlForm.setBorder(new CompoundBorder(
-            new LineBorder(UITheme.BORDER, 1, true),
-            new EmptyBorder(12, 14, 12, 14)
+                new LineBorder(UITheme.BORDER, 1, true),
+                new EmptyBorder(12, 14, 12, 14)
         ));
+
+        // Cột nhập thông tin
+        JPanel pnlInputs = new JPanel(new GridLayout(2, 4, 12, 6));
+        pnlInputs.setOpaque(false);
 
         cbNhanVienKT = new JComboBox<>();
         UITheme.styleComboBox(cbNhanVienKT);
@@ -210,28 +239,49 @@ public class PhuCapKhauTruPanel extends JPanel {
         txtLyDoKT = new JTextField("Ứng lương cá nhân");
         UITheme.styleTextField(txtLyDoKT);
 
-        btnThemKT = new JButton("Thêm khấu trừ");
-        UITheme.stylePrimaryButton(btnThemKT);
-        btnXoaKT = new JButton("Xóa chọn");
+        JLabel lblNv = new JLabel("Nhân viên:");
+        lblNv.setFont(UITheme.FONT_BODY);
+        JLabel lblTen = new JLabel("Tên khoản khấu trừ:");
+        lblTen.setFont(UITheme.FONT_BODY);
+        JLabel lblTien = new JLabel("Số tiền (VNĐ):");
+        lblTien.setFont(UITheme.FONT_BODY);
+        JLabel lblLyDo = new JLabel("Lý do:");
+        lblLyDo.setFont(UITheme.FONT_BODY);
+
+        pnlInputs.add(lblNv);
+        pnlInputs.add(lblTen);
+        pnlInputs.add(lblTien);
+        pnlInputs.add(lblLyDo);
+
+        pnlInputs.add(cbNhanVienKT);
+        pnlInputs.add(txtTenKhauTru);
+        pnlInputs.add(txtSoTienKT);
+        pnlInputs.add(txtLyDoKT);
+
+        // Cột nút thao tác bên phải
+        JPanel pnlActions = new JPanel(new GridLayout(2, 1, 0, 6));
+        pnlActions.setOpaque(false);
+
+        JLabel lblActions = new JLabel("Thao tác:");
+        lblActions.setFont(UITheme.FONT_BODY);
+        pnlActions.add(lblActions);
+
+        // Tạo nút Thêm khấu trừ nền xanh ngọc lục bảo chữ trắng (Solid Button)
+        btnThemKT = createSuccessButton("Thêm khấu trừ");
+        btnThemKT.setToolTipText("Thêm mới một khoản khấu trừ cho nhân viên đã chọn");
+
+        btnXoaKT = new JButton("Xóa khấu trừ");
         UITheme.styleDangerButton(btnXoaKT);
+        btnXoaKT.setToolTipText("Xóa khoản khấu trừ đang được chọn trên bảng");
 
-        pnlForm.add(new JLabel("Nhân viên:"));
-        pnlForm.add(new JLabel("Tên khoản khấu trừ:"));
-        pnlForm.add(new JLabel("Số tiền (VNĐ):"));
-        pnlForm.add(new JLabel("Lý do:"));
-        pnlForm.add(new JLabel("Thao tác:"));
-
-        pnlForm.add(cbNhanVienKT);
-        pnlForm.add(txtTenKhauTru);
-        pnlForm.add(txtSoTienKT);
-        pnlForm.add(txtLyDoKT);
-
-        JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         pnlBtn.setOpaque(false);
         pnlBtn.add(btnThemKT);
         pnlBtn.add(btnXoaKT);
-        pnlForm.add(pnlBtn);
+        pnlActions.add(pnlBtn);
 
+        pnlForm.add(pnlInputs, BorderLayout.CENTER);
+        pnlForm.add(pnlActions, BorderLayout.EAST);
         pnl.add(pnlForm, BorderLayout.SOUTH);
 
         btnThemKT.addActionListener(e -> handleThemKhauTru());
@@ -259,6 +309,63 @@ public class PhuCapKhauTruPanel extends JPanel {
         return pnl;
     }
 
+    // =========================================================================
+    // HÀM TẠO NÚT BẤM TỰ VẼ NỀN (KHẮC PHỤC 100% LỖI TÀNG HÌNH TRÊN WINDOWS L&F)
+    // =========================================================================
+    private JButton createSuccessButton(String text) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (getModel().isPressed()) {
+                    g2.setColor(new Color(13, 120, 82)); // Nhấn chuột: xanh đậm
+                } else if (getModel().isRollover()) {
+                    g2.setColor(new Color(22, 175, 120)); // Rê chuột: xanh sáng
+                } else {
+                    g2.setColor(new Color(16, 149, 102)); // Trạng thái thường: Emerald Green
+                }
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 4, 4);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(UITheme.FONT_BODY_BOLD);
+        btn.setForeground(Color.WHITE);
+        btn.setContentAreaFilled(false);
+        btn.setFocusPainted(false);
+        btn.setBorder(new EmptyBorder(7, 14, 7, 14));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
+    private JButton createPrimaryButton(String text) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (getModel().isPressed()) {
+                    g2.setColor(new Color(0, 75, 150));
+                } else if (getModel().isRollover()) {
+                    g2.setColor(new Color(25, 125, 225));
+                } else {
+                    g2.setColor(new Color(0, 102, 204)); // Màu Primary của dự án
+                }
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 4, 4);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(UITheme.FONT_BODY_BOLD);
+        btn.setForeground(Color.WHITE);
+        btn.setContentAreaFilled(false);
+        btn.setFocusPainted(false);
+        btn.setBorder(new EmptyBorder(7, 14, 7, 14));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
     private void loadNhanVienCombobox() {
         try {
             listNhanVien = nhanVienDAO.getAll();
@@ -266,13 +373,12 @@ public class PhuCapKhauTruPanel extends JPanel {
             cbNhanVienKT.removeAllItems();
             if (listNhanVien != null) {
                 for (NhanVien nv : listNhanVien) {
-                    String item = nv.getMaNV() + " - " + nv.getHoTen();
-                    cbNhanVienPC.addItem(item);
-                    cbNhanVienKT.addItem(item);
+                    cbNhanVienPC.addItem(nv.getMaNV() + " - " + nv.getHoTen());
+                    cbNhanVienKT.addItem(nv.getMaNV() + " - " + nv.getHoTen());
                 }
             }
         } catch (Exception ex) {
-            // Trường hợp DB chưa sẵn sàng nhân viên
+            System.err.println("Chưa nạp được danh sách nhân viên: " + ex.getMessage());
         }
     }
 
@@ -280,7 +386,7 @@ public class PhuCapKhauTruPanel extends JPanel {
         int thang = (int) cbThang.getSelectedItem();
         int nam = (int) cbNam.getSelectedItem();
 
-        // 1. Load Phụ Cấp
+        // 1. Tải Phụ cấp
         try {
             modelPhuCap.setRowCount(0);
             List<PhuCapNhanVien> listPC = service.getListPhuCap(thang, nam);
@@ -293,12 +399,10 @@ public class PhuCapKhauTruPanel extends JPanel {
         } catch (Exception ex) {
             if (isShowing()) {
                 JOptionPane.showMessageDialog(this, "Lỗi tải Phụ cấp: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            } else {
-                System.err.println("Bỏ qua dialog tải Phụ cấp: " + ex.getMessage());
             }
         }
 
-        // 2. Load Khấu Trừ
+        // 2. Tải Khấu trừ
         try {
             modelKhauTru.setRowCount(0);
             List<KhauTruNhanVien> listKT = service.getListKhauTru(thang, nam);
@@ -311,12 +415,10 @@ public class PhuCapKhauTruPanel extends JPanel {
         } catch (Exception ex) {
             if (isShowing()) {
                 JOptionPane.showMessageDialog(this, "Lỗi tải Khấu trừ: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            } else {
-                System.err.println("Bỏ qua dialog tải Khấu trừ: " + ex.getMessage());
             }
         }
 
-        // 3. Load Tổng Hợp từ View & Function
+        // 3. Tải Tổng hợp (View vw_TongPhuCapThang & Function fn_TongKhauTru)
         try {
             modelTongHop.setRowCount(0);
             List<Map<String, Object>> listTH = service.getTongHopPhuCap(thang, nam);
@@ -334,16 +436,14 @@ public class PhuCapKhauTruPanel extends JPanel {
                         moneyFormat.format(tongKT)
                 });
             }
-        } catch (Exception ex) {
-            // Không ngắt app nếu bảng view rỗng
-        }
+        } catch (Exception ignored) {}
     }
 
     private void handleThemPhuCap() {
         try {
             int selectedIdx = cbNhanVienPC.getSelectedIndex();
             if (selectedIdx < 0 || listNhanVien == null || listNhanVien.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên!");
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             int maNV = listNhanVien.get(selectedIdx).getMaNV();
@@ -355,7 +455,7 @@ public class PhuCapKhauTruPanel extends JPanel {
 
             PhuCapNhanVien pc = new PhuCapNhanVien(maNV, thang, nam, ten, tien, null, ghiChu);
             service.themPhuCap(pc);
-            JOptionPane.showMessageDialog(this, "Thêm phụ cấp thành công!");
+            JOptionPane.showMessageDialog(this, "Thêm phụ cấp thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             loadAllData();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi thêm phụ cấp: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -365,17 +465,27 @@ public class PhuCapKhauTruPanel extends JPanel {
     private void handleXoaPhuCap() {
         int row = tblPhuCap.getSelectedRow();
         if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn dòng phụ cấp cần xóa!");
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn dòng phụ cấp cần xóa trên bảng!", "Thông báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
         int maPCNV = (int) modelPhuCap.getValueAt(row, 0);
-        int opt = JOptionPane.showConfirmDialog(this, "Xác nhận xóa khoản phụ cấp mã " + maPCNV + "?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        String tenNV = modelPhuCap.getValueAt(row, 2).toString();
+        String khoanPC = modelPhuCap.getValueAt(row, 3).toString();
+
+        int opt = JOptionPane.showConfirmDialog(this,
+                "Xác nhận xóa khoản phụ cấp [" + khoanPC + "] của nhân viên [" + tenNV + "] (Mã PC: " + maPCNV + ")?",
+                "Xác nhận xóa phụ cấp",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
         if (opt == JOptionPane.YES_OPTION) {
             try {
                 service.xoaPhuCap(maPCNV);
+                JOptionPane.showMessageDialog(this, "Đã xóa phụ cấp thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
                 loadAllData();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Lỗi xóa phụ cấp: " + ex.getMessage());
+                JOptionPane.showMessageDialog(this, "Lỗi xóa phụ cấp: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -384,7 +494,7 @@ public class PhuCapKhauTruPanel extends JPanel {
         try {
             int selectedIdx = cbNhanVienKT.getSelectedIndex();
             if (selectedIdx < 0 || listNhanVien == null || listNhanVien.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên!");
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             int maNV = listNhanVien.get(selectedIdx).getMaNV();
@@ -396,7 +506,7 @@ public class PhuCapKhauTruPanel extends JPanel {
 
             KhauTruNhanVien kt = new KhauTruNhanVien(maNV, thang, nam, ten, tien, null, lyDo);
             service.themKhauTru(kt);
-            JOptionPane.showMessageDialog(this, "Thêm khoản khấu trừ thành công!");
+            JOptionPane.showMessageDialog(this, "Thêm khoản khấu trừ thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             loadAllData();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi thêm khấu trừ: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -406,17 +516,27 @@ public class PhuCapKhauTruPanel extends JPanel {
     private void handleXoaKhauTru() {
         int row = tblKhauTru.getSelectedRow();
         if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn dòng khấu trừ cần xóa!");
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn dòng khấu trừ cần xóa trên bảng!", "Thông báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
         int maKTNV = (int) modelKhauTru.getValueAt(row, 0);
-        int opt = JOptionPane.showConfirmDialog(this, "Xác nhận xóa khoản khấu trừ mã " + maKTNV + "?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        String tenNV = modelKhauTru.getValueAt(row, 2).toString();
+        String khoanKT = modelKhauTru.getValueAt(row, 3).toString();
+
+        int opt = JOptionPane.showConfirmDialog(this,
+                "Xác nhận xóa khoản khấu trừ [" + khoanKT + "] của nhân viên [" + tenNV + "] (Mã KT: " + maKTNV + ")?",
+                "Xác nhận xóa khấu trừ",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
         if (opt == JOptionPane.YES_OPTION) {
             try {
                 service.xoaKhauTru(maKTNV);
+                JOptionPane.showMessageDialog(this, "Đã xóa khoản khấu trừ thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
                 loadAllData();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Lỗi xóa khấu trừ: " + ex.getMessage());
+                JOptionPane.showMessageDialog(this, "Lỗi xóa khấu trừ: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -426,11 +546,14 @@ public class PhuCapKhauTruPanel extends JPanel {
         int nam = (int) cbNam.getSelectedItem();
         int opt = JOptionPane.showConfirmDialog(this,
                 "CẢNH BÁO TRANSACTION: Hệ thống sẽ gọi sp_XoaKyLuongChuaChot để xóa toàn bộ chi tiết và bảng lương tháng " + thang + "/" + nam + ".\nNếu kỳ lương đã chốt, Transaction sẽ tự động ROLLBACK toàn bộ.\nBạn có muốn tiếp tục?",
-                "Xác nhận Transaction xóa kỳ lương", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                "Xác nhận Transaction xóa kỳ lương",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
         if (opt == JOptionPane.YES_OPTION) {
             try {
                 service.xoaKyLuongChuaChot(thang, nam);
-                JOptionPane.showMessageDialog(this, "Đã thực hiện xong Transaction xóa kỳ lương thành công!");
+                JOptionPane.showMessageDialog(this, "Đã thực hiện xong Transaction xóa kỳ lương thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 loadAllData();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Transaction Rollback do lỗi: " + ex.getMessage(), "Kết quả Transaction", JOptionPane.ERROR_MESSAGE);
