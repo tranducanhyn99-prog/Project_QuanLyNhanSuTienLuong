@@ -19,8 +19,8 @@ public class DatabaseConnection {
             DriverManager.setLoginTimeout(2);
         } catch (ClassNotFoundException e) {
             throw new ExceptionInInitializerError(
-                "Không tìm thấy SQL Server JDBC Driver (com.microsoft.sqlserver.jdbc.SQLServerDriver)! "
-                + "Vui lòng kiểm tra classpath hoặc biến môi trường MSSQL_JDBC_JAR."
+                    "Không tìm thấy SQL Server JDBC Driver (com.microsoft.sqlserver.jdbc.SQLServerDriver)! "
+                            + "Vui lòng kiểm tra classpath hoặc biến môi trường MSSQL_JDBC_JAR."
             );
         }
 
@@ -64,10 +64,10 @@ public class DatabaseConnection {
             String safeUser = (user != null && !user.trim().isEmpty()) ? user : "<chưa cấu hình>";
             String safeUrl = (url != null && !url.trim().isEmpty()) ? url : "<chưa cấu hình>";
             throw new SQLException(
-                "Lỗi kết nối CSDL (URL: " + safeUrl + ", User: " + safeUser + "): " + ex.getMessage(),
-                ex.getSQLState(),
-                ex.getErrorCode(),
-                ex
+                    "Lỗi kết nối CSDL (URL: " + safeUrl + ", User: " + safeUser + "): " + ex.getMessage(),
+                    ex.getSQLState(),
+                    ex.getErrorCode(),
+                    ex
             );
         }
     }
