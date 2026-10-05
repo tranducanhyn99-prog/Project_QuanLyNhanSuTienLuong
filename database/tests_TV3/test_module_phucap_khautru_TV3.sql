@@ -176,6 +176,36 @@ END TRY
 BEGIN CATCH
     PRINT N'-> PASS 5.4: Đã chặn thành công giờ ra không hợp lệ (' + ERROR_MESSAGE() + N')';
 END CATCH;
+
+-- ----------------------------------------------------------------------------
+-- 5.5. Kiểm thử Stored Procedure sp_ThemPhuCapNhanVien (SỞ HỮU ĐỘC QUYỀN TV3)
+-- ----------------------------------------------------------------------------
+PRINT N'>>> TEST 5.5: Stored Procedure sp_ThemPhuCapNhanVien (TV3)';
+DECLARE @NewMaPCNV INT;
+BEGIN TRY
+    EXEC dbo.sp_ThemPhuCapNhanVien
+        @MaNV        = 1,
+        @Thang       = 10,
+        @Nam         = 2026,
+        @TenPhuCap   = N'Phụ cấp chuyên cần test SP',
+        @SoTien      = 500000,
+        @GhiChu      = N'Kiểm thử Stored Procedure TV3',
+        @MaPCNV      = @NewMaPCNV OUTPUT;
+
+    IF @NewMaPCNV IS NOT NULL AND @NewMaPCNV > 0
+    BEGIN
+        PRINT N'-> PASS 5.5: Thêm phụ cấp thành công qua SP. Mã PCNV vừa sinh (OUTPUT): ' + CAST(@NewMaPCNV AS VARCHAR(10));
+        -- Dọn dẹp bản ghi vừa thêm
+        DELETE FROM dbo.PHUCAPNHANVIEN WHERE MaPCNV = @NewMaPCNV;
+    END
+    ELSE
+    BEGIN
+        PRINT N'-> LỖI 5.5: Không nhận được mã PCNV từ tham số OUTPUT!';
+    END
+END TRY
+BEGIN CATCH
+    PRINT N'-> LỖI 5.5: Phát sinh ngoại lệ không mong muốn: ' + ERROR_MESSAGE();
+END CATCH;
 GO
 
 -- TEST 6: KIỂM THỬ TRANSACTION sp_XoaKyLuongChuaChot
@@ -197,12 +227,12 @@ PRINT N'-> PASS 6.1: Đã xóa thành công bảng lương và chi tiết lươn
 
 -- 6.2. Kiểm thử cố tình xóa kỳ lương ĐÃ CHỐT -> Kỳ vọng Bị chặn & Rollback
 BEGIN TRY
-    -- Giả lập kỳ 12/2026 đã chốt
-    IF NOT EXISTS (SELECT 1 FROM dbo.BANGLUONG WHERE Thang = 12 AND Nam = 2026)
-    BEGIN
-        INSERT INTO dbo.BANGLUONG (MaBangLuong, Thang, Nam, NgayTao, TrangThai)
-        VALUES ('BL_2026_12', 12, 2026, GETDATE(), N'DA_CHOT');
-    END;
+    -- Giả lập kỳ 12/2026 đã chốt (chuẩn hóa schema INT IDENTITY và NgayTao)
+    DELETE FROM dbo.CHITIETBANGLUONG WHERE MaBangLuong IN (SELECT MaBangLuong FROM dbo.BANGLUONG WHERE Thang = 12 AND Nam = 2026);
+    DELETE FROM dbo.BANGLUONG WHERE Thang = 12 AND Nam = 2026;
+
+    INSERT INTO dbo.BANGLUONG (Thang, Nam, NgayCongChuan, TrangThai, NgayTao)
+    VALUES (12, 2026, 26, 'DA_CHOT', GETDATE());
 
     EXEC dbo.sp_XoaKyLuongChuaChot @Thang = 12, @Nam = 2026;
     PRINT N'LỖI: Transaction không chặn xóa kỳ đã chốt!';
