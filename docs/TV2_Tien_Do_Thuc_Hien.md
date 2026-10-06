@@ -5,7 +5,7 @@
 - **MSSV:** 24110311  
 - **Mã phân công:** TV2  
 - **Module phụ trách:** Quản lý Chấm Công, Tổng Hợp Ngày Công Tháng, Giao Diện Chấm Công & Điều Chỉnh Công  
-- **Branch làm việc:** `feature/attendance-module`
+- **Branch làm việc:** `feature/tv2-week3-evidence`
 
 ---
 
@@ -13,9 +13,9 @@
 
 | Tuần | Thời gian | Nội dung công việc được giao | Sản phẩm dự kiến theo kế hoạch | Mức độ hoàn thành | Ngày cập nhật | Tình trạng & Sản phẩm thực tế |
 |:---:|:---:|---|---|:---:|:---:|---|
-| **T1** | 21/09 – 27/09 | • Phân tích nghiệp vụ chấm công theo cặp nhân viên – ngày.<br>• Chốt cấu trúc bảng `CHAMCONG` và các quy tắc: không trùng ngày, giờ ra > giờ vào, nhân viên nghỉ việc không được chấm công mới.<br>• Đặc tả luồng xử lý `ChamCongPanel` → `Service` → `DAO` → SQL Server.<br>• Thiết kế bộ 20 testcase cho dữ liệu chấm công hợp lệ/không hợp lệ. | • Đặc tả nghiệp vụ chấm công.<br>• Thiết kế bảng `CHAMCONG` (1NF - 3NF).<br>• Danh sách constraint/trigger.<br>• Bộ testcase chấm công. | **100%** | **24/09/2026** | Đã hoàn thành toàn bộ tài liệu phân tích nghiệp vụ, thiết kế tích hợp và bộ testcase 20 kịch bản. |
-| **T2** | 28/09 – 04/10 | • Cài đặt DDL/Constraints cho bảng `CHAMCONG`.<br>• Cài đặt Stored Procedure `sp_GhiNhanChamCong`.<br>• Cài đặt 2 Trigger: `trg_ChamCong_KiemTraGio` và `trg_ChamCong_KiemTraNhanVien`.<br>• Cài đặt View `vw_TongHopChamCongThang` và Index `IX_CHAMCONG_MaNV_Ngay`.<br>• Lập trình Java Swing: `ChamCongPanel`, `DieuChinhChamCongDialog`.<br>• Lập trình Model, DAO, Service: `ChamCong`, `ChamCongDAO`, `ChamCongService` (JDBC Transaction All-or-Nothing). | • Script SQL: `database/02_Module_ChamCong_TV2.sql`.<br>• Giao diện chấm công 2 tab (chi tiết & tổng hợp) + dialog điều chỉnh.<br>• Transaction nhập theo lô an toàn.<br>• Biên dịch sạch 100%. | **100%** | **29/09/2026** | Đã hoàn thành 100%, tạo Pull Request #12 và đã được merge thành công vào nhánh `main`. |
-| **T3** | 05/10 – 11/10 | • Tích hợp liên module: cung cấp ngày công cho TV4 (`sp_TinhBangLuongThang`) và TV1 (`fn_TinhSoNgayCong`).<br>• Đo lường hiệu năng Covering Index `IX_CHAMCONG_MaNV_Ngay` (Execution Plan + `STATISTICS IO/TIME`).<br>• Chụp ảnh giao diện minh chứng hoàn thiện.<br>• Đóng góp nội dung báo cáo tổng hợp nhóm và chuẩn bị slide vấn đáp cá nhân. | • Kết quả benchmark Index.<br>• Ảnh chụp giao diện hoàn thiện.<br>• Báo cáo tổng kết phân hệ. | **100%** | **29/09/2026** | Đã tích hợp hoàn tất vào luồng chạy chung của toàn hệ thống, vượt qua 41/41 test criteria kiểm thử tích hợp. |
+| **T1** | 21/09 – 27/09 | • Phân tích nghiệp vụ chấm công theo cặp nhân viên – ngày.<br>• Chốt cấu trúc bảng `CHAMCONG` và các quy tắc: không trùng ngày, giờ ra > giờ vào, nhân viên nghỉ việc không được chấm công mới.<br>• Đặc tả luồng xử lý `ChamCongPanel` → `Service` → `DAO` → SQL Server.<br>• Thiết kế bộ testcase cho dữ liệu chấm công hợp lệ/không hợp lệ. | • Đặc tả nghiệp vụ chấm công.<br>• Thiết kế bảng `CHAMCONG` (1NF - 3NF).<br>• Danh sách constraint/trigger.<br>• Bộ testcase chấm công. | **100%** | **24/09/2026** | Đã hoàn thành toàn bộ tài liệu phân tích nghiệp vụ, thiết kế tích hợp và bộ testcase kịch bản. |
+| **T2** | 28/09 – 04/10 | • Cài đặt DDL/Constraints cho bảng `CHAMCONG`.<br>• Cài đặt Stored Procedure `sp_GhiNhanChamCong`.<br>• Cài đặt 2 Trigger: `trg_ChamCong_KiemTraGio` và `trg_ChamCong_KiemTraNhanVien`.<br>• Cài đặt View `vw_TongHopChamCongThang` và Index `IX_CHAMCONG_MaNV_Ngay`.<br>• Lập trình Java Swing: `ChamCongPanel`, `DieuChinhChamCongDialog`.<br>• Lập trình Model, DAO, Service: `ChamCong`, `ChamCongDAO`, `ChamCongService` (JDBC Transaction All-or-Nothing). | • Script SQL: `database/02_Module_ChamCong_TV2.sql`.<br>• Giao diện chấm công 2 tab (chi tiết & tổng hợp) + dialog điều chỉnh.<br>• Transaction nhập theo lô an toàn.<br>• Mã nguồn Java hoàn thiện. | **100%** | **29/09/2026** | Đã hoàn thành cài đặt CSDL và mã nguồn tầng ứng dụng trong branch làm việc. |
+| **T3** | 05/10 – 11/10 | • Cung cấp dữ liệu ngày công cho TV4 (`sp_TinhBangLuongThang`) và TV1 (`fn_TinhSoNgayCong`).<br>• Đo lường hiệu năng Covering Index `IX_CHAMCONG_MaNV_Ngay` (Execution Plan + `STATISTICS IO`).<br>• Thu thập minh chứng giao diện ứng dụng thực tế.<br>• Hoàn thiện báo cáo chuyên đề và tài liệu tiến độ cá nhân. | • Kết quả benchmark Index trên `#CHAMCONG_BENCHMARK`.<br>• Bộ 5 ảnh benchmark đã lưu trữ.<br>• Ảnh chụp giao diện thực tế.<br>• Báo cáo chuyên đề cuối kỳ `TV2_BaoCao_ChuyenDe_ChamCong_CuoiKy.md`. | **100%** | **06/10/2026** | Đã hoàn tất benchmark Index (574 xuống 5 logical reads, 5 ảnh minh chứng). Bộ 3 ảnh minh chứng giao diện (`TV2_ChamCong_ChiTiet.png`, `TV2_ChamCong_TongHopThang.png`, `TV2_DieuChinhChamCongDialog.png`) đã được chụp từ phiên desktop tương tác thật (ứng dụng Java Swing kết nối CSDL SQL Server thật) và đã được xác thực, lưu trữ tại `screenshots/TV2/`. |
 
 ---
 
@@ -57,52 +57,111 @@ CREATE TABLE dbo.CHAMCONG (
 
 ### 3. Các đối tượng CSDL do TV2 sở hữu
 
+Theo đúng ma trận phân công đối tượng SQL của Nhóm 06 trong repository:
+
 | Tên đối tượng | Loại đối tượng | Mục đích kỹ thuật |
 |---|:---:|---|
 | `sp_GhiNhanChamCong` | Stored Procedure | Tiếp nhận 7 tham số, kiểm tra tồn tại nhân viên, validate giờ và insert an toàn trả về `MaChamCong OUTPUT`. |
 | `trg_ChamCong_KiemTraGio` | Trigger AFTER INSERT, UPDATE | Kiểm tra logic `GioRa > GioVao`, ném lỗi và ROLLBACK nếu vi phạm. |
-| `trg_ChamCong_KiemTraNhanVien` | Trigger AFTER INSERT | Chặn chấm công nếu nhân viên có `TrangThai = 'NGHI_VIEC'`, tự động ROLLBACK. |
+| `trg_ChamCong_KiemTraNhanVien` | Trigger AFTER INSERT, UPDATE | Chặn chấm công nếu nhân viên có `TrangThai <> 'DANG_LAM_VIEC'`, tự động ROLLBACK. |
 | `vw_TongHopChamCongThang` | View | Tổng hợp theo tháng/năm: Tổng số ngày có mặt, đi trễ, về sớm, vắng và tổng số giờ làm việc thực tế. |
 | `IX_CHAMCONG_MaNV_Ngay` | Non-clustered Index | Tạo trên `(MaNV, NgayChamCong)` INCLUDE `(GioVao, GioRa, TrangThai)` giúp tối ưu hóa tra cứu và tính công tháng. |
+
+*(Lưu ý quyền sở hữu: TV2 không sở hữu các đối tượng phụ cấp/khấu trừ thuộc TV3 như `sp_XoaKyLuongChuaChot`, `fn_TongKhauTru`, `vw_TongPhuCapThang`, `trg_PhuCap_KhongSuaKhiDaChotLuong`).*
 
 ---
 
 ## PHẦN 3. KIẾN TRÚC PHÂN LỚP & TÍCH HỢP ỨNG DỤNG JAVA
 
-### 1. Kiến trúc 4 tầng chuẩn mực
+### 1. Kiến trúc phân tầng chuẩn
 - **Presentation Layer:**
-  - `ChamCongPanel.java`: Giao diện chính gồm 2 tab: Tab 1 (Ghi nhận chấm công chi tiết theo ngày, tìm kiếm, lọc trạng thái, phân trang) và Tab 2 (Tổng hợp công theo tháng, xuất thống kê).
-  - `DieuChinhChamCongDialog.java`: Hộp thoại cho phép người quản lý nhân sự điều chỉnh giờ vào, giờ ra, trạng thái công có ghi nhận lý do.
+  - `ChamCongPanel.java`: Giao diện chính gồm 2 tab: Tab 1 (Ghi nhận chấm công chi tiết theo ngày, lọc theo kỳ, bảng nhật ký) và Tab 2 (Tổng hợp công theo tháng từ View).
+  - `DieuChinhChamCongDialog.java`: Hộp thoại mở dạng drill-down cho phép quản lý nhân sự điều chỉnh giờ vào, giờ ra, trạng thái công của một nhân viên trong tháng.
 - **Service Layer (`ChamCongService.java`):**
   - Kiểm tra định dạng thời gian và ràng buộc nghiệp vụ trước khi chuyển xuống CSDL.
-  - Điều phối Transaction khi nhập chấm công theo lô (`importBatch`): Quản lý kết nối JDBC bằng `setAutoCommit(false)`, `commit()`, và `rollback()` khi gặp lỗi bất kỳ.
+  - Điều phối Transaction khi nhập chấm công theo lô (`nhapChamCongTheoLo`): Quản lý kết nối JDBC bằng `setAutoCommit(false)`, `commit()`, và `rollback()` khi gặp lỗi bất kỳ.
 - **DAO Layer (`ChamCongDAO.java`):**
   - Gọi `sp_GhiNhanChamCong` thông qua `CallableStatement`.
   - Truy vấn dữ liệu tổng hợp tháng từ View `vw_TongHopChamCongThang` thông qua `PreparedStatement`.
-- **Model Layer (`ChamCong.java`):**
-  - Thực thể POJO đại diện cho một bản ghi chấm công (MaChamCong, MaNV, HoTen, TenPB, NgayChamCong, GioVao, GioRa, TrangThai, GhiChu).
+  - Kiểm tra trạng thái kỳ lương trong `BANGLUONG`: Cấm sửa hoặc xóa bản ghi chấm công nếu kỳ lương tương ứng đã chốt (`DA_CHOT`).
+- **Model Layer (`ChamCong.java`, `TongHopChamCong.java`):**
+  - Thực thể POJO đại diện cho bản ghi chấm công và đối tượng tổng hợp công theo tháng.
 
 ---
 
-## PHẦN 4. DANH MỤC TEST CASES & BẰNG CHỨNG THỰC THI
+## PHẦN 4. KỊCH BẢN KIỂM THỬ PHÂN HỆ CHẤM CÔNG (TEST DESIGN)
 
-Bộ kiểm thử gồm 20 kịch bản chia thành 5 nhóm:
+Bộ kịch bản kiểm thử tự động của TV2 được thiết kế tại `database/tests_TV2/test_module_chamcong_TV2.sql` với cơ chế self-seeding token per-run và dọn dẹp cách ly:
 
-### 1. Nhóm Ràng buộc Schema & Constraint
-- **TC-CC-01 (Chấm công đơn lẻ hợp lệ):** Nhập `MaNV=1`, ngày hợp lệ, `GioVao='08:00'`, `GioRa='17:00'` $\rightarrow$ **PASS** (Thêm thành công, sinh mã tự tăng).
-- **TC-CC-02 (Ngăn chặn trùng lặp trong ngày):** Cố ý chấm 2 lần cho cùng nhân viên cùng ngày $\rightarrow$ **PASS** (Vi phạm `UQ_CHAMCONG_MaNV_Ngay`, bị từ chối).
-- **TC-CC-03 (Chặn nhân viên không tồn tại):** Nhập `MaNV=999` $\rightarrow$ **PASS** (Vi phạm khóa ngoại `FK_CHAMCONG_NHANVIEN`, bị chặn).
-- **TC-CC-04 (Chặn ngày trong tương lai):** Nhập ngày `2099-01-01` $\rightarrow$ **PASS** (Vi phạm `CHK_CHAMCONG_Ngay`, bị chặn).
-- **TC-CC-05 (Chặn giá trị trạng thái ngoài danh mục):** Trạng thái `KHONG_HOP_LE` $\rightarrow$ **PASS** (Vi phạm `CHK_CHAMCONG_TrangThai`).
+**Trạng thái thực thi hiện tại:** Chưa thực thi / chưa có log trong worktree này; danh sách dưới đây là thiết kế kịch bản, không phải kết quả PASS đã xác nhận.
 
-### 2. Nhóm Trigger nghiệp vụ
-- **TC-CC-06 (Trigger chặn nhân viên đã nghỉ việc):** Chấm công cho nhân viên `TrangThai = 'NGHI_VIEC'` $\rightarrow$ **PASS** (`trg_ChamCong_KiemTraNhanVien` chặn và ROLLBACK).
-- **TC-CC-07 (Trigger chặn giờ ra nhỏ hơn hoặc bằng giờ vào):** `GioVao='17:00'`, `GioRa='08:00'` $\rightarrow$ **PASS** (`trg_ChamCong_KiemTraGio` chặn và ROLLBACK).
+1. **TC-CC-01:** Chấm công đơn lẻ hợp lệ qua `sp_GhiNhanChamCong`.
+2. **TC-CC-02:** Chặn trùng lặp cặp `(MaNV, NgayChamCong)` qua SP và qua ràng buộc duy nhất `UQ_CHAMCONG_MaNV_Ngay`.
+3. **TC-CC-03:** Chặn nhân viên không tồn tại qua SP và qua khóa ngoại `FK_CHAMCONG_NHANVIEN`.
+4. **TC-CC-04:** Chặn ngày trong tương lai qua SP và qua Check Constraint `CHK_CHAMCONG_Ngay`.
+5. **TC-CC-05:** Chặn giá trị trạng thái không hợp lệ qua SP và qua Check Constraint `CHK_CHAMCONG_TrangThai`.
+6. **TC-CC-06:** Chặn nhân viên đã nghỉ việc (`NGHI_VIEC`) qua SP và qua Trigger `trg_ChamCong_KiemTraNhanVien`.
+7. **TC-CC-07:** Chặn giờ ra nhỏ hơn hoặc bằng giờ vào làm qua SP và qua Trigger `trg_ChamCong_KiemTraGio`.
+8. **TC-CC-08:** Giao dịch nhập lô 5 bản ghi hợp lệ trong một Database Transaction (COMMIT).
+9. **TC-CC-09:** Giao dịch nhập lô có dòng vi phạm $\rightarrow$ ROLLBACK toàn bộ, không lưu dữ liệu dở dang.
+10. **TC-CC-10:** Kiểm tra dữ liệu tổng hợp từ View `vw_TongHopChamCongThang`.
+11. **TC-CC-11:** Kiểm tra tìm kiếm và tra cứu qua Non-clustered Index `IX_CHAMCONG_MaNV_Ngay`.
+12. **TC-CC-12:** Trigger `trg_ChamCong_KiemTraGio` chặn lệnh UPDATE sửa giờ vào/ra vi phạm.
+13. **TC-CC-13:** Kiểm tra Stored Procedure chặn tham số bắt buộc NULL.
+14. **TC-CC-14:** Dọn dẹp sạch sẽ toàn bộ dữ liệu kiểm thử, bảo toàn CSDL.
 
-### 3. Nhóm Transaction nhập lô All-or-Nothing
-- **TC-CC-08 (Nhập lô hợp lệ toàn bộ):** Import danh sách 5 nhân viên hợp lệ $\rightarrow$ **PASS** (Tất cả 5 dòng được commit vào CSDL).
-- **TC-CC-09 (Rollback toàn bộ lô khi có 1 dòng sai):** Lô 5 nhân viên có dòng thứ 3 chứa nhân viên đã nghỉ việc $\rightarrow$ **PASS** (Cả lô bị rollback, không dòng nào được ghi).
+---
 
-### 4. Nhóm View tổng hợp & Index
-- **TC-CC-10 (Truy vấn tổng hợp tháng):** Đọc từ `vw_TongHopChamCongThang` $\rightarrow$ **PASS** (Dữ liệu số ngày công khớp 100% với số bản ghi thực tế).
-- **TC-CC-11 (Hiệu năng Index):** Lọc theo `MaNV` và `NgayChamCong` qua `IX_CHAMCONG_MaNV_Ngay` $\rightarrow$ **PASS** (Chuyển từ Table Scan sang Index Seek).
+## PHẦN 5. BÁO CÁO BENCHMARK HIỆU NĂNG NON-CLUSTERED COVERING INDEX
+
+Thực nghiệm đo lường hiệu năng của chỉ mục `IX_CHAMCONG_MaNV_Ngay` được thực thi và xác thực độc lập tại `database/test_benchmark_index_TV2.sql`:
+
+### 1. Bối cảnh kỹ thuật và phương pháp luận
+- **Hiện trạng bảng sản xuất:** Bảng `dbo.CHAMCONG` có sẵn ràng buộc duy nhất `UQ_CHAMCONG_MaNV_Ngay` trên `(MaNV, NgayChamCong)`. Ràng buộc này tạo ra một Non-clustered Index tìm kiếm theo khóa. Do đó, việc so sánh với Table Scan (bỏ toàn bộ index) là phi thực tế trong môi trường sản xuất.
+- **Giá trị cốt lõi của Covering Index:** Bổ sung mệnh đề `INCLUDE (GioVao, GioRa, TrangThai)` giúp toàn bộ thông tin truy vấn chi tiết và tổng hợp công đều nằm trên tầng lá của chỉ mục Non-clustered, loại bỏ hoàn toàn toán tử tốn kém **Key Lookup (Clustered Lookup)**.
+- **Tính an toàn và cách ly (Isolation):** Benchmark sử dụng bảng tạm cục bộ phiên làm việc `#CHAMCONG_BENCHMARK` chứa 30.000 bản ghi thử nghiệm. Toàn bộ kịch bản tự dọn dẹp sau khi chạy, **bảo toàn 100% cấu trúc và dữ liệu bảng sản xuất `dbo.CHAMCONG`**.
+- **Tiêu chí đánh giá chuẩn xác:** Sử dụng `SET STATISTICS IO ON` và Actual Execution Plan để đo lường số lượt đọc trang logic (Logical Reads). Tuyệt đối không dựa vào thời gian đồng hồ (wall-clock time) do chịu ảnh hưởng bởi tài nguyên nền của hệ điều hành.
+
+### 2. Bảng đối chiếu chỉ số hiệu năng thực tế
+
+| Chỉ Số Đánh Giá | Trước Khi Có Covering Index (BEFORE) | Sau Khi Có Covering Index (AFTER) | Mức Độ Cải Thiện |
+|---|:---:|:---:|:---:|
+| **Physical Operator** | Index Seek trên `UQ_Bench_MaNV_Ngay` + **Key Lookup (Clustered)** | **Index Seek thuần túy** trên `IX_Bench_CHAMCONG_MaNV_Ngay` | Loại bỏ hoàn toàn Key Lookup (zero Key Lookup) |
+| **Logical Reads (I/O)** | **574 pages** | **5 pages** | **Giảm 99.13% số lượt đọc trang logic** |
+| **Số lần truy cập bảng chính** | 1 lần qua Clustered B-tree cho mỗi dòng tìm thấy | **0 lần** (truy cập 100% trên index lá) | Triệt tiêu I/O thứ cấp |
+| **Scan Count** | 1 | 1 | Quét theo phạm vi khóa |
+| **Tác động CSDL sản xuất** | Không ảnh hưởng (`#CHAMCONG_BENCHMARK`) | Không ảnh hưởng (`#CHAMCONG_BENCHMARK`) | Bảng `dbo.CHAMCONG` được bảo toàn nguyên vẹn |
+
+### 3. Minh chứng hình ảnh Benchmark đã lưu trữ trong repository
+
+Năm ảnh chụp màn hình chứng minh kết quả thực nghiệm được lưu trữ nguyên vẹn tại thư mục `screenshots/TV2/`:
+1. `screenshots/TV2/TV2_Benchmark_ExecutionPlan_BEFORE.png`: Thể hiện Execution Plan giai đoạn BEFORE gồm toán tử Index Seek trên `UQ_Bench_MaNV_Ngay` kết hợp với Key Lookup (Clustered).
+2. `screenshots/TV2/TV2_Benchmark_ExecutionPlan_AFTER.png`: Thể hiện Execution Plan giai đoạn AFTER chuyển thành Index Seek thuần túy trên `IX_Bench_CHAMCONG_MaNV_Ngay` không còn Key Lookup.
+3. `screenshots/TV2/TV2_Benchmark_StatisticsIO_BEFORE.png`: Thống kê I/O giai đoạn BEFORE ghi nhận **574 logical reads**.
+4. `screenshots/TV2/TV2_Benchmark_StatisticsIO_AFTER.png`: Thống kê I/O giai đoạn AFTER ghi nhận giảm xuống chỉ còn **5 logical reads**.
+5. `screenshots/TV2/TV2_Benchmark_Results_Metadata.png`: Bảng kết quả truy vấn tổng hợp và metadata chỉ mục xác nhận cấu trúc `INCLUDE (GioVao, GioRa, TrangThai)`.
+
+---
+
+## PHẦN 6. TÌNH TRẠNG MINH CHỨNG GIAO DIỆN ỨNG DỤNG JAVA SWING (UI EVIDENCE)
+
+- **Trạng thái:** **ĐÃ THU THẬP & ĐÃ XÁC THỰC (COLLECTED & VERIFIED)**.
+- **Phương thức thu thập:** Cả 3 ảnh chụp giao diện được chụp trực tiếp từ một phiên desktop tương tác thật (interactive desktop session): ứng dụng Java Swing được mở trực tiếp trên môi trường desktop đồ họa, kết nối tới CSDL SQL Server thật (`QuanLyNhanSuTienLuong`), và chụp màn hình thực tế; nội dung ảnh đã được rà soát và xác thực trước khi lưu vào repository.
+- **Danh mục minh chứng UI đã lưu trữ tại `screenshots/TV2/`:**
+  - `screenshots/TV2/TV2_ChamCong_ChiTiet.png`: Tab 1 chấm công chi tiết — form ghi nhận chấm công, nút điểm danh hàng loạt (Transaction) và nhật ký chấm công với dữ liệu thật.
+  - `screenshots/TV2/TV2_ChamCong_TongHopThang.png`: Tab 2 tổng hợp ngày công tháng — dữ liệu tổng hợp đọc từ View `vw_TongHopChamCongThang`.
+  - `screenshots/TV2/TV2_DieuChinhChamCongDialog.png`: Hộp thoại điều chỉnh ngày công dạng drill-down với bản ghi công thật và các thao tác thêm/cập nhật/xóa.
+
+---
+
+## PHẦN 7. BẢO TOÀN TRÁCH NHIỆM & CÁC TỒN TẠI KỸ THUẬT (REMAINING GAPS)
+
+### 1. Phân định quyền sở hữu (Ownership Boundary)
+- Toàn bộ nội dung tuân thủ nghiêm ngặt phạm vi phân công của TV2 (Chấm công).
+- Không can thiệp, chỉnh sửa cấu trúc hay logic nghiệp vụ của TV1 (Nhân sự), TV3 (Phụ cấp/Khấu trừ), TV4 (Tính lương), TV5 (Bảo mật/Chốt lương).
+- Schema sản xuất `dbo.CHAMCONG` và các đối tượng CSDL liên quan được bảo toàn nguyên vẹn.
+
+### 2. Các tồn tại kỹ thuật được ghi nhận rõ ràng (Remaining Gaps)
+1. **Minh chứng giao diện Java Swing (Đã hoàn tất):** Cả 3 ảnh chụp giao diện hợp lệ có nội dung trực quan thật cho TV2 (`TV2_ChamCong_ChiTiet.png`, `TV2_ChamCong_TongHopThang.png`, `TV2_DieuChinhChamCongDialog.png`) đã được thu thập từ phiên desktop tương tác thật và đã được xác thực, lưu trữ tại `screenshots/TV2/` (chi tiết tại PHẦN 6).
+2. **Dữ liệu bảng sản xuất `dbo.CHAMCONG`:** Bảng hiện đang duy trì dữ liệu baseline mẫu (1 bản ghi) để đảm bảo luồng chạy an toàn; chưa nạp dữ liệu lịch sử đầy đủ nhiều tháng của toàn thể công ty.
+3. **Mở rộng cơ chế chấm công:** Hiện tại hỗ trợ chấm công thủ công và điểm danh theo lô qua giao diện; đề xuất mở rộng kết nối API thiết bị chấm công phần cứng (ZKTeco/Hikvision) trong các pha tiếp theo.
