@@ -131,6 +131,11 @@ Bảng `TAIKHOAN` được thiết kế có thuộc tính `TrangThai NVARCHAR(20
 Nhân viên bình thường (`role_Employee`) bị cấm truy cập trực tiếp vào toàn bộ 9 bảng dữ liệu gốc bằng lệnh `DENY`. Điều này bảo vệ an toàn cho cơ sở dữ liệu trước nguy cơ bị quét dữ liệu toàn công ty.  
 Thay vào đó, nhân viên chỉ được cấp quyền `SELECT` trên View `vw_BangLuongChiTiet`. View này kết hợp với điều kiện lọc theo `MaNV` tương ứng với tài khoản đăng nhập giúp nhân viên chỉ thấy được chính xác phiếu lương của mình mà không thể soi mói mức lương của đồng nghiệp.
 
+### 3.4.3. Minh chứng thực nghiệm phân quyền trên SQL Server Management Studio
+Toàn bộ kịch bản kiểm thử phân quyền được tự động hóa tại `database/test_security_roles_TV5.sql` và được chạy thực tế trên SQL Server:
+- **Ảnh minh chứng phân quyền 4 Roles:** `screenshots/TV5/TV5_Security_Roles_Verification.png`  
+  *(Thể hiện rõ cơ chế chuyển ngữ cảnh `EXECUTE AS USER` cho từng vai trò: xác nhận `user_DBAdmin` toàn quyền, `user_HRManager` và `user_PayrollOfficer` bị chặn khi gọi thủ tục ngoài thẩm quyền, `user_Employee` bị `DENY` tuyệt đối trên bảng nhạy cảm `TAIKHOAN` và `CHITIETBANGLUONG`).*
+
 ---
 
 ## 3.5. KIỂM SOÁT ĐỒNG THỜI VÀ XỬ LÝ TRANH CHẤP (CONCURRENCY CONTROL)
@@ -214,6 +219,9 @@ END;
 2. `HOLDLOCK`: Giữ khóa này liên tục cho đến khi giao dịch kết thúc (`COMMIT` hoặc `ROLLBACK`), tương đương mức cô lập `SERIALIZABLE` nhưng chỉ áp dụng cục bộ cho đúng dòng dữ liệu cần bảo vệ mà không khóa oan các dòng khác.
 3. Khi Kế toán B gọi `sp_ChotBangLuong`, Session 2 bị chặn lại tại câu lệnh `SELECT ... WITH (UPDLOCK, HOLDLOCK)` cho đến khi Kế toán A `COMMIT`. Khi Session 2 được giải phóng, biến `@TrangThaiHienTai` đọc được ngay lập tức mang giá trị `'DA_CHOT'`. Thủ tục nhảy vào khối kiểm tra và phát lệnh `RAISERROR`, tự động `ROLLBACK` an toàn mà không làm hỏng dữ liệu.
 
+- **Ảnh minh chứng Concurrency (2 Sessions song song):** `screenshots/TV5/TV5_Concurrency_2Sessions.png`  
+  *(Chụp trực quan 2 phiên SSMS song song: Session 1 giữ khóa `UPDLOCK, HOLDLOCK` trong 15 giây làm Session 2 bị chặn chờ; khi Session 1 hoàn tất, Session 2 đọc thấy trạng thái `DA_CHOT` và rollback an toàn, triệt tiêu 100% rủi ro Lost Update).*
+
 ### 3.5.3. Ràng buộc toàn vẹn dữ liệu qua Trigger `trg_ChiTietLuong_KhongSuaKhiDaChot`
 Sau khi kỳ lương đã chốt, một rủi ro khác là người dùng hoặc phần mềm độc hại có thể cố ý chạy lệnh `UPDATE` hoặc `DELETE` trực tiếp trên bảng `CHITIETBANGLUONG` để thay đổi số tiền thực nhận.  
 Trigger sau đây được cài đặt để bảo đảm tính bất biến tuyệt đối:
@@ -240,6 +248,9 @@ BEGIN
 END;
 ```
 Bất kỳ câu lệnh `UPDATE` hay `DELETE` nào vi phạm đều bị chặn đứng tức thì ở cấp độ Kernel của SQL Server và giao dịch bị hủy bỏ toàn bộ.
+
+- **Ảnh minh chứng Trigger khóa chi tiết lương:** `screenshots/TV5/TV5_Trigger_KhoaChiTietLuong.png`  
+  *(Chụp trực tiếp từ SSMS khi cố ý chạy câu lệnh UPDATE trên kỳ lương đã chốt: SQL Server lập tức ném thông báo lỗi màu đỏ `Msg 50000: LỖI TOÀN VẸN: Kỳ lương đã chốt!...` và hủy bỏ toàn bộ giao dịch batch).*
 
 ---
 
@@ -288,6 +299,12 @@ INCLUDE (MaNV, HoTen, LuongCoBan, TrangThai);
 **Phân tích kết quả:**
 Việc số trang đọc logic giảm từ **94 trang xuống còn 2 trang** chứng minh rằng SQL Server chỉ cần đọc đúng 1 trang chỉ mục tầng gốc/trung gian và 1 trang tầng lá là đã trả về đầy đủ kết quả mong muốn. Điều này đảm bảo hệ thống có thể mở rộng quy mô (Scalability) lên đến hàng trăm nghìn nhân sự mà giao diện ứng dụng vẫn phản hồi mượt mà trong vài mili-giây.
 
+#### Minh chứng hình ảnh Benchmark thực nghiệm trên SSMS:
+- **Ảnh Actual Execution Plan:** `screenshots/TV5/TV5_Benchmark_ExecutionPlan.png`  
+  *(So sánh trực quan 2 cây thực thi: Query 1 Clustered Index Scan chiếm 96% chi phí vs Query 2 Index Seek Non-Clustered trên `IX_Bench_MaPB_MaCV` chiếm 4% chi phí, không có Key Lookup).*
+- **Ảnh thống kê I/O & Time:** `screenshots/TV5/TV5_Benchmark_StatisticsIO.png`  
+  *(Tab Messages thể hiện rõ số logical reads giảm từ 94 trang xuống 2 trang, CPU Time giảm về 0 ms).*
+
 ---
 
 ## 3.7. BỘ KIỂM THỬ TÍCH HỢP TỰ ĐỘNG VÀ KẾT QUẢ ĐẠT ĐƯỢC
@@ -315,6 +332,19 @@ Nhằm nghiệm thu toàn bộ 5 module của 5 thành viên nhóm, TV5 đã ph�
 8. `08_BangLuong_TinhLuong.png`: Bảng tính toán lương tổng thể (TV4).
 9. `09_BaoCao_ChotLuong.png`: Báo cáo chi tiết lương và chức năng Chốt kỳ lương (TV5).
 10. `10_TaiKhoan_QuanTri.png`: Màn hình quản trị người dùng, khóa tài khoản và phân quyền (TV5).
+
+### 3.7.3. Tổng hợp Danh mục Minh chứng Kỹ thuật & Thực nghiệm Phân hệ TV5 (`screenshots/TV5/`)
+Toàn bộ minh chứng kỹ thuật phục vụ nghiệm thu và chấm điểm đồ án của TV5 được tổ chức đồng bộ trong thư mục `screenshots/TV5/`:
+
+| STT | Tên tệp minh chứng | Môi trường | Nội dung minh chứng | Trạng thái |
+|:---:|---|:---:|---|:---:|
+| 1 | `TV5_Benchmark_ExecutionPlan.png` | SSMS | Cây Actual Execution Plan so sánh Clustered Index Scan (96% cost) vs Covering Index Seek (4% cost) trên `IX_Bench_MaPB_MaCV` |  Đầy đủ |
+| 2 | `TV5_Benchmark_StatisticsIO.png` | SSMS | Tab Messages hiển thị số logical reads giảm từ 94 trang xuống 2 trang, CPU time về 0 ms |  Đầy đủ |
+| 3 | `TV5_Security_Roles_Verification.png` | SSMS | Kết quả thực thi `test_security_roles_TV5.sql` xác minh 4 Database Roles, cơ chế chặn `DENY` an toàn |  Đầy đủ |
+| 4 | `TV5_Trigger_KhoaChiTietLuong.png` | SSMS | Thông báo lỗi đỏ `Msg 50000` từ trigger `trg_ChiTietLuong_KhongSuaKhiDaChot` khi cố ý sửa kỳ lương đã chốt |  Đầy đủ |
+| 5 | `TV5_Concurrency_2Sessions.png` | SSMS | Chụp 2 phiên song song chứng minh cơ chế `UPDLOCK, HOLDLOCK` chặn Lost Update thành công 100% |  Đầy đủ |
+| 6 | `TV5_BaoCao_ChotLuong.png` | Java Swing | Giao diện báo cáo chi tiết lương và thực thi chốt kỳ lương |  Đầy đủ |
+| 7 | `TV5_TaiKhoan_QuanTri.png` | Java Swing | Giao diện quản trị tài khoản, khóa/mở khóa và phân quyền |  Đầy đủ |
 
 ---
 
