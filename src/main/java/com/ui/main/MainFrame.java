@@ -117,27 +117,27 @@ public class MainFrame extends JFrame {
 
     private JPanel createSidebar() {
         JPanel sidebar = new JPanel(new BorderLayout());
-        sidebar.setPreferredSize(new Dimension(240, 0));
+        sidebar.setPreferredSize(new Dimension(250, 0));
         sidebar.setBackground(UITheme.BG_SIDEBAR);
-        sidebar.setBorder(new MatteBorder(0, 0, 0, 1, UITheme.BORDER));
+        sidebar.setBorder(new MatteBorder(0, 0, 0, 1, new Color(30, 41, 59)));
 
         // Top Brand Header
         JPanel brandPanel = new JPanel();
         brandPanel.setLayout(new BoxLayout(brandPanel, BoxLayout.Y_AXIS));
         brandPanel.setBackground(UITheme.BG_SIDEBAR);
-        brandPanel.setBorder(new EmptyBorder(20, 20, 18, 20));
+        brandPanel.setBorder(new EmptyBorder(22, 20, 18, 20));
 
         JLabel lblBrandTitle = new JLabel("HR & PAYROLL");
-        lblBrandTitle.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 16));
-        lblBrandTitle.setForeground(UITheme.PRIMARY);
+        lblBrandTitle.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 17));
+        lblBrandTitle.setForeground(Color.WHITE);
 
-        JLabel lblBrandSub = new JLabel("Enterprise Management");
+        JLabel lblBrandSub = new JLabel("Hệ thống Doanh nghiệp");
         lblBrandSub.setFont(UITheme.FONT_CAPTION);
-        lblBrandSub.setForeground(UITheme.TEXT_MUTED);
+        lblBrandSub.setForeground(new Color(148, 163, 184));
 
         JLabel lblGroupBadge = new JLabel("DBMS330284 • NHÓM 06");
         lblGroupBadge.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 10));
-        lblGroupBadge.setForeground(new Color(148, 163, 184));
+        lblGroupBadge.setForeground(new Color(165, 180, 252));
         lblGroupBadge.setBorder(new EmptyBorder(4, 0, 0, 0));
 
         brandPanel.add(lblBrandTitle);
@@ -210,14 +210,30 @@ public class MainFrame extends JFrame {
         JPanel bottomSidebar = new JPanel(new BorderLayout());
         bottomSidebar.setBackground(UITheme.BG_SIDEBAR);
         bottomSidebar.setBorder(new CompoundBorder(
-            new MatteBorder(1, 0, 0, 0, UITheme.BORDER),
-            new EmptyBorder(12, 14, 12, 14)
+            new MatteBorder(1, 0, 0, 0, new Color(30, 41, 59)),
+            new EmptyBorder(14, 16, 14, 16)
         ));
 
         JButton btnLogout = new JButton("Đăng xuất");
-        UITheme.styleSecondaryButton(btnLogout);
-        btnLogout.setFont(UITheme.FONT_BODY);
-        btnLogout.setForeground(new Color(185, 28, 28));
+        btnLogout.setUI(new UITheme.RoundedButtonUI(8, new Color(244, 63, 94, 70)));
+        btnLogout.setFont(UITheme.FONT_BODY_BOLD);
+        btnLogout.setBackground(new Color(30, 41, 59));
+        btnLogout.setForeground(new Color(254, 205, 211));
+        btnLogout.setFocusPainted(false);
+        btnLogout.setBorder(new EmptyBorder(8, 12, 8, 12));
+        btnLogout.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnLogout.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btnLogout.setBackground(new Color(190, 18, 60));
+                btnLogout.setForeground(Color.WHITE);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btnLogout.setBackground(new Color(30, 41, 59));
+                btnLogout.setForeground(new Color(254, 205, 211));
+            }
+        });
         btnLogout.addActionListener(e -> handleLogout());
         bottomSidebar.add(btnLogout, BorderLayout.CENTER);
 
@@ -230,7 +246,7 @@ public class MainFrame extends JFrame {
         JLabel lbl = new JLabel(title);
         lbl.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 10));
         lbl.setForeground(new Color(148, 163, 184));
-        lbl.setBorder(new EmptyBorder(12, 12, 4, 12));
+        lbl.setBorder(new EmptyBorder(14, 12, 4, 12));
         lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
         container.add(lbl);
     }
@@ -240,7 +256,7 @@ public class MainFrame extends JFrame {
         NavItem item = new NavItem(key, label, breadcrumb, supplier, enabled);
         navItems.add(item);
         container.add(item);
-        container.add(Box.createVerticalStrut(2));
+        container.add(Box.createVerticalStrut(3));
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -263,8 +279,9 @@ public class MainFrame extends JFrame {
         leftPanel.add(lblBreadcrumb);
 
         // Right: User Profile Chip
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 12));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
         rightPanel.setOpaque(false);
+        rightPanel.setBorder(new EmptyBorder(0, 0, 0, 16));
 
         // Avatar tròn chứa chữ cái đầu
         String userName = session.getUserInfo();
@@ -312,7 +329,8 @@ public class MainFrame extends JFrame {
         JPanel container = new JPanel();
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
         container.setBackground(UITheme.BG_APP);
-        container.setBorder(new EmptyBorder(20, 24, 24, 24));
+        container.setOpaque(true);
+        container.setBorder(new EmptyBorder(22, 24, 22, 24));
 
         // 1. Flat Greeting Banner (Tuyệt đối không dùng gradient)
         JPanel banner = new JPanel(new BorderLayout(16, 8));
@@ -321,18 +339,19 @@ public class MainFrame extends JFrame {
             new LineBorder(UITheme.BORDER, 1, true),
             new EmptyBorder(18, 22, 18, 22)
         ));
-        banner.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+        banner.setMaximumSize(new Dimension(Integer.MAX_VALUE, 104));
+        banner.setPreferredSize(new Dimension(1000, 104));
 
         JPanel bannerText = new JPanel();
         bannerText.setLayout(new BoxLayout(bannerText, BoxLayout.Y_AXIS));
         bannerText.setOpaque(false);
 
-        JLabel lblSys = new JLabel("HỆ THỐNG QUẢN LÝ NHÂN SỰ VÀ TIỀN LƯƠNG DOANH NGHIỆP");
+        JLabel lblSys = new JLabel("HỆ THỐNG QUẢN TRỊ NHÂN SỰ VÀ TIỀN LƯƠNG DOANH NGHIỆP");
         lblSys.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 11));
         lblSys.setForeground(UITheme.PRIMARY);
 
         JLabel lblHello = new JLabel("Xin chào, " + session.getUserInfo() + "!");
-        lblHello.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 20));
+        lblHello.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 21));
         lblHello.setForeground(UITheme.TEXT_MAIN);
 
         String roleStr = session.getFullRoleDisplayName();
@@ -346,19 +365,27 @@ public class MainFrame extends JFrame {
         bannerText.add(Box.createVerticalStrut(4));
         bannerText.add(lblSub);
 
+        JPanel bannerRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 10));
+        bannerRight.setOpaque(false);
+        JLabel badgeStatus = UITheme.createBadge("● Hệ thống trực tuyến", UITheme.SUCCESS_TEXT, UITheme.SUCCESS_BG, UITheme.SUCCESS_BORDER);
+        bannerRight.add(badgeStatus);
+
         banner.add(bannerText, BorderLayout.CENTER);
+        banner.add(bannerRight, BorderLayout.EAST);
+
         container.add(banner);
-        container.add(Box.createVerticalStrut(16));
+        container.add(Box.createVerticalStrut(18));
 
         // 2. Small KPI Cards (4 Thẻ chỉ số nhỏ gọn, sắc nét)
-        JPanel kpiGrid = new JPanel(new GridLayout(1, 4, 14, 0));
+        JPanel kpiGrid = new JPanel(new GridLayout(1, 4, 16, 0));
         kpiGrid.setOpaque(false);
-        kpiGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 86));
+        kpiGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+        kpiGrid.setPreferredSize(new Dimension(1000, 90));
 
         kpiGrid.add(createSmallKpiCard("HỒ SƠ NHÂN SỰ", "5 Nhân viên", "Đang hoạt động", UITheme.PRIMARY));
-        kpiGrid.add(createSmallKpiCard("CƠ CẤU DOANH NGHIỆP", "4 PB • 5 Chức vụ", "Danh mục chuẩn hóa", new Color(99, 102, 241)));
-        kpiGrid.add(createSmallKpiCard("KỲ TÍNH LƯƠNG", "Tháng 09 / 2026", "Chu kỳ mở", new Color(217, 119, 6)));
-        kpiGrid.add(createSmallKpiCard("CƠ SỞ DỮ LIỆU", "SQL Server 2025", "RBAC • ACID OK", UITheme.SUCCESS_TEXT));
+        kpiGrid.add(createSmallKpiCard("CƠ CẤU DOANH NGHIỆP", "4 PB • 5 Chức vụ", "Danh mục chuẩn hóa", new Color(37, 99, 235)));
+        kpiGrid.add(createSmallKpiCard("KỲ TÍNH LƯƠNG", "Tháng 09 / 2026", "Chu kỳ đang mở", new Color(217, 119, 6)));
+        kpiGrid.add(createSmallKpiCard("CƠ SỞ DỮ LIỆU", "SQL Server 2025", "RBAC & ACID OK", UITheme.SUCCESS_TEXT));
 
         container.add(kpiGrid);
         container.add(Box.createVerticalStrut(22));
@@ -369,12 +396,13 @@ public class MainFrame extends JFrame {
         lblShortcut.setForeground(new Color(51, 65, 85));
         lblShortcut.setAlignmentX(Component.LEFT_ALIGNMENT);
         container.add(lblShortcut);
-        container.add(Box.createVerticalStrut(10));
+        container.add(Box.createVerticalStrut(12));
 
         // 4. Quick Action Grid (Flat Cards)
-        JPanel actionGrid = new JPanel(new GridLayout(2, 3, 14, 14));
+        JPanel actionGrid = new JPanel(new GridLayout(2, 3, 16, 16));
         actionGrid.setOpaque(false);
-        actionGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 160));
+        actionGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 170));
+        actionGrid.setPreferredSize(new Dimension(1000, 170));
 
         boolean canHR = session.hasRole("DB_Admin", "HR_Manager");
         boolean canPayroll = session.hasRole("DB_Admin", "Payroll_Officer");
@@ -400,16 +428,17 @@ public class MainFrame extends JFrame {
                 () -> switchView("TAI_KHOAN", "QUẢN TRỊ > Phân quyền & Quản lý tài khoản"), canAdmin));
 
         container.add(actionGrid);
-        container.add(Box.createVerticalStrut(20));
+        container.add(Box.createVerticalStrut(22));
 
         // 5. System Status Footer
         JPanel footerCard = new JPanel(new BorderLayout());
         footerCard.setBackground(Color.WHITE);
         footerCard.setBorder(new CompoundBorder(
             new LineBorder(UITheme.BORDER, 1, true),
-            new EmptyBorder(10, 16, 10, 16)
+            new EmptyBorder(12, 18, 12, 18)
         ));
-        footerCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        footerCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        footerCard.setPreferredSize(new Dimension(1000, 44));
 
         int maNV = session.getMaNV();
         String idInfo = (maNV > 0) ? ("Mã NV: " + maNV) : "Tài khoản quản trị";
@@ -417,7 +446,7 @@ public class MainFrame extends JFrame {
         lblLeft.setFont(UITheme.FONT_CAPTION);
         lblLeft.setForeground(UITheme.TEXT_MUTED);
 
-        JLabel lblRight = new JLabel("Hệ Quản trị Cơ sở Dữ liệu – Nhóm 06");
+        JLabel lblRight = new JLabel("Hệ Quản trị Cơ sở Dữ liệu – Nhóm 06  •  v2.5");
         lblRight.setFont(UITheme.FONT_CAPTION_BOLD);
         lblRight.setForeground(UITheme.TEXT_SUBTLE);
 
@@ -439,21 +468,21 @@ public class MainFrame extends JFrame {
         card.setBorder(new CompoundBorder(
             new LineBorder(UITheme.BORDER, 1, true),
             new CompoundBorder(
-                new MatteBorder(0, 3, 0, 0, accent),
+                new MatteBorder(0, 4, 0, 0, accent),
                 new EmptyBorder(10, 14, 10, 14)
             )
         ));
 
         JLabel lblTitle = new JLabel(title);
-        lblTitle.setFont(UITheme.FONT_CAPTION_BOLD);
+        lblTitle.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 11));
         lblTitle.setForeground(UITheme.TEXT_MUTED);
 
         JLabel lblVal = new JLabel(value);
-        lblVal.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 16));
+        lblVal.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 17));
         lblVal.setForeground(UITheme.TEXT_MAIN);
 
         JLabel lblSub = new JLabel(subtext);
-        lblSub.setFont(UITheme.FONT_CAPTION);
+        lblSub.setFont(UITheme.FONT_CAPTION_BOLD);
         lblSub.setForeground(accent);
 
         card.add(lblTitle, BorderLayout.NORTH);
@@ -636,7 +665,7 @@ public class MainFrame extends JFrame {
 
     private void initLegacyMenusAndStatus() {
         tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("Trang chủ", new JScrollPane(createDashboardView()));
+        tabbedPane.addTab("Trang chủ", new JScrollPane(new JPanel()));
 
         lblStatusUser = new JLabel("Người dùng: " + session.getUserInfo());
         lblStatusUser.setFont(new Font(UITheme.FONT_FAMILY, Font.PLAIN, 12));
@@ -760,15 +789,15 @@ public class MainFrame extends JFrame {
             this.enabled = enabled;
 
             setLayout(new BorderLayout());
-            setPreferredSize(new Dimension(218, 36));
-            setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+            setPreferredSize(new Dimension(228, 38));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
             setBackground(UITheme.BG_SIDEBAR);
             setOpaque(true);
 
             lblText = new JLabel(label);
             lblText.setFont(UITheme.FONT_BODY);
-            lblText.setForeground(enabled ? UITheme.TEXT_MAIN : UITheme.TEXT_SUBTLE);
-            lblText.setBorder(new EmptyBorder(0, 16, 0, 8));
+            lblText.setForeground(enabled ? new Color(226, 232, 240) : new Color(100, 116, 139));
+            lblText.setBorder(new EmptyBorder(0, 14, 0, 8));
 
             add(lblText, BorderLayout.CENTER);
 
@@ -778,13 +807,15 @@ public class MainFrame extends JFrame {
                     @Override
                     public void mouseEntered(MouseEvent e) {
                         if (!active) {
-                            setBackground(new Color(230, 236, 245));
+                            setBackground(new Color(30, 41, 59));
+                            lblText.setForeground(Color.WHITE);
                         }
                     }
                     @Override
                     public void mouseExited(MouseEvent e) {
                         if (!active) {
                             setBackground(UITheme.BG_SIDEBAR);
+                            lblText.setForeground(new Color(226, 232, 240));
                         }
                     }
                     @Override
@@ -806,13 +837,13 @@ public class MainFrame extends JFrame {
         public void setActive(boolean active) {
             this.active = active;
             if (active) {
-                setBackground(UITheme.PRIMARY_LIGHT);
-                lblText.setForeground(UITheme.PRIMARY_ACTIVE);
+                setBackground(new Color(30, 41, 59));
+                lblText.setForeground(Color.WHITE);
                 lblText.setFont(UITheme.FONT_BODY_BOLD);
                 setBorder(new MatteBorder(0, 3, 0, 0, UITheme.PRIMARY));
             } else {
                 setBackground(UITheme.BG_SIDEBAR);
-                lblText.setForeground(enabled ? UITheme.TEXT_MAIN : UITheme.TEXT_SUBTLE);
+                lblText.setForeground(enabled ? new Color(226, 232, 240) : new Color(100, 116, 139));
                 lblText.setFont(UITheme.FONT_BODY);
                 setBorder(null);
             }
