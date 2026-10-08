@@ -6,6 +6,7 @@ import com.model.NhanVien;
 import com.model.PhuCapNhanVien;
 import com.service.PhuCapKhauTruService;
 import com.ui.theme.UITheme;
+import com.ui.theme.DatabaseTask;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -74,8 +75,8 @@ public class PhuCapKhauTruPanel extends JPanel {
         int curYear = Calendar.getInstance().get(Calendar.YEAR);
         for (int i = 2020; i <= curYear + 2; i++) cbNam.addItem(i);
 
-        cbThang.setSelectedItem(9);
-        cbNam.setSelectedItem(2026);
+        cbThang.setSelectedItem(Calendar.getInstance().get(Calendar.MONTH) + 1);
+        cbNam.setSelectedItem(curYear);
         UITheme.styleComboBox(cbThang);
         UITheme.styleComboBox(cbNam);
 
@@ -95,6 +96,7 @@ public class PhuCapKhauTruPanel extends JPanel {
         pnlTop.add(lblNam);
         pnlTop.add(cbNam);
         pnlTop.add(btnLoc);
+        btnXoaKyLuong.setVisible(com.session.Session.getInstance().hasRole("DB_Admin", "Payroll_Officer"));
         pnlTop.add(btnXoaKyLuong);
 
         add(pnlTop, BorderLayout.NORTH);
@@ -108,6 +110,8 @@ public class PhuCapKhauTruPanel extends JPanel {
         add(tabbedPane, BorderLayout.CENTER);
 
         btnLoc.addActionListener(e -> loadAllData());
+        cbThang.addActionListener(e -> loadAllData());
+        cbNam.addActionListener(e -> loadAllData());
         btnXoaKyLuong.addActionListener(e -> handleXoaKyLuong());
     }
 
@@ -367,76 +371,36 @@ public class PhuCapKhauTruPanel extends JPanel {
     }
 
     private void loadNhanVienCombobox() {
-        try {
-            listNhanVien = nhanVienDAO.getAll();
-            cbNhanVienPC.removeAllItems();
-            cbNhanVienKT.removeAllItems();
-            if (listNhanVien != null) {
-                for (NhanVien nv : listNhanVien) {
-                    cbNhanVienPC.addItem(nv.getMaNV() + " - " + nv.getHoTen());
-                    cbNhanVienKT.addItem(nv.getMaNV() + " - " + nv.getHoTen());
-                }
+        DatabaseTask.run(cbNhanVienPC, () -> nhanVienDAO.getAll(), employees -> {
+            listNhanVien=employees; cbNhanVienPC.removeAllItems(); cbNhanVienKT.removeAllItems();
+            for(NhanVien nv:employees) {
+                String label=nv.getMaNV()+" - "+nv.getHoTen();
+                cbNhanVienPC.addItem(label); cbNhanVienKT.addItem(label);
             }
-        } catch (Exception ex) {
-            System.err.println("Chưa nạp được danh sách nhân viên: " + ex.getMessage());
-        }
+        });
     }
 
     private void loadAllData() {
-        int thang = (int) cbThang.getSelectedItem();
-        int nam = (int) cbNam.getSelectedItem();
-
-        // 1. Tải Phụ cấp
-        try {
+        int month=(Integer)cbThang.getSelectedItem(),year=(Integer)cbNam.getSelectedItem();
+        modelPhuCap.setRowCount(0);
+        modelKhauTru.setRowCount(0);
+        modelTongHop.setRowCount(0);
+        DatabaseTask.run(tblPhuCap, () -> service.getListPhuCap(month,year), list -> {
             modelPhuCap.setRowCount(0);
-            List<PhuCapNhanVien> listPC = service.getListPhuCap(thang, nam);
-            for (PhuCapNhanVien p : listPC) {
-                modelPhuCap.addRow(new Object[]{
-                        p.getMaPCNV(), p.getMaNV(), p.getHoTen(), p.getTenPhuCap(),
-                        moneyFormat.format(p.getSoTien()), p.getNgayGhiNhan(), p.getGhiChu()
-                });
-            }
-        } catch (Exception ex) {
-            if (isShowing()) {
-                JOptionPane.showMessageDialog(this, "Lỗi tải Phụ cấp: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-
-        // 2. Tải Khấu trừ
-        try {
+            for(PhuCapNhanVien p:list) modelPhuCap.addRow(new Object[]{p.getMaPCNV(),p.getMaNV(),p.getHoTen(),p.getTenPhuCap(),moneyFormat.format(p.getSoTien()),p.getNgayGhiNhan(),p.getGhiChu()});
+        });
+        DatabaseTask.run(tblKhauTru, () -> service.getListKhauTru(month,year), list -> {
             modelKhauTru.setRowCount(0);
-            List<KhauTruNhanVien> listKT = service.getListKhauTru(thang, nam);
-            for (KhauTruNhanVien k : listKT) {
-                modelKhauTru.addRow(new Object[]{
-                        k.getMaKTNV(), k.getMaNV(), k.getHoTen(), k.getTenKhauTru(),
-                        moneyFormat.format(k.getSoTien()), k.getNgayGhiNhan(), k.getLyDo()
-                });
-            }
-        } catch (Exception ex) {
-            if (isShowing()) {
-                JOptionPane.showMessageDialog(this, "Lỗi tải Khấu trừ: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-
-        // 3. Tải Tổng hợp (View vw_TongPhuCapThang & Function fn_TongKhauTru)
-        try {
+            for(KhauTruNhanVien k:list) modelKhauTru.addRow(new Object[]{k.getMaKTNV(),k.getMaNV(),k.getHoTen(),k.getTenKhauTru(),moneyFormat.format(k.getSoTien()),k.getNgayGhiNhan(),k.getLyDo()});
+        });
+        DatabaseTask.run(tblTongHop, () -> {
+            List<Map<String,Object>> rows=service.getTongHopPhuCap(month,year);
+            for(Map<String,Object> row:rows) row.put("TongKhauTru",service.getTongKhauTruNV((Integer)row.get("MaNV"),month,year));
+            return rows;
+        }, rows -> {
             modelTongHop.setRowCount(0);
-            List<Map<String, Object>> listTH = service.getTongHopPhuCap(thang, nam);
-            for (Map<String, Object> map : listTH) {
-                int maNV = (int) map.get("MaNV");
-                BigDecimal tongPC = (BigDecimal) map.get("TongTienPhuCap");
-                BigDecimal tongKT = service.getTongKhauTruNV(maNV, thang, nam);
-
-                modelTongHop.addRow(new Object[]{
-                        maNV,
-                        map.get("HoTen"),
-                        map.get("Thang") + "/" + map.get("Nam"),
-                        map.get("SoKhoanPhuCap"),
-                        moneyFormat.format(tongPC),
-                        moneyFormat.format(tongKT)
-                });
-            }
-        } catch (Exception ignored) {}
+            for(Map<String,Object> row:rows) modelTongHop.addRow(new Object[]{row.get("MaNV"),row.get("HoTen"),month+"/"+year,row.get("SoKhoanPhuCap"),moneyFormat.format(row.get("TongTienPhuCap")),moneyFormat.format(row.get("TongKhauTru"))});
+        });
     }
 
     private void handleThemPhuCap() {
@@ -454,9 +418,10 @@ public class PhuCapKhauTruPanel extends JPanel {
             String ghiChu = txtGhiChuPC.getText().trim();
 
             PhuCapNhanVien pc = new PhuCapNhanVien(maNV, thang, nam, ten, tien, null, ghiChu);
-            service.themPhuCap(pc);
+            DatabaseTask.runExclusive(this, () -> { service.themPhuCap(pc); return true; }, ignored -> {
             JOptionPane.showMessageDialog(this, "Thêm phụ cấp thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             loadAllData();
+                    });
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi thêm phụ cấp: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -481,9 +446,10 @@ public class PhuCapKhauTruPanel extends JPanel {
 
         if (opt == JOptionPane.YES_OPTION) {
             try {
-                service.xoaPhuCap(maPCNV);
+                DatabaseTask.runExclusive(this, () -> { service.xoaPhuCap(maPCNV); return true; }, ignored -> {
                 JOptionPane.showMessageDialog(this, "Đã xóa phụ cấp thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
                 loadAllData();
+                            });
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Lỗi xóa phụ cấp: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
@@ -505,9 +471,10 @@ public class PhuCapKhauTruPanel extends JPanel {
             String lyDo = txtLyDoKT.getText().trim();
 
             KhauTruNhanVien kt = new KhauTruNhanVien(maNV, thang, nam, ten, tien, null, lyDo);
-            service.themKhauTru(kt);
+            DatabaseTask.runExclusive(this, () -> { service.themKhauTru(kt); return true; }, ignored -> {
             JOptionPane.showMessageDialog(this, "Thêm khoản khấu trừ thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             loadAllData();
+                    });
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi thêm khấu trừ: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -532,9 +499,10 @@ public class PhuCapKhauTruPanel extends JPanel {
 
         if (opt == JOptionPane.YES_OPTION) {
             try {
-                service.xoaKhauTru(maKTNV);
+                DatabaseTask.runExclusive(this, () -> { service.xoaKhauTru(maKTNV); return true; }, ignored -> {
                 JOptionPane.showMessageDialog(this, "Đã xóa khoản khấu trừ thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
                 loadAllData();
+                            });
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Lỗi xóa khấu trừ: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
@@ -552,9 +520,10 @@ public class PhuCapKhauTruPanel extends JPanel {
         );
         if (opt == JOptionPane.YES_OPTION) {
             try {
-                service.xoaKyLuongChuaChot(thang, nam);
+                DatabaseTask.runExclusive(this, () -> { service.xoaKyLuongChuaChot(thang, nam); return true; }, ignored -> {
                 JOptionPane.showMessageDialog(this, "Đã thực hiện xong Transaction xóa kỳ lương thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 loadAllData();
+                            });
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Transaction Rollback do lỗi: " + ex.getMessage(), "Kết quả Transaction", JOptionPane.ERROR_MESSAGE);
             }

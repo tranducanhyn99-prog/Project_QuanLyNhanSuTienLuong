@@ -4,6 +4,7 @@ import com.model.ChamCong;
 import com.service.ChamCongService;
 import com.session.Session;
 import com.ui.theme.UITheme;
+import com.ui.theme.DatabaseTask;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -70,11 +71,17 @@ public class DieuChinhChamCongDialog extends JDialog {
         this.nam = nam;
 
         initComponents();
-        loadData();
         applyPermissions();
+        loadData();
     }
 
     private void initComponents() {
+        setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override public void windowClosing(java.awt.event.WindowEvent event) {
+                if (getRootPane().isEnabled()) dispose();
+            }
+        });
         setSize(850, 600);
         setLocationRelativeTo(getOwner());
         setLayout(new BorderLayout(8, 8));
@@ -268,8 +275,7 @@ public class DieuChinhChamCongDialog extends JDialog {
 
     private void loadData() {
         modelChiTiet.setRowCount(0);
-        try {
-            List<ChamCong> list = chamCongService.layChamCongTheoThang(maNV, thang, nam);
+        DatabaseTask.run(tblChiTiet, () -> chamCongService.layChamCongTheoThang(maNV, thang, nam), list -> {
             for (ChamCong cc : list) {
                 modelChiTiet.addRow(new Object[]{
                     cc.getMaChamCong(),
@@ -280,13 +286,7 @@ public class DieuChinhChamCongDialog extends JDialog {
                     cc.getGhiChu() != null ? cc.getGhiChu() : ""
                 });
             }
-        } catch (Exception ex) {
-            if (isShowing()) {
-                JOptionPane.showMessageDialog(this, "Lỗi tải chi tiết chấm công: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            } else {
-                System.err.println("Bỏ qua dialog tải chi tiết chấm công: " + ex.getMessage());
-            }
-        }
+        });
     }
 
     private void fillFormFromRow(int row) {
@@ -348,13 +348,14 @@ public class DieuChinhChamCongDialog extends JDialog {
 
         ChamCong cc = new ChamCong(maNV, ngayCC, gioVao, gioRa, trangThai, ghiChu.isEmpty() ? "Bổ sung công tác / điều chỉnh" : ghiChu);
         try {
-            boolean ok = chamCongService.chamCongDonLe(cc);
+            DatabaseTask.runExclusive(getRootPane(), () -> chamCongService.chamCongDonLe(cc), ok -> {
             if (ok) {
                 dataChanged = true;
                 JOptionPane.showMessageDialog(this, "Đã thêm ngày công " + ngayCC + " thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 loadData();
                 lamMoiForm();
             }
+                    });
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi thêm ngày công: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -383,13 +384,14 @@ public class DieuChinhChamCongDialog extends JDialog {
         cc.setMaChamCong(maCC);
 
         try {
-            boolean ok = chamCongService.capNhatChamCong(cc);
+            DatabaseTask.runExclusive(getRootPane(), () -> chamCongService.capNhatChamCong(cc), ok -> {
             if (ok) {
                 dataChanged = true;
                 JOptionPane.showMessageDialog(this, "Cập nhật ngày công mã " + maCC + " thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 loadData();
                 lamMoiForm();
             }
+                    });
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi cập nhật ngày công: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -411,11 +413,12 @@ public class DieuChinhChamCongDialog extends JDialog {
 
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                chamCongService.xoaChamCong(maCC);
+                DatabaseTask.runExclusive(getRootPane(), () -> { chamCongService.xoaChamCong(maCC); return true; }, ignored -> {
                 dataChanged = true;
                 JOptionPane.showMessageDialog(this, "Đã xóa ngày công thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 loadData();
                 lamMoiForm();
+                            });
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Lỗi xóa ngày công: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }

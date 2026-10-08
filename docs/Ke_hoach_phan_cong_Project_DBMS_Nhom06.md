@@ -19,6 +19,8 @@
 
 ## 2. Nguyên tắc phân công
 
+Cập nhật hiện thực 08/10/2026: schema có thêm LICHSULUONG, NgayNghiViec và mapping SqlLogin; SQL login cá nhân/PBKDF2 được dùng khi đăng nhập. Bộ tài khoản/mật khẩu demo được nhóm lưu ở [DEMO_ACCOUNTS](DEMO_ACCOUNTS.md), kịch bản trình bày ở [GUI_TEST_GUIDE](GUI_TEST_GUIDE.md). Kế hoạch theo tuần giữ vai trò phân công; kết quả chạy thực tế được đối chiếu ở [FIX_TASKLIST](FIX_TASKLIST.md).
+
 - Phân công theo mô hình “vertical slice”: mỗi thành viên có phần phân tích, SQL Server, Java/JDBC, kiểm thử, báo cáo và nội dung vấn đáp tương ứng.
 - Giữ thống nhất tên bảng/cột, công thức lương, trạng thái nghiệp vụ và tên các đối tượng SQL giữa tài liệu, script và source code.
 - SQL Server là trung tâm của project: logic dữ liệu quan trọng phải được thể hiện bằng constraint/trigger/view/index/stored procedure/function/transaction/role theo rubric.
@@ -41,8 +43,8 @@
 
 | Người chịu trách nhiệm | Nhiệm vụ | Sản phẩm | Kết quả thực tế | Chữ ký GVHD |
 |---|---|---|---|---|
-| **Nguyễn Minh Trí** | • Cài đặt DDL/constraint cho PHONGBAN, CHUCVU, NHANVIEN và các khóa ngoại liên quan.<br>• Cài đặt sp_ThemNhanVien; phối hợp kiểm thử sp_CapNhatNhanVien.<br>• Cài đặt trg_NhanVien_KhongXoaKhiDaPhatSinhLuong, vw_NhanVien_PhongBan_ChucVu, IX_NHANVIEN_HoTen.<br>• Cài đặt chức năng NhanVienPanel/DanhMucPanel, NhanVienService, NhanVienDAO.<br>• Thực hiện transaction “Tạo nhân viên + tài khoản” và kiểm tra rollback khi bước tạo tài khoản thất bại. | • SQL script module nhân sự.<br>• CRUD/tìm kiếm nhân viên hoạt động.<br>• Transaction tạo nhân viên + tài khoản.<br>• Testcase + ảnh minh chứng. |  |  |
-| **Phạm Minh Quân** | • Cài đặt sp_GhiNhanChamCong; cài đặt trg_ChamCong_KiemTraGio và trg_ChamCong_KiemTraNhanVien; cài đặt vw_TongHopChamCongThang, IX_CHAMCONG_MaNV_Ngay.<br>• Xây dựng ChamCongPanel, ChamCongService, ChamCongDAO; dùng PreparedStatement/CallableStatement phù hợp.<br>• Cài đặt transaction nhập chấm công theo lô; kiểm thử rollback khi có một dòng không hợp lệ.<br>• Chuẩn bị minh chứng lỗi: nhân viên nghỉ việc, trùng ngày, giờ không hợp lệ. | • SQL objects theo phân công.<br>• Màn hình chấm công hoạt động.<br>• Transaction nhập chấm công theo lô.<br>• Bộ testcase lỗi chấm công. |  |  |
+| **Nguyễn Minh Trí** | • Cài đặt DDL/constraint cho PHONGBAN, CHUCVU, NHANVIEN và các khóa ngoại liên quan.<br>• Cài đặt sp_ThemNhanVien; phối hợp kiểm thử cập nhật hồ sơ qua NhanVienDAO.<br>• Cài đặt trg_NhanVien_KhongXoaKhiDaPhatSinhLuong, vw_NhanVien_PhongBan_ChucVu, IX_NHANVIEN_HoTen.<br>• Cài đặt chức năng NhanVienPanel/DanhMucPanel, NhanVienService, NhanVienDAO.<br>• Thực hiện transaction “Tạo nhân viên + tài khoản” và kiểm tra rollback khi bước tạo tài khoản thất bại. | • SQL script module nhân sự.<br>• CRUD/tìm kiếm nhân viên hoạt động.<br>• Transaction tạo nhân viên + tài khoản.<br>• Testcase + ảnh minh chứng. |  |  |
+| **Phạm Minh Quân** | • Cài đặt sp_GhiNhanChamCong; phối hợp TV3 cài đặt fn_TongPhuCap (module 03); cài đặt trg_ChamCong_KiemTraGio và trg_ChamCong_KiemTraNhanVien; cài đặt vw_TongHopChamCongThang, IX_CHAMCONG_MaNV_Ngay.<br>• Xây dựng ChamCongPanel, ChamCongService, ChamCongDAO; dùng PreparedStatement/CallableStatement phù hợp.<br>• Cài đặt transaction nhập chấm công theo lô; kiểm thử rollback khi có một dòng không hợp lệ.<br>• Chuẩn bị minh chứng lỗi: nhân viên nghỉ việc, trùng ngày, giờ không hợp lệ. | • SQL objects theo phân công.<br>• Màn hình chấm công hoạt động.<br>• Transaction nhập chấm công theo lô.<br>• Bộ testcase lỗi chấm công. |  |  |
 | **Trần Tiến Đạt** | • Cài đặt DDL/Constraints cho PHUCAPNHANVIEN, KHAUTRUNHANVIEN.<br>• Cài đặt fn_TongKhauTru, trg_PhuCap_KhongSuaKhiDaChotLuong, vw_TongPhuCapThang, IX_PHUCAP_MaNV_ThangNam.<br>• Xây dựng giao diện/module quản lý phụ cấp và khấu trừ (PhuCapKhauTruPanel), gồm nhập dữ liệu, lọc theo kỳ, tải lại từ CSDL.<br>• Cài đặt và kiểm thử transaction/SP sp_XoaKyLuongChuaChot: xóa chi tiết trước, xóa kỳ sau, rollback khi lỗi.<br>• Chuẩn bị dữ liệu demo phụ cấp/khấu trừ đủ để phục vụ tính lương. | • SQL objects theo phân công.<br>• Module phụ cấp/khấu trừ hoạt động.<br>• Transaction xóa kỳ chưa chốt.<br>• Dữ liệu demo theo kỳ. |  |  |
 | **Nguyễn Quang Vinh** | • Cài đặt sp_TinhBangLuongThang với TRY...CATCH, BEGIN TRAN/COMMIT/ROLLBACK.<br>• Cài đặt fn_TinhTienCong, trg_BangLuong_KhongSuaKhiDaChot, vw_TongKhauTruThang, IX_KHAUTRU_MaNV_ThangNam.<br>• Tích hợp phần “Tính lương” trong BangLuongPanel, PayrollService, BangLuongDAO.<br>• Kiểm thử kỳ đã tồn tại, kỳ đã chốt, lỗi insert chi tiết và rollback toàn bộ.<br>• Đối chiếu kết quả tính với công thức đã chốt ở tuần 1. | • Payroll Stored Procedure.<br>• Function/Trigger/View/Index theo phân công.<br>• BangLuongPanel phần tính lương.<br>• Testcase transaction tính lương. |  |  |
 | **Trần Đức Anh** | • Cài đặt sp_ChotBangLuong, fn_TinhThucNhan, trg_ChiTietLuong_KhongSuaKhiDaChot, vw_BangLuongChiTiet, IX_NHANVIEN_MaPB_MaCV.<br>• Cài đặt LoginFrame, MainFrame, Session, ẩn/disable chức năng theo role và kiểm tra quyền ở SQL Server.<br>• Cài đặt 4 Role/Login, script GRANT/REVOKE/DENY và kiểm thử truy cập đúng/sai quyền.<br>• Tích hợp chức năng chốt bảng lương trong transaction.<br>• Thiết lập BaoCaoPanel đọc dữ liệu qua View/Stored Procedure thay vì SQL lặp lại trong giao diện. | • Login/phân quyền hoạt động.<br>• Security script.<br>• Chốt bảng lương hoạt động.<br>• BaoCaoPanel cơ bản.<br>• SQL objects theo phân công. |  |  |
@@ -62,7 +64,7 @@
 | Thành viên | Stored Procedure | Function | Trigger | View | Index | Transaction |
 |---|---|---|---|---|---|---|
 | TV1 – Nguyễn Minh Trí | sp_ThemNhanVien | fn_TinhSoNgayCong | trg_NhanVien_KhongXoaKhiDaPhatSinhLuong | vw_NhanVien_PhongBan_ChucVu | IX_NHANVIEN_HoTen | Tạo nhân viên + tài khoản |
-| TV2 – Phạm Minh Quân | sp_GhiNhanChamCong | fn_TongHopGioLam (hoặc View) | trg_ChamCong_KiemTraGio, trg_ChamCong_KiemTraNhanVien | vw_TongHopChamCongThang | IX_CHAMCONG_MaNV_Ngay | Nhập chấm công theo lô |
+| TV2 – Phạm Minh Quân | sp_GhiNhanChamCong | fn_TongPhuCap (module 03) | trg_ChamCong_KiemTraGio, trg_ChamCong_KiemTraNhanVien | vw_TongHopChamCongThang | IX_CHAMCONG_MaNV_Ngay | Nhập chấm công theo lô |
 | TV3 – Trần Tiến Đạt | sp_XoaKyLuongChuaChot | fn_TongKhauTru | trg_PhuCap_KhongSuaKhiDaChotLuong | vw_TongPhuCapThang | IX_PHUCAP_MaNV_ThangNam | Xóa kỳ lương chưa chốt |
 | TV4 – Nguyễn Quang Vinh | sp_TinhBangLuongThang | fn_TinhTienCong | trg_BangLuong_KhongSuaKhiDaChot | vw_TongKhauTruThang | IX_KHAUTRU_MaNV_ThangNam | Tính bảng lương tháng |
 | TV5 – Trần Đức Anh | sp_ChotBangLuong | fn_TinhThucNhan | trg_ChiTietLuong_KhongSuaKhiDaChot | vw_BangLuongChiTiet | IX_NHANVIEN_MaPB_MaCV | Chốt bảng lương |
@@ -71,7 +73,7 @@
 
 | Hạng mục | Yêu cầu tối thiểu | Kế hoạch đáp ứng |
 |---|---|---|
-| Thiết kế dữ liệu | ≥ 8 bảng, ERD, relational schema, PK/FK, chuẩn hóa ≥ 3NF | 9 bảng; ERD/3NF do TV1 điều phối, cả nhóm rà soát |
+| Thiết kế dữ liệu | ≥ 8 bảng, ERD, relational schema, PK/FK, chuẩn hóa ≥ 3NF | 10 bảng gồm LICHSULUONG; ERD/3NF do TV1 điều phối, cả nhóm rà soát |
 | Constraint | ≥ 5 CHECK/UNIQUE/DEFAULT có ý nghĩa | Phân bổ theo module; kiểm thử ở tuần 2–3 |
 | Trigger | ≥ 5 | Mỗi thành viên sở hữu 1 trigger chính |
 | View | ≥ 5 | Mỗi thành viên sở hữu 1 view chính |

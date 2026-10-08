@@ -1,6 +1,8 @@
 package com.service;
 
 import com.dao.TaiKhoanDAO;
+import com.config.DatabaseConnection;
+import java.sql.Connection;
 import com.model.TaiKhoan;
 import com.session.Session;
 import com.util.PasswordUtil;
@@ -10,12 +12,8 @@ import java.sql.SQLException;
 /**
  * AuthService – Dịch vụ xác thực đăng nhập.
  *
- * Luồng xử lý:
- * 1. Nhận TenDangNhap + MatKhau (plaintext) từ LoginFrame
- * 2. Hash mật khẩu bằng SHA-256 (PasswordUtil)
- * 3. Gọi TaiKhoanDAO.findByCredentials() để so sánh với CSDL
- * 4. Kiểm tra trạng thái tài khoản (HOAT_DONG / KHOA)
- * 5. Thiết lập Session singleton nếu thành công
+ * SQL Server xác thực login; DB trả profile theo ORIGINAL_LOGIN.
+ * Hash PBKDF2 của ứng dụng được kiểm tra và migrate sau đăng nhập hợp lệ.
  *
  * @author Trần Đức Anh (TV5 – MSSV 24110155)
  */
@@ -40,32 +38,25 @@ public class AuthService {
             throw new Exception("Mật khẩu không được để trống!");
         }
 
-        // 2. Hash mật khẩu bằng SHA-256
-        String matKhauHash = PasswordUtil.hashSHA256(matKhauPlainText.trim());
-
-        // 3. Truy vấn CSDL
-        TaiKhoan taiKhoan;
-        try {
-            taiKhoan = taiKhoanDAO.findByCredentials(tenDangNhap.trim(), matKhauHash);
-        } catch (SQLException ex) {
-            throw new Exception("Lỗi kết nối cơ sở dữ liệu: " + ex.getMessage(), ex);
+        logout();
+        try (Connection connection = DatabaseConnection.openForLogin(tenDangNhap.trim(), matKhauPlainText)) {
+            TaiKhoan taiKhoan = taiKhoanDAO.findCurrentIdentity(connection);
+            if (taiKhoan == null || !PasswordUtil.verifyPassword(matKhauPlainText, taiKhoan.getMatKhau())) {
+                throw new SecurityException("Tên đăng nhập hoặc mật khẩu không đúng, hoặc chưa được DBA mapping.");
+            }
+            if (!taiKhoan.isActive()) throw new SecurityException("Tài khoản đã bị khóa.");
+            if (!taiKhoan.getMatKhau().startsWith("pbkdf2-sha256$")) {
+                taiKhoanDAO.migrateOwnPassword(connection, PasswordUtil.hashPassword(matKhauPlainText));
+            }
+            DatabaseConnection.authenticated(tenDangNhap.trim(), matKhauPlainText);
+            Session.getInstance().login(taiKhoan);
+            // Password hash must not escape into UI/session objects.
+            taiKhoan.setMatKhau(null);
+            return taiKhoan;
+        } catch (Exception ex) {
+            logout();
+            throw ex;
         }
-
-        // 4. Kiểm tra kết quả
-        if (taiKhoan == null) {
-            throw new Exception("Tên đăng nhập hoặc mật khẩu không đúng!");
-        }
-
-        // 5. Kiểm tra trạng thái tài khoản
-        if (taiKhoan.isLocked()) {
-            throw new Exception("Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên!");
-        }
-
-        // 6. Thiết lập Session
-        Session session = Session.getInstance();
-        session.login(taiKhoan);
-
-        return taiKhoan;
     }
 
     /**
@@ -73,6 +64,7 @@ public class AuthService {
      */
     public void logout() {
         Session.getInstance().logout();
+        DatabaseConnection.logout();
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -96,6 +88,7 @@ public class AuthService {
      */
     public void doiTrangThaiTaiKhoan(int maTK, String trangThai) throws Exception {
         checkAdminPermission();
+        if (!java.util.Arrays.asList("KHOA", "HOAT_DONG").contains(trangThai)) throw new IllegalArgumentException("Trạng thái không hợp lệ.");
         try {
             taiKhoanDAO.updateTrangThai(maTK, trangThai);
         } catch (SQLException ex) {
@@ -104,16 +97,17 @@ public class AuthService {
     }
 
     /**
-     * Đặt lại mật khẩu tài khoản về mật khẩu mới (hash SHA-256).
+     * Đặt lại mật khẩu SQL login và hash PBKDF2 trong cùng transaction.
      */
     public void datLaiMatKhau(int maTK, String matKhauMoi) throws Exception {
         checkAdminPermission();
         if (matKhauMoi == null || matKhauMoi.trim().isEmpty()) {
             throw new Exception("Mật khẩu mới không được để trống!");
         }
-        String hash = PasswordUtil.hashSHA256(matKhauMoi.trim());
+        validateNewPassword(matKhauMoi);
+        String hash = PasswordUtil.hashPassword(matKhauMoi);
         try {
-            taiKhoanDAO.resetPassword(maTK, hash);
+            taiKhoanDAO.resetPassword(maTK, hash, matKhauMoi);
         } catch (SQLException ex) {
             throw new Exception("Lỗi đặt lại mật khẩu: " + ex.getMessage(), ex);
         }
@@ -134,9 +128,13 @@ public class AuthService {
         }
     }
 
-    private void checkAdminPermission() throws Exception {
-        if (!Session.getInstance().hasRole("DB_Admin")) {
-            throw new Exception("Chức năng chỉ dành cho quản trị viên (DB_Admin)!");
+    public static void validateNewPassword(String password) {
+        if (password == null || password.length() < 8 || password.length() > 128) {
+            throw new IllegalArgumentException("Mật khẩu mới phải có 8–128 ký tự và đáp ứng policy của SQL Server.");
         }
+    }
+
+    private void checkAdminPermission() throws Exception {
+        Session.getInstance().requireRoles("DB_Admin");
     }
 }

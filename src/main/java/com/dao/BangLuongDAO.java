@@ -238,7 +238,7 @@ public class BangLuongDAO {
      */
     public List<ChiTietBangLuong> getPhieuLuongByMaNV(int maNV) throws SQLException {
         List<ChiTietBangLuong> list = new ArrayList<>();
-        String sql = "SELECT * FROM vw_BangLuongChiTiet WHERE MaNV = ? ORDER BY Nam DESC, Thang DESC";
+        String sql = "SELECT * FROM dbo.vw_PhieuLuongCaNhan WHERE MaNV = ? ORDER BY Nam DESC, Thang DESC";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, maNV);

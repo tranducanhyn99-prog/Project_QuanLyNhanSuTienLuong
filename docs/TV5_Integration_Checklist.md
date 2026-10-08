@@ -1,3 +1,5 @@
+> **Cập nhật 08/10/2026:** Checklist danh tính dưới đây theo mô hình hiện hành: mỗi người dùng kết nối bằng SQL login cá nhân, URL cấu hình không chứa credential. Hướng dẫn cấp/migrate tài khoản xem [SECURE_SETUP](SECURE_SETUP.md); log và phạm vi kiểm thử có ngày xem [FIX_TASKLIST](FIX_TASKLIST.md).
+
 # TV5 – Checklist Tích hợp (Integration Checklist)
 # Quản lý Nhân sự và Tiền lương – Nhóm 06 – DBMS330284
 
@@ -28,13 +30,13 @@ Mỗi thành viên tự kiểm tra trước khi tạo PR vào `main`:
 - [ ] Không có `System.exit()` ở tầng DAO/Service
 - [ ] Không dùng `Statement` (phải dùng `PreparedStatement` hoặc `CallableStatement`)
 - [ ] Tất cả `Connection`, `Statement`, `ResultSet` được đóng trong `try-with-resources` hoặc `finally`
-- [ ] Không hardcode connection string — đọc từ `config.properties`
+- [ ] Chỉ cấu hình `db.url` từ `config.properties`, `DB_URL` hoặc `-Ddb.url`; URL không chứa credential
 - [ ] Không commit `config.properties` (chỉ commit `config.properties.template`)
 - [ ] Không có file `.class`, `*.bak` trong commit (ngoại trừ file driver JDBC trong `lib/` để phục vụ build/chạy tự động)
 
 ### 1.3 Phân quyền
 
-- [ ] DAO gọi đúng Login SQL Server phù hợp với role của nghiệp vụ
+- [ ] DAO dùng SQL login đã xác thực tại LoginFrame; role SQL giới hạn quyền ở database
 - [ ] Đã kiểm tra với cả role có quyền và role không có quyền
 - [ ] Nếu gọi SP → đã kiểm tra `GRANT EXECUTE` cho role tương ứng
 
@@ -65,17 +67,20 @@ Khi cài đặt tính năng mới cần kiểm tra với tất cả 4 role:
 
 | Bước | Hành động | Công cụ |
 |---|---|---|
-| 1 | Đăng nhập bằng tài khoản `DB_Admin` | Ứng dụng Java |
+| 1 | Đăng nhập bằng SQL login đã được DBA mapping `DB_Admin` | Ứng dụng Java |
 | 2 | Kiểm tra menu hiển thị đúng (tất cả menu) | Ứng dụng Java |
-| 3 | Đăng nhập bằng `HR_Manager` | Ứng dụng Java |
+| 3 | Đăng nhập bằng SQL login đã được DBA mapping `HR_Manager` | Ứng dụng Java |
 | 4 | Kiểm tra menu lương bị ẩn | Ứng dụng Java |
-| 5 | Thử gọi SP lương từ SSMS với login `HR_Manager` | SSMS |
-| 6 | Đăng nhập bằng `Payroll_Officer` | Ứng dụng Java |
+| 5 | Thử gọi SP chốt lương từ SSMS bằng chính login cá nhân HR; phải bị từ chối | SSMS |
+| 6 | Đăng nhập bằng SQL login đã được DBA mapping `Payroll_Officer` | Ứng dụng Java |
 | 7 | Kiểm tra menu Nhân viên bị ẩn | Ứng dụng Java |
-| 8 | Thử UPDATE NHANVIEN từ SSMS với login `Payroll_Officer` | SSMS |
-| 9 | Đăng nhập bằng `Employee` | Ứng dụng Java |
-| 10 | Kiểm tra chỉ thấy phiếu lương cá nhân | Ứng dụng Java |
-| 11 | Thử SELECT CHAMCONG từ SSMS với login `Employee` | SSMS |
+| 8 | Thử UPDATE NHANVIEN từ SSMS bằng chính login cá nhân Payroll; phải bị từ chối | SSMS |
+| 9 | Kiểm tra Payroll có thể CRUD phụ cấp/khấu trừ; role SQL cấp SELECT/INSERT/UPDATE/DELETE trên hai bảng | Java + SSMS |
+| 10 | Đăng nhập bằng SQL login đã được DBA mapping `Employee` | Ứng dụng Java |
+| 11 | Kiểm tra chỉ thấy phiếu lương cá nhân | Ứng dụng Java |
+| 12 | Thử SELECT CHAMCONG từ SSMS bằng chính login Employee; phải bị từ chối | SSMS |
+
+Không dùng `EXECUTE AS USER` làm bằng chứng cho lọc theo `ORIGINAL_LOGIN()`; kiểm tra employee bằng kết nối SQL thật của từng user. `role_DBAdmin` kế thừa `db_owner` trong application database, không đồng nghĩa SQL Server `sysadmin`. HR không được cấp quyền tính/chốt lương hoặc xóa kỳ lương. SQL reset mật khẩu/khóa-mở cần quyền server `ALTER ANY LOGIN` thích hợp; ứng dụng không tự nâng quyền. Xem [SECURE_SETUP](SECURE_SETUP.md).
 
 ---
 
@@ -121,18 +126,19 @@ Toàn nhóm tự đánh giá trước khi chuyển sang giai đoạn test:
 
 ### 5.1 SQL Server (hoàn chỉnh)
 
-- [ ] 9 bảng tạo xong với đầy đủ PK, FK, CHECK, DEFAULT, UNIQUE
+- [ ] 10 bảng hiện hành tạo xong với các PK, FK, CHECK, DEFAULT, UNIQUE được yêu cầu; gồm `LICHSULUONG`
 - [ ] 5 Stored Procedure tạo xong và chạy được
 - [ ] 5 User-Defined Function tạo xong và trả về kết quả đúng
 - [ ] 5 Trigger tạo xong, đã test trigger firing
 - [ ] 5 View tạo xong và trả về dữ liệu đúng
 - [ ] 5 Index tạo xong
-- [ ] 4 Login/User/Role tạo xong, GRANT/REVOKE/DENY áp dụng
+- [ ] Bốn mapping SQL login/user/role được DBA cấp riêng; schema install không tự tạo login hoặc mật khẩu
 - [ ] Dữ liệu mẫu đủ cho demo (ít nhất 5–10 nhân viên, 2–3 tháng chấm công)
 
 ### 5.2 Java (hoàn chỉnh)
 
-- [ ] `LoginFrame` → đăng nhập đúng/sai hoạt động
+- [ ] `LoginFrame` → login sai, mapping thiếu/khóa, timeout và đăng nhập thành công được kiểm tra; chip demo chỉ hiện khi `-Dapp.demo=true` và chỉ điền username
+- [x] T18 hidden-frame regression: production mode không có chip; demo mode có đúng bốn username, click để password rỗng; 20 assertions, không mở SQL connection (log 08/10/2026 trong `build/test-results/`)
 - [ ] `MainFrame` → menu ẩn/hiện đúng theo role
 - [ ] `NhanVienPanel` → CRUD cơ bản hoạt động (TV1)
 - [ ] `ChamCongPanel` → nhập chấm công hoạt động (TV2)

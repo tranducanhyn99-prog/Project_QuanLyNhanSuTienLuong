@@ -3,6 +3,7 @@ package com.ui.admin;
 import com.model.TaiKhoan;
 import com.service.AuthService;
 import com.ui.theme.UITheme;
+import com.ui.theme.DatabaseTask;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -19,7 +20,7 @@ import java.util.List;
  * Chức năng:
  * - Xem danh sách toàn bộ tài khoản trong hệ thống
  * - Khóa / Mở khóa tài khoản (phục vụ demo Tình huống 6 bảo mật)
- * - Đặt lại mật khẩu (hash SHA-256)
+ * - Đặt lại mật khẩu (PBKDF2-SHA256)
  * - Cập nhật vai trò (DB_Admin, HR_Manager, Payroll_Officer, Employee)
  * - Tải lại danh sách
  *
@@ -142,16 +143,8 @@ public class TaiKhoanPanel extends JPanel {
     }
 
     private void loadData() {
-        SwingWorker<List<TaiKhoan>, Void> worker = new SwingWorker<List<TaiKhoan>, Void>() {
-            @Override
-            protected List<TaiKhoan> doInBackground() throws Exception {
-                return authService.layDanhSachTaiKhoan();
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    danhSachHienTai = get();
+        DatabaseTask.run(tblTaiKhoan, () -> authService.layDanhSachTaiKhoan(), list -> {
+                    danhSachHienTai = list;
                     modelTaiKhoan.setRowCount(0);
                     int hoatDongCount = 0;
                     int khoaCount = 0;
@@ -179,22 +172,12 @@ public class TaiKhoanPanel extends JPanel {
 
                     lblThongKe.setText(String.format("Tổng số: %d tài khoản (%d hoạt động, %d bị khóa)",
                             danhSachHienTai.size(), hoatDongCount, khoaCount));
-                } catch (Exception ex) {
-                    if (isShowing()) {
-                        JOptionPane.showMessageDialog(TaiKhoanPanel.this,
-                                "Lỗi tải danh sách tài khoản: " + ex.getMessage(),
-                                "Lỗi", JOptionPane.ERROR_MESSAGE);
-                    } else {
-                        System.err.println("Bỏ qua dialog tải tài khoản: " + ex.getMessage());
-                    }
-                }
-            }
-        };
-        worker.execute();
+        });
     }
 
     private TaiKhoan getSelectedTaiKhoan() {
         int selectedRow = tblTaiKhoan.getSelectedRow();
+        if (selectedRow >= 0) selectedRow = tblTaiKhoan.convertRowIndexToModel(selectedRow);
         if (selectedRow < 0 || danhSachHienTai == null || selectedRow >= danhSachHienTai.size()) {
             JOptionPane.showMessageDialog(this, "Vui lòng chọn một tài khoản trong bảng!",
                     "Chưa chọn", JOptionPane.WARNING_MESSAGE);
@@ -216,34 +199,31 @@ public class TaiKhoanPanel extends JPanel {
 
         if (confirm != JOptionPane.YES_OPTION) return;
 
-        try {
-            authService.doiTrangThaiTaiKhoan(tk.getMaTK(), trangThaiMoi);
+        DatabaseTask.runExclusive(this, () -> { authService.doiTrangThaiTaiKhoan(tk.getMaTK(), trangThaiMoi); return true; }, ok -> {
             JOptionPane.showMessageDialog(this, String.format("Đã %s tài khoản '%s' thành công!", hanhDong, tk.getTenDangNhap()),
                     "Thành công", JOptionPane.INFORMATION_MESSAGE);
             loadData();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+        });
     }
 
     private void handleDatLaiMatKhau() {
         TaiKhoan tk = getSelectedTaiKhoan();
         if (tk == null) return;
 
-        String matKhauMoi = JOptionPane.showInputDialog(this,
-                String.format("Nhập mật khẩu mới cho tài khoản '%s':\n(Mặc định: 123456)", tk.getTenDangNhap()),
-                "123456");
+        JPasswordField password = new JPasswordField(24);
+        if (JOptionPane.showConfirmDialog(this, password, "Mật khẩu mới (8–128 ký tự)",
+                JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) return;
+        char[] entered = password.getPassword();
+        String matKhauMoi = new String(entered);
+        java.util.Arrays.fill(entered, '\0');
+        password.setText("");
+        if (matKhauMoi.isEmpty()) return;
 
-        if (matKhauMoi == null || matKhauMoi.trim().isEmpty()) return;
-
-        try {
-            authService.datLaiMatKhau(tk.getMaTK(), matKhauMoi.trim());
+        DatabaseTask.runExclusive(this, () -> { authService.datLaiMatKhau(tk.getMaTK(), matKhauMoi); return true; }, ok -> {
             JOptionPane.showMessageDialog(this,
                     String.format("Đã đặt lại mật khẩu cho tài khoản '%s' thành công!", tk.getTenDangNhap()),
                     "Thành công", JOptionPane.INFORMATION_MESSAGE);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+        });
     }
 
     private void handleDoiVaiTro() {
@@ -261,14 +241,11 @@ public class TaiKhoanPanel extends JPanel {
 
         if (roleMoi == null || roleMoi.equals(tk.getVaiTro())) return;
 
-        try {
-            authService.capNhatVaiTro(tk.getMaTK(), roleMoi);
+        DatabaseTask.runExclusive(this, () -> { authService.capNhatVaiTro(tk.getMaTK(), roleMoi); return true; }, ok -> {
             JOptionPane.showMessageDialog(this,
                     String.format("Đã đổi vai trò tài khoản '%s' thành '%s'!", tk.getTenDangNhap(), roleMoi),
                     "Thành công", JOptionPane.INFORMATION_MESSAGE);
             loadData();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+        });
     }
 }

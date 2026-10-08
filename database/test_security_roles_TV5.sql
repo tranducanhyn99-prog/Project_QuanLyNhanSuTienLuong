@@ -1,123 +1,79 @@
--- ============================================================================
--- PROJECT: HỆ THỐNG QUẢN LÝ NHÂN SỰ VÀ TIỀN LƯƠNG (DBMS330284)
--- KỊCH BẢN KIỂM THỬ PHÂN QUYỀN TRUY CẬP SQL SERVER (SECURITY DEMO) - TV5
--- TÁC GIẢ: TRẦN ĐỨC ANH (TV5 - MSSV: 24110155) - TUẦN 3
--- ĐỐI TƯỢNG SỞ HỮU: 4 ROLE, LOGIN, USER & MA TRẬN GRANT/REVOKE/DENY
--- ============================================================================
-
-USE QuanLyNhanSuTienLuong;
-GO
-
-PRINT '============================================================================';
-PRINT '   BẮT ĐẦU KIỂM THỬ BẢO MẬT & PHÂN QUYỀN TRÊN 4 ROLE SQL SERVER (TV5)';
-PRINT '============================================================================';
-GO
-
--- ----------------------------------------------------------------------------
--- 1. KIỂM THỬ VAI TRÒ 1: user_DBAdmin (Quản trị viên toàn quyền)
--- ----------------------------------------------------------------------------
-PRINT '>>> 1. KIỂM THỬ: user_DBAdmin (Toàn quyền db_owner)';
-EXECUTE AS USER = 'user_DBAdmin';
-GO
-
--- 1.1 Kiểm tra quyền đọc bảng
-SELECT TOP 2 MaNV, HoTen, LuongCoBan FROM dbo.NHANVIEN;
-SELECT TOP 2 TenDangNhap, VaiTro FROM dbo.TAIKHOAN;
-SELECT TOP 2 Thang, Nam, TrangThai FROM dbo.BANGLUONG;
-GO
-
-REVERT;
-PRINT '-> user_DBAdmin: ĐỌC DỮ LIỆU TOÀN BỘ BẢNG THÀNH CÔNG (PASSED).';
-GO
-
--- ----------------------------------------------------------------------------
--- 2. KIỂM THỬ VAI TRÒ 2: user_HRManager (Quản lý nhân sự)
--- ----------------------------------------------------------------------------
-PRINT '>>> 2. KIỂM THỬ: user_HRManager (Quản lý nhân sự & chấm công)';
-EXECUTE AS USER = 'user_HRManager';
-GO
-
--- 2.1 Quyền hợp lệ: Đọc và gọi SP Nhân sự / Chấm công
-SELECT TOP 2 MaNV, HoTen, TrangThai FROM dbo.NHANVIEN;
-SELECT TOP 2 MaChamCong, MaNV, NgayChamCong, TrangThai FROM dbo.CHAMCONG;
-GO
-
--- 2.2 Quyền bị cấm: HR_Manager KHÔNG ĐƯỢC phép tính hoặc chốt bảng lương
--- Thử gọi sp_ChotBangLuong -> Kỳ vọng SQL Server ném lỗi Permission Denied (Msg 229)
+-- Run after 01 -> 05, in a dedicated QA database as the DBA.
+-- WITHOUT LOGIN tests grants only; real personal identities are tested separately.
+SET NOCOUNT ON;
+IF DB_NAME() NOT LIKE 'PRJ[_]Fix[_]QA[_]%' THROW 53200,N'Use the dedicated QA database.',1;
+IF USER_ID('qaFix_Admin') IS NOT NULL OR USER_ID('qaFix_HR') IS NOT NULL
+ OR USER_ID('qaFix_Payroll') IS NOT NULL OR USER_ID('qaFix_Employee') IS NOT NULL
+    THROW 53201,N'Test principals already exist; do not overwrite them.',1;
+DECLARE @Impersonating BIT=0,@Passed INT=0;
 BEGIN TRY
-    EXEC dbo.sp_ChotBangLuong @Thang = 9, @Nam = 2026, @NguoiChot = N'HR_Manager';
-    PRINT '-> LỖI BẢO MẬT: HR_Manager không được phép chốt lương nhưng lệnh vẫn chạy!';
+    CREATE USER qaFix_Admin WITHOUT LOGIN; ALTER ROLE role_DBAdmin ADD MEMBER qaFix_Admin;
+    CREATE USER qaFix_HR WITHOUT LOGIN; ALTER ROLE role_HRManager ADD MEMBER qaFix_HR;
+    CREATE USER qaFix_Payroll WITHOUT LOGIN; ALTER ROLE role_PayrollOfficer ADD MEMBER qaFix_Payroll;
+    CREATE USER qaFix_Employee WITHOUT LOGIN; ALTER ROLE role_Employee ADD MEMBER qaFix_Employee;
+    DECLARE @Cases TABLE(Id INT IDENTITY,UserName SYSNAME,ObjectName SYSNAME,PermissionName VARCHAR(20),Expected INT);
+    INSERT @Cases VALUES
+    ('qaFix_Admin','dbo.TAIKHOAN','SELECT',1),
+    ('qaFix_HR','dbo.sp_ThemNhanVien','EXECUTE',1),
+    ('qaFix_HR','dbo.NHANVIEN','DELETE',1),
+    ('qaFix_HR','dbo.CHAMCONG','UPDATE',1),
+    ('qaFix_HR','dbo.sp_ChotBangLuong','EXECUTE',0),
+    ('qaFix_HR','dbo.sp_TinhBangLuongThang','EXECUTE',0),
+    ('qaFix_HR','dbo.sp_XoaKyLuongChuaChot','EXECUTE',0),
+    ('qaFix_HR','dbo.TAIKHOAN','UPDATE',0),
+    ('qaFix_Payroll','dbo.sp_TinhBangLuongThang','EXECUTE',1),
+    ('qaFix_Payroll','dbo.sp_ChotBangLuong','EXECUTE',1),
+    ('qaFix_Payroll','dbo.sp_HuyChotBangLuong','EXECUTE',1),
+    ('qaFix_Payroll','dbo.sp_XoaBangLuongChuaChot','EXECUTE',1),
+    ('qaFix_Payroll','dbo.sp_XoaKyLuongChuaChot','EXECUTE',1),
+    ('qaFix_Payroll','dbo.KHAUTRUNHANVIEN','DELETE',1),
+    ('qaFix_Payroll','dbo.fn_TongPhuCap','EXECUTE',1),
+    ('qaFix_Payroll','dbo.NHANVIEN','UPDATE',0),
+    ('qaFix_Employee','dbo.vw_PhieuLuongCaNhan','SELECT',1),
+    ('qaFix_Employee','dbo.vw_BangLuongChiTiet','SELECT',0),
+    ('qaFix_Employee','dbo.NHANVIEN','SELECT',0),
+    ('qaFix_Employee','dbo.TAIKHOAN','SELECT',0),
+    ('qaFix_Employee','dbo.sp_LayTaiKhoanHienTai','EXECUTE',1),
+    ('qaFix_Employee','dbo.sp_TinhBangLuongThang','EXECUTE',0);
+    DECLARE @Id INT=1,@User SYSNAME,@Object SYSNAME,@Permission VARCHAR(20),@Expected INT,@Actual INT,@Sql NVARCHAR(MAX);
+    WHILE @Id<=(SELECT COUNT(*) FROM @Cases)
+    BEGIN
+        SELECT @User=UserName,@Object=ObjectName,@Permission=PermissionName,@Expected=Expected FROM @Cases WHERE Id=@Id;
+        SET @Sql=N'EXECUTE AS USER='+QUOTENAME(@User,CHAR(39))+N'; SELECT @Actual=HAS_PERMS_BY_NAME(@Object,N''OBJECT'',@Permission); REVERT;';
+        EXEC sys.sp_executesql @Sql,N'@Object SYSNAME,@Permission VARCHAR(20),@Actual INT OUTPUT',@Object,@Permission,@Actual OUTPUT;
+        IF ISNULL(@Actual,-1)<>@Expected THROW 53202,N'Permission matrix mismatch.',1;
+        SET @Passed+=1; SET @Id+=1;
+    END;
+    DECLARE @Rejected BIT=0,@NewId INT;
+    EXECUTE AS USER='qaFix_HR'; SET @Impersonating=1;
+    BEGIN TRY EXEC dbo.sp_ChotBangLuong @MaBangLuong=-1; END TRY
+    BEGIN CATCH IF ERROR_NUMBER()<>229 THROW; SET @Rejected=1; END CATCH;
+    IF @Rejected<>1 THROW 53203,N'HR unexpectedly closed payroll.',1;
+    SET @Rejected=0;
+    BEGIN TRY
+        EXEC dbo.sp_ThemNhanVien N'Forbidden', '1990-01-01', N'Nam', '999999999999', NULL, '0999999999',
+            'forbidden@example.invalid','2020-01-01',26000000,0,0,1,'qa_forbidden','invalid','DB_Admin',@NewId OUTPUT;
+    END TRY
+    BEGIN CATCH
+        IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%HR chỉ được%' THROW;
+        SET @Rejected=1;
+    END CATCH;
+    REVERT; SET @Impersonating=0;
+    IF @Rejected<>1 OR EXISTS(SELECT 1 FROM dbo.TAIKHOAN WHERE TenDangNhap='qa_forbidden')
+        THROW 53204,N'HR role escalation was accepted.',1;
+    EXECUTE AS USER='qaFix_Employee'; SET @Impersonating=1; SET @Rejected=0;
+    BEGIN TRY SELECT TOP(1) MaNV FROM dbo.vw_BangLuongChiTiet; END TRY
+    BEGIN CATCH IF ERROR_NUMBER()<>229 THROW; SET @Rejected=1; END CATCH;
+    REVERT; SET @Impersonating=0;
+    IF @Rejected<>1 THROW 53205,N'Employee read the global payroll view.',1;
+    DROP USER qaFix_Admin; DROP USER qaFix_HR; DROP USER qaFix_Payroll; DROP USER qaFix_Employee;
+    SELECT 'PASS' AS Result,@Passed AS PermissionChecks,3 AS ActualDeniedOperations,'PASS' AS Cleanup;
 END TRY
 BEGIN CATCH
-    PRINT '-> [PASS BẢO MẬT] SQL Server đã chặn đúng: ' + ERROR_MESSAGE();
+    IF @Impersonating=1 REVERT;
+    IF USER_ID('qaFix_Admin') IS NOT NULL DROP USER qaFix_Admin;
+    IF USER_ID('qaFix_HR') IS NOT NULL DROP USER qaFix_HR;
+    IF USER_ID('qaFix_Payroll') IS NOT NULL DROP USER qaFix_Payroll;
+    IF USER_ID('qaFix_Employee') IS NOT NULL DROP USER qaFix_Employee;
+    THROW;
 END CATCH;
-GO
-
-REVERT;
-PRINT '-> user_HRManager: KIỂM THỬ QUYỀN ĐẠT CHUẨN (PASSED).';
-GO
-
--- ----------------------------------------------------------------------------
--- 3. KIỂM THỬ VAI TRÒ 3: user_PayrollOfficer (Kế toán tiền lương)
--- ----------------------------------------------------------------------------
-PRINT '>>> 3. KIỂM THỬ: user_PayrollOfficer (Quản lý lương & phụ cấp/khấu trừ)';
-EXECUTE AS USER = 'user_PayrollOfficer';
-GO
-
--- 3.1 Quyền hợp lệ: Xem báo cáo lương chi tiết qua View
-SELECT TOP 2 MaNV, HoTen, TienCong, ThucNhan FROM dbo.vw_BangLuongChiTiet;
-GO
-
--- 3.2 Quyền bị cấm: Kế toán KHÔNG ĐƯỢC phép thêm mới hồ sơ nhân sự
--- Thử gọi sp_ThemNhanVien -> Kỳ vọng SQL Server ném lỗi Msg 229
-BEGIN TRY
-    EXEC dbo.sp_ThemNhanVien 
-        @HoTen = N'Test NV', @NgaySinh = '1995-01-01', @GioiTinh = N'Nam',
-        @CCCD = '012345678999', @SoDienThoai = '0988888888', @Email = 'test@corp.com',
-        @LuongCoBan = 10000000, @MaPB = 1, @MaCV = 1, @MaNV = NULL;
-    PRINT '-> LỖI BẢO MẬT: Payroll_Officer không được phép thêm nhân sự!';
-END TRY
-BEGIN CATCH
-    PRINT '-> [PASS BẢO MẬT] SQL Server đã chặn đúng: ' + ERROR_MESSAGE();
-END CATCH;
-GO
-
-REVERT;
-PRINT '-> user_PayrollOfficer: KIỂM THỬ QUYỀN ĐẠT CHUẨN (PASSED).';
-GO
-
--- ----------------------------------------------------------------------------
--- 4. KIỂM THỬ VAI TRÒ 4: user_Employee (Nhân viên thông thường)
--- ----------------------------------------------------------------------------
-PRINT '>>> 4. KIỂM THỬ: user_Employee (Nhân viên bị DENY toàn bộ dữ liệu quản trị)';
-EXECUTE AS USER = 'user_Employee';
-GO
-
--- 4.1 Thử đọc trực tiếp bảng TAIKHOAN -> Kỳ vọng bị DENY chặn đứng
-BEGIN TRY
-    SELECT * FROM dbo.TAIKHOAN;
-    PRINT '-> LỖI BẢO MẬT: Employee đọc được bảng TAIKHOAN!';
-END TRY
-BEGIN CATCH
-    PRINT '-> [PASS BẢO MẬT] SQL Server chặn đọc bảng TAIKHOAN: ' + ERROR_MESSAGE();
-END CATCH;
-GO
-
--- 4.2 Thử đọc bảng lương của người khác -> Kỳ vọng bị DENY chặn đứng
-BEGIN TRY
-    SELECT * FROM dbo.CHITIETBANGLUONG;
-    PRINT '-> LỖI BẢO MẬT: Employee đọc được chi tiết lương người khác!';
-END TRY
-BEGIN CATCH
-    PRINT '-> [PASS BẢO MẬT] SQL Server chặn đọc bảng CHITIETBANGLUONG: ' + ERROR_MESSAGE();
-END CATCH;
-GO
-
-REVERT;
-PRINT '-> user_Employee: KIỂM THỬ DENY BẢO MẬT ĐẠT CHUẨN (PASSED).';
-GO
-
-PRINT '============================================================================';
-PRINT '   KẾT QUẢ KIỂM THỬ BẢO MẬT SQL SERVER: 100% QUY CÁCH PHÂN QUYỀN ĐẠT CHUẨN!';
-PRINT '============================================================================';
-GO

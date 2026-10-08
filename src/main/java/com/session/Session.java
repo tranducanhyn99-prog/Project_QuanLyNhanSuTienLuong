@@ -64,6 +64,7 @@ public class Session {
      * Gọi khi đăng xuất – xóa sạch thông tin phiên.
      */
     public synchronized void logout() {
+        com.config.DatabaseConnection.logout();
         reset();
     }
 
@@ -83,6 +84,12 @@ public class Session {
      *
      * Ví dụ: session.hasRole("DB_Admin", "HR_Manager")
      */
+    public void requireRoles(String... roles) {
+        if (!isLoggedIn() || !hasRole(roles)) {
+            throw new SecurityException("Bạn chưa đăng nhập hoặc không có quyền thực hiện thao tác này.");
+        }
+    }
+
     public boolean hasRole(String... roles) {
         if (vaiTro == null) return false;
         for (String r : roles) {

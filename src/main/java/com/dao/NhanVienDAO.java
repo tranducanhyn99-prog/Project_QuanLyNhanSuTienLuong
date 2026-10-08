@@ -80,7 +80,7 @@ public class NhanVienDAO {
      */
     public boolean update(NhanVien nv) throws SQLException {
         String sql = "UPDATE NHANVIEN SET HoTen = ?, NgaySinh = ?, GioiTinh = ?, CCCD = ?, "
-                   + "DiaChi = ?, SoDienThoai = ?, Email = ?, LuongCoBan = ?, MaPB = ?, MaCV = ?, TrangThai = ? "
+                   + "DiaChi = ?, SoDienThoai = ?, Email = ?, LuongCoBan = ?, MaPB = ?, MaCV = ?, TrangThai = ?, NgayVaoLam = ? "
                    + "WHERE MaNV = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -95,7 +95,8 @@ public class NhanVienDAO {
             ps.setInt(9, nv.getMaPB());
             ps.setInt(10, nv.getMaCV());
             ps.setString(11, nv.getTrangThai());
-            ps.setInt(12, nv.getMaNV());
+            ps.setDate(12, Date.valueOf(nv.getNgayVaoLam()));
+            ps.setInt(13, nv.getMaNV());
             return ps.executeUpdate() > 0;
         }
     }

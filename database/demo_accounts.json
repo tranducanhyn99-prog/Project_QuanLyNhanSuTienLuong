@@ -1,0 +1,32 @@
+[
+  {
+    "User": "gui_admin",
+    "Role": "DB_Admin",
+    "Password": "Gui9!RViC8RsC5P6e0Xt8kGcEXw==",
+    "Email": null
+  },
+  {
+    "User": "gui_hr",
+    "Role": "HR_Manager",
+    "Password": "Gui9!2aC+pyk01j8/1/rs3V+1pg==",
+    "Email": null
+  },
+  {
+    "User": "gui_payroll",
+    "Role": "Payroll_Officer",
+    "Password": "Gui9!M2oYx/cQugmI/Y9pYrawlA==",
+    "Email": null
+  },
+  {
+    "User": "gui_a",
+    "Role": "Employee",
+    "Password": "Gui9!41Ay2bMK+OIlMSeew2Or3Q==",
+    "Email": "gui-a@example.invalid"
+  },
+  {
+    "User": "gui_b",
+    "Role": "Employee",
+    "Password": "Gui9!f9bTBwZZNFygXZU3FkknSw==",
+    "Email": "gui-b@example.invalid"
+  }
+]

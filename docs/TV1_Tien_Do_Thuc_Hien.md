@@ -6,6 +6,7 @@
 - **Mã phân công:** TV1  
 - **Module phụ trách:** Quản lý Phòng Ban, Chức Vụ, Hồ Sơ Nhân Viên, Tích Hợp Tài Khoản  
 - **Branch làm việc:** `feature/hr-core`
+- **Rà soát tài liệu:** 08/10/2026. Các benchmark/ảnh trong báo cáo cũ là tư liệu lịch sử; trạng thái xác minh hiện tại xem [FIX_TASKLIST](FIX_TASKLIST.md).
 
 ---
 
@@ -14,8 +15,8 @@
 | Tuần | Thời gian | Nội dung công việc được giao | Sản phẩm dự kiến theo kế hoạch | Mức độ hoàn thành | Ngày cập nhật | Tình trạng & Sản phẩm thực tế |
 |:---:|:---:|---|---|:---:|:---:|---|
 | **T1** | 21/09 – 27/09 | • Rà soát mục tiêu, phạm vi, tác nhân, Use Case module nhân sự.<br>• Chốt cấu trúc các bảng: `PHONGBAN`, `CHUCVU`, `NHANVIEN` và liên kết `TAIKHOAN`.<br>• Xây dựng ERD chi tiết và Relational Schema.<br>• Chuẩn hóa dữ liệu đạt **3NF** (1NF $\rightarrow$ 2NF $\rightarrow$ 3NF).<br>• Chốt danh mục Constraints và quy tắc Soft Delete. | • Bản đặc tả ERD.<br>• Relational Schema.<br>• Tài liệu chứng minh 3NF.<br>• Danh sách ràng buộc nghiệp vụ. | **100%** | **23/09/2026** | Đã hoàn thành 100% nội dung phân tích, chuẩn hóa 3NF và quy tắc nghiệp vụ (chi tiết ở Phần 2). |
-| **T2** | 28/09 – 04/10 | • Cài đặt DDL/Constraints cho `PHONGBAN`, `CHUCVU`, `NHANVIEN`.<br>• Cài đặt SP `sp_ThemNhanVien` (có Transaction tạo kèm tài khoản).<br>• Cài đặt Trigger `trg_NhanVien_KhongXoaKhiDaPhatSinhLuong`.<br>• Cài đặt View `vw_NhanVien_PhongBan_ChucVu`.<br>• Cài đặt Function `fn_TinhSoNgayCong`.<br>• Cài đặt Non-clustered Index `IX_NHANVIEN_HoTen`.<br>• Lập trình Java Swing: `NhanVienPanel`, `DanhMucPanel`.<br>• Lập trình Service & DAO: `NhanVienDAO`, `PhongBanDAO`, `ChucVuDAO`, `NhanVienService`, `DanhMucService`. | • Script SQL module nhân sự.<br>• Giao diện & CRUD nhân sự hoạt động.<br>• Transaction tạo nhân viên + tài khoản.<br>• Bộ testcase & minh chứng. | **100%** | **29/09/2026** | • Script SQL: `database/01_Module_NhanSu_TV1.sql`.<br>• Java source: các package `model`, `dao`, `service`, `ui.nhanvien` đã hoàn thành và compile thành công.<br>• Bộ 20 test cases chi tiết: [`docs/TV1_NhanSu_Test_Cases.md`](TV1_NhanSu_Test_Cases.md). |
-| **T3** | 05/10 – 11/10 | • Rà soát lại ERD và Schema sau khi tích hợp toàn hệ thống.<br>• Kiểm tra tính nhất quán giữa tài liệu, script CSDL và Java code.<br>• Benchmark hiệu năng Index `IX_NHANVIEN_HoTen` (Execution Plan + `SET STATISTICS IO/TIME`).<br>• Viết nội dung Chương 1 và Phân tích thiết kế CSDL trong báo cáo Word/PDF.<br>• Chuẩn bị slide và kịch bản vấn đáp cá nhân. | • Báo cáo chuyên đề TV1.<br>• Kết quả benchmark Index.<br>• Slide thuyết trình & Q&A. | **100%** | **29/09/2026** | • Hoàn thiện báo cáo chuyên đề tổng kết: [`docs/TV1_BaoCao_ChuyenDe_NhanSu_CuoiKy.md`](TV1_BaoCao_ChuyenDe_NhanSu_CuoiKy.md).<br>• Đo kiểm Benchmark Index: Logical Reads giảm 99% (từ 428 xuống 4 reads).<br>• Biên soạn Slide thuyết trình & 5 kịch bản vấn đáp cá nhân chuẩn Rubric. |
+| **T2** | 28/09 – 04/10 | • Cài đặt DDL/Constraints cho `PHONGBAN`, `CHUCVU`, `NHANVIEN`.<br>• Cài đặt SP `sp_ThemNhanVien` có transaction; HR chỉ có thể tạo tài khoản ứng dụng Employee.<br>• Cài đặt View `vw_NhanVien_PhongBan_ChucVu` và Index `IX_NHANVIEN_HoTen`.<br>• Function `fn_TinhSoNgayCong` được cài sau bảng `CHAMCONG` trong module 02; trigger bảo vệ nhân viên được cài tại module 05 sau khi có các bảng liên quan.<br>• Lập trình Java Swing, Service và DAO cho nhân sự. | • Script SQL module nhân sự.<br>• Giao diện & CRUD nhân sự.<br>• Transaction tạo nhân viên và hồ sơ tài khoản ứng dụng.<br>• Bộ testcase. | **100%** | **08/10/2026** | Source và regression đã được cập nhật sau tích hợp. Tài khoản HR tạo ở trạng thái chờ DBA provision SQL login/mapping; cấp role vận hành và login qua DBA tool, không do form HR tự cấp. Chi tiết bằng chứng hiện hành ở [FIX_TASKLIST](FIX_TASKLIST.md). |
+| **T3** | 05/10 – 11/10 | • Rà soát tài liệu sau tích hợp toàn hệ thống.<br>• Đo benchmark trên fixture tách biệt và lưu plan/log thực.<br>• Hoàn thiện báo cáo chuyên đề và Q&A. | • Báo cáo chuyên đề TV1.<br>• Bằng chứng benchmark hiện hành được ghi trong tasklist. | **100%** | **08/10/2026** | Các số liệu 428→4 trong báo cáo cũ không đại diện cho lần xác minh hiện tại. Benchmark hiện hành trên bảng tạm ghi logical reads 75→10; xem [FIX_TASKLIST](FIX_TASKLIST.md) và log/plan trong thư mục build được nêu ở đó. |
 
 ---
 
@@ -27,7 +28,7 @@ Module Quản lý Nhân sự là phân hệ cốt lõi cung cấp danh mục d�
 
 #### 1.1 Tác nhân liên quan
 - **HR_Manager:** Thực hiện tạo mới, cập nhật hồ sơ nhân viên, phân công phòng ban, chức vụ, thay đổi trạng thái làm việc; quản lý danh mục phòng ban và chức vụ.
-- **DB_Admin:** Toàn quyền quản trị, có thể khởi tạo tài khoản liên kết với nhân viên.
+- **DB_Admin:** Quản trị database; các SQL login và ánh xạ tài khoản được provision bằng công cụ DBA. `DB_Admin` trong database không tự tạo server login.
 - **Payroll_Officer:** Đọc dữ liệu nhân viên, chức vụ, hệ số lương để tính bảng lương.
 - **Employee:** Tra cứu thông tin hồ sơ cá nhân.
 
@@ -36,7 +37,7 @@ Module Quản lý Nhân sự là phân hệ cốt lõi cung cấp danh mục d�
 2. **Quản lý danh mục Chức vụ (`CHUCVU`):** Lưu trữ chức danh và mức phụ cấp trách nhiệm theo chức vụ (`PhuCapChucVu`).
 3. **Quản lý Hồ sơ Nhân viên (`NHANVIEN`):** Lưu trữ định danh, thông tin cá nhân, ngày vào làm, mức lương cơ bản thỏa thuận, phòng ban và chức danh.
 4. **Quy tắc không xóa cứng (Soft Delete):** Khi nhân viên đã có dữ liệu phát sinh (chấm công, phụ cấp/khấu trừ, bảng lương), **tuyệt đối không cho phép DELETE vật lý** khỏi bảng `NHANVIEN` mà chỉ chuyển `TrangThai = 'NGHI_VIEC'` (kiểm soát thông qua Trigger và Constraint).
-5. **Cấp phát tài khoản tự động (Transaction):** Khi thêm nhân viên mới có thể thực hiện liên chuỗi tạo tài khoản đăng nhập tương ứng trong cùng một Transaction; nếu tạo tài khoản thất bại thì toàn bộ quá trình phải được Rollback.
+5. **Tạo hồ sơ tài khoản ứng dụng (Transaction):** Có thể tạo hồ sơ Employee cùng nhân viên trong transaction. Hồ sơ này chưa đăng nhập được cho tới khi DBA provision SQL login cá nhân và map login với `TAIKHOAN.SqlLogin`; HR không được tự cấp vai trò quản trị/Payroll.
 
 ---
 
@@ -75,13 +76,14 @@ Bảng trung tâm lưu trữ thông tin người lao động.
 | `SoDienThoai` | `VARCHAR(15)` | NOT NULL | `UNIQUE`, `CHECK` 10 chữ số | Số điện thoại cá nhân |
 | `Email` | `VARCHAR(100)` | NOT NULL | `UNIQUE`, `CHECK` format email | Thư điện tử |
 | `NgayVaoLam` | `DATE` | NOT NULL | `DEFAULT GETDATE()` | Ngày chính thức vào làm việc |
+| `NgayNghiViec` | `DATE` | NULL |  | Ngày nghỉ việc (nếu có) |
 | `LuongCoBan` | `DECIMAL(18,2)` | NOT NULL | `CHECK (LuongCoBan > 0)` | Lương cơ bản theo hợp đồng |
 | `MaPB` | `INT` | NOT NULL | `FK -> PHONGBAN(MaPB)` | Thuộc phòng ban nào |
 | `MaCV` | `INT` | NOT NULL | `FK -> CHUCVU(MaCV)` | Giữ chức vụ nào |
 | `TrangThai` | `NVARCHAR(20)` | NOT NULL | `DEFAULT N'DANG_LAM_VIEC'`, `CHECK` | Trạng thái: `DANG_LAM_VIEC` / `NGHI_VIEC` |
 
 #### 2.4 Mối liên kết với các bảng của các thành viên khác
-- `TAIKHOAN(MaNV)` tham chiếu đến `NHANVIEN(MaNV)`: Mối quan hệ 1 - 0..1 (Tài khoản thuộc về một nhân viên cụ thể, riêng DB_Admin có thể là NULL).
+- `TAIKHOAN(MaNV)` nullable tham chiếu đến `NHANVIEN(MaNV)`; không có unique constraint trên `MaNV`, nên schema không đảm bảo quan hệ 1-1. `SqlLogin` unique khi khác NULL.
 - `CHAMCONG(MaNV)` tham chiếu đến `NHANVIEN(MaNV)`: Mối quan hệ 1 - N.
 - `PHUCAPNHANVIEN(MaNV)` tham chiếu đến `NHANVIEN(MaNV)`: Mối quan hệ 1 - N.
 - `KHAUTRUNHANVIEN(MaNV)` tham chiếu đến `NHANVIEN(MaNV)`: Mối quan hệ 1 - N.
@@ -95,7 +97,7 @@ Bảng trung tâm lưu trữ thông tin người lao động.
 erDiagram
     PHONGBAN ||--o{ NHANVIEN : "thuộc"
     CHUCVU ||--o{ NHANVIEN : "giữ"
-    NHANVIEN ||--o| TAIKHOAN : "sở hữu"
+    NHANVIEN ||--o{ TAIKHOAN : "có profile tài khoản"
     NHANVIEN ||--o{ CHAMCONG : "chấm công"
     NHANVIEN ||--o{ PHUCAPNHANVIEN : "hưởng"
     NHANVIEN ||--o{ KHAUTRUNHANVIEN : "bị trừ"
@@ -124,6 +126,7 @@ erDiagram
         varchar SoDienThoai UK
         varchar Email UK
         date NgayVaoLam
+        date NgayNghiViec "nullable"
         decimal LuongCoBan
         int MaPB FK
         int MaCV FK
@@ -132,11 +135,18 @@ erDiagram
 
     TAIKHOAN {
         int MaTK PK
-        int MaNV FK
+        int MaNV FK "nullable cho principal không gắn nhân viên"
         varchar TenDangNhap UK
-        char MatKhau
+        varchar MatKhau "VARCHAR(255), định dạng PBKDF2 versioned"
         varchar VaiTro
         varchar TrangThai
+        sysname SqlLogin "Nullable, ánh xạ SQL login cá nhân"
+    }
+
+    LICHSULUONG {
+        int MaNV PK, FK
+        date TuThang PK
+        decimal LuongCoBan
     }
 ```
 
@@ -159,8 +169,8 @@ erDiagram
 - Loại bỏ các phụ thuộc bắc cầu:
   - `MaNV` $\rightarrow$ `MaPB` $\rightarrow$ `TenPB`, `SdtPB`: Tách bảng **`PHONGBAN`**(`MaPB` (PK), `TenPB`, `SoDienThoai`, `TrangThai`).
   - `MaNV` $\rightarrow$ `MaCV` $\rightarrow$ `TenCV`, `PhuCapChucVu`: Tách bảng **`CHUCVU`**(`MaCV` (PK), `TenCV`, `PhuCapChucVu`).
-  - `MaNV` $\rightarrow$ `MaTK` $\rightarrow$ `TenDangNhap`, `MatKhau`, `VaiTro`: Tách bảng **`TAIKHOAN`**(`MaTK` (PK), `MaNV` (FK), `TenDangNhap`, `MatKhau`, `VaiTro`, `TrangThai`).
-  - Bảng **`NHANVIEN`**(`MaNV` (PK), `HoTen`, `NgaySinh`, `GioiTinh`, `CCCD`, `DiaChi`, `SoDienThoai`, `Email`, `NgayVaoLam`, `LuongCoBan`, `MaPB` (FK), `MaCV` (FK), `TrangThai`).
+  - `MaNV` $\rightarrow$ `MaTK` $\rightarrow$ `TenDangNhap`, `MatKhau`, `VaiTro`, `SqlLogin`: Tách bảng **`TAIKHOAN`**. `MaNV` nullable để hỗ trợ tài khoản DBA không gắn nhân viên; `SqlLogin` là ánh xạ principal SQL cá nhân.
+  - **`NHANVIEN`** có thêm `NgayNghiViec` nullable phục vụ tính lại kỳ cũ; mức lương hiệu lực được ghi theo tháng trong **`LICHSULUONG(MaNV, TuThang, LuongCoBan)`**.
 - $\rightarrow$ Đạt chuẩn **3NF**.
 
 ---
@@ -189,16 +199,18 @@ erDiagram
 
 | STT | Đối tượng CSDL | Tên định danh | Trạng thái mã nguồn | Minh chứng kiểm thử |
 |:---:|---|---|:---:|:---:|
-| 1 | **Stored Procedure** | `sp_ThemNhanVien` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` | TC-NS-12, 13, 14, 15 (PASS) |
-| 2 | **Function** | `fn_TinhSoNgayCong` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` | TC-NS-16, 17 (PASS) |
-| 3 | **Trigger** | `trg_NhanVien_KhongXoaKhiDaPhatSinhLuong` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` | TC-NS-09, 10, 11 (PASS) |
-| 4 | **View** | `vw_NhanVien_PhongBan_ChucVu` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` | TC-NS-18 (PASS) |
-| 5 | **Index** | `IX_NHANVIEN_HoTen` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql` | Benchmark Before/After (PASS) |
-| 6 | **Transaction** | Tạo Nhân viên + Tài khoản | Đã hoàn thành trong SP và `NhanVienDAO.java` | TC-NS-13, 14 (PASS) |
+| 1 | **Stored Procedure** | `sp_ThemNhanVien` | Đã hoàn thành trong `database/01_Module_NhanSu_TV1.sql`; HR chỉ tạo profile Employee | Regression evidence hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md) |
+| 2 | **Function** | `fn_TinhSoNgayCong` | Cài trong module 02 sau `CHAMCONG` | Runtime evidence hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md) |
+| 3 | **Trigger** | `trg_NhanVien_KhongXoaKhiDaPhatSinhLuong` | Cài trong module 05 sau bảng chấm công/payroll | Runtime evidence hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md) |
+| 4 | **View** | `vw_NhanVien_PhongBan_ChucVu` | Module 01 | Regression evidence hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md) |
+| 5 | **Index** | `IX_NHANVIEN_HoTen` | Module 01 | Benchmark hiện hành xem FIX_TASKLIST; số liệu lịch sử phía dưới không còn là evidence |
+| 6 | **Transaction** | Tạo nhân viên + profile ứng dụng | SP và DAO | DBA provisioning/mapping SQL login là bước riêng |
 
 ---
 
-## PHẦN 4. KẾT QUẢ BENCHMARK CHỈ MỤC (INDEX IX_NHANVIEN_HOTEN)
+## PHẦN 4. BENCHMARK LỊCH SỬ CHỈ MỤC (INDEX IX_NHANVIEN_HOTEN)
+
+Các số 428→4 dưới đây thuộc lần chạy/fixture cũ, không phải benchmark hiện tại. Bản sửa được đo trên bảng tạm với 75→10 logical reads; log và plan hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md).
 
 - **Cấu hình chỉ mục:** Non-clustered Index trên `NHANVIEN(HoTen)` kèm `INCLUDE (MaNV, SoDienThoai, Email, MaPB, MaCV, TrangThai)`.
 - **Tập dữ liệu đo lường:** 20.000 bản ghi nhân sự giả định.
@@ -207,16 +219,16 @@ erDiagram
 | Tiêu chí đo lường | Trước khi có Index | Sau khi có Index | Đánh giá cải thiện |
 |---|:---:|:---:|:---:|
 | **Phương thức truy cập** | `Clustered Index Scan` | `Index Seek` (Covering) | Không duyệt tuần tự toàn bảng |
-| **Số lần đọc trang logic (Logical Reads)** | **428 reads** | **4 reads** | **Giảm 99.06% chi phí I/O** |
-| **CPU Time** | 16 ms | 0 ms | Tối ưu tài nguyên xử lý |
-| **Elapsed Time** | 35 ms | 2 ms | **Nhanh hơn 17.5 lần** |
-| **Query Cost** | 98% batch cost | 2% batch cost | Tối ưu vượt bậc |
+| **Logical reads** | 428 | 4 | Số liệu báo cáo lịch sử, chưa tái xác nhận trên run hiện tại |
+| **CPU/elapsed/query cost** | 16/35 ms; 98% | 0/2 ms; 2% | Số liệu lịch sử, phụ thuộc fixture/môi trường; không dùng làm kết quả hiện hành |
+
+Benchmark hiện hành trên bảng tạm ghi 75→10 logical reads; xem [FIX_TASKLIST](FIX_TASKLIST.md) để biết log và plan. Không so sánh số cũ và mới như cùng một fixture.
 
 ---
 
 ## PHẦN 5. DANH MỤC TÀI LIỆU VÀ SẢN PHẨM BÀN GIAO CỦA TV1
 
-1. **Bộ Test Case Kiểm Thử:** [`docs/TV1_NhanSu_Test_Cases.md`](TV1_NhanSu_Test_Cases.md) (20/20 Test Cases đạt PASS).
+1. **Bộ test case thiết kế:** [`docs/TV1_NhanSu_Test_Cases.md`](TV1_NhanSu_Test_Cases.md). Kết quả runtime hiện hành được ghi riêng trong FIX_TASKLIST.
 2. **Báo Cáo Chuyên Đề Cuối Kỳ (Chương 1 & Thiết kế CSDL):** [`docs/TV1_BaoCao_ChuyenDe_NhanSu_CuoiKy.md`](TV1_BaoCao_ChuyenDe_NhanSu_CuoiKy.md).
 3. **Mã nguồn CSDL SQL Server:** [`database/01_Module_NhanSu_TV1.sql`](../database/01_Module_NhanSu_TV1.sql).
 4. **Mã nguồn ứng dụng Java:**

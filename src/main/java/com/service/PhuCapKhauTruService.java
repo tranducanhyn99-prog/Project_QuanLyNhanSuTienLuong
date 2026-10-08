@@ -1,5 +1,6 @@
 package com.service;
 
+import com.session.Session;
 import com.dao.KhauTruDAO;
 import com.dao.PhuCapDAO;
 import com.model.KhauTruNhanVien;
@@ -20,10 +21,12 @@ public class PhuCapKhauTruService {
     }
 
     public List<PhuCapNhanVien> getListPhuCap(int thang, int nam) throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         return phuCapDAO.getListByKy(thang, nam);
     }
 
     public void themPhuCap(PhuCapNhanVien pc) throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         if (pc.getSoTien() == null || pc.getSoTien().compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Số tiền phụ cấp không được âm!");
         }
@@ -34,14 +37,17 @@ public class PhuCapKhauTruService {
     }
 
     public void xoaPhuCap(int maPCNV) throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         phuCapDAO.delete(maPCNV);
     }
 
     public List<KhauTruNhanVien> getListKhauTru(int thang, int nam) throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         return khauTruDAO.getListByKy(thang, nam);
     }
 
     public void themKhauTru(KhauTruNhanVien kt) throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         if (kt.getSoTien() == null || kt.getSoTien().compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Số tiền khấu trừ không được âm!");
         }
@@ -52,19 +58,23 @@ public class PhuCapKhauTruService {
     }
 
     public void xoaKhauTru(int maKTNV) throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         khauTruDAO.delete(maKTNV);
     }
 
     public List<Map<String, Object>> getTongHopPhuCap(int thang, int nam) throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         return phuCapDAO.getTongHopPhuCap(thang, nam);
     }
 
     public BigDecimal getTongKhauTruNV(int maNV, int thang, int nam) throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         return khauTruDAO.getTongKhauTruNV(maNV, thang, nam);
     }
 
     // Nghiệp vụ transaction xóa kỳ lương chưa chốt
     public void xoaKyLuongChuaChot(int thang, int nam) throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "Payroll_Officer");
         khauTruDAO.xoaKyLuongChuaChot(thang, nam);
     }
 }

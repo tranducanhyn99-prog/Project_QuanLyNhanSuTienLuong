@@ -113,6 +113,7 @@ public class ChamCongService {
      * Lấy danh sách chấm công của nhân viên theo tháng và năm.
      */
     public List<ChamCong> layChamCongTheoThang(int maNV, int thang, int nam) throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         if (maNV <= 0) {
             throw new IllegalArgumentException("Mã nhân viên không hợp lệ.");
         }
@@ -129,6 +130,7 @@ public class ChamCongService {
      * Phương thức định danh tương thích DAO để tra cứu theo tháng và năm.
      */
     public List<ChamCong> findByNhanVienAndMonth(int maNV, int thang, int nam) throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         return layChamCongTheoThang(maNV, thang, nam);
     }
 
@@ -136,6 +138,7 @@ public class ChamCongService {
      * Lấy toàn bộ danh sách chấm công của công ty trong tháng.
      */
     public List<ChamCong> layDanhSachChamCongTheoThang(int thang, int nam) throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         if (thang < 1 || thang > 12) {
             throw new IllegalArgumentException("Tháng phải từ 1 đến 12.");
         }
@@ -149,6 +152,7 @@ public class ChamCongService {
      * Lấy dữ liệu tổng hợp chấm công tháng từ View dbo.vw_TongHopChamCongThang.
      */
     public List<TongHopChamCong> layTongHopChamCongThang(int thang, int nam) throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         if (thang < 1 || thang > 12) {
             throw new IllegalArgumentException("Tháng phải từ 1 đến 12.");
         }
@@ -162,6 +166,7 @@ public class ChamCongService {
      * Lấy dữ liệu tổng hợp chấm công của một nhân viên trong tháng từ View.
      */
     public TongHopChamCong layTongHopChamCongNhanVien(int maNV, int thang, int nam) throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         if (maNV <= 0) {
             throw new IllegalArgumentException("Mã nhân viên không hợp lệ.");
         }
@@ -195,19 +200,11 @@ public class ChamCongService {
         if (cc == null || cc.getMaChamCong() <= 0) {
             throw new IllegalArgumentException("Dữ liệu chấm công không hợp lệ.");
         }
-        if (cc.getGioVao() == null) {
-            throw new IllegalArgumentException("Giờ vào làm không được để trống.");
-        }
-        if (cc.getGioRa() != null && !cc.getGioRa().isAfter(cc.getGioVao())) {
-            throw new IllegalArgumentException("Giờ ra về phải lớn hơn giờ vào làm.");
-        }
+        validateChamCong(cc);
         return chamCongDAO.updateChamCong(cc);
     }
 
     private void checkPermission(String action) throws Exception {
-        Session session = Session.getInstance();
-        if (!session.isLoggedIn() || !session.hasRole("DB_Admin", "HR_Manager")) {
-            throw new Exception("Bạn không có quyền " + action + "! Chỉ Quản trị viên hoặc Quản lý nhân sự mới được thực hiện.");
-        }
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager");
     }
 }

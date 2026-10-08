@@ -7,6 +7,7 @@ import com.service.ChamCongService;
 import com.service.NhanVienService;
 import com.session.Session;
 import com.ui.theme.UITheme;
+import com.ui.theme.DatabaseTask;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -73,10 +74,10 @@ public class ChamCongPanel extends JPanel {
 
     public ChamCongPanel(boolean selectSummaryTab) {
         initComponents();
+        applySecurityPermissions();
         loadNhanVienComboBox();
         loadDuLieuChiTiet();
         loadDuLieuTongHop();
-        applySecurityPermissions();
 
         if (selectSummaryTab && tabbedPane.getTabCount() > 1) {
             tabbedPane.setSelectedIndex(1);
@@ -303,6 +304,10 @@ public class ChamCongPanel extends JPanel {
         btnTaiLaiChiTiet.addActionListener(e -> loadDuLieuChiTiet());
         btnXoaChamCong.addActionListener(e -> xuLyXoaChamCong());
         btnXemTongHop.addActionListener(e -> loadDuLieuTongHop());
+        spnThangLoc.addChangeListener(e -> loadDuLieuChiTiet());
+        spnNamLoc.addChangeListener(e -> loadDuLieuChiTiet());
+        spnThangTongHop.addChangeListener(e -> loadDuLieuTongHop());
+        spnNamTongHop.addChangeListener(e -> loadDuLieuTongHop());
         btnDieuChinhCong.addActionListener(e -> moDialogDieuChinhCong());
         tblTongHop.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
@@ -330,29 +335,20 @@ public class ChamCongPanel extends JPanel {
 
     private void loadNhanVienComboBox() {
         cboNhanVien.removeAllItems();
-        try {
-            List<NhanVien> list = nhanVienService.layDanhSachNhanVien();
+        DatabaseTask.run(cboNhanVien, () -> nhanVienService.layDanhSachNhanVien(), list -> {
             for (NhanVien nv : list) {
                 if ("DANG_LAM_VIEC".equals(nv.getTrangThai())) {
                     cboNhanVien.addItem(new NhanVienItem(nv.getMaNV(), nv.getHoTen()));
                 }
             }
-        } catch (SQLException ex) {
-            if (isShowing()) {
-                JOptionPane.showMessageDialog(this, "Không thể tải danh sách nhân viên: " + ex.getMessage(),
-                        "Lỗi tải dữ liệu", JOptionPane.ERROR_MESSAGE);
-            } else {
-                System.err.println("Bỏ qua dialog tải nhân viên chấm công: " + ex.getMessage());
-            }
-        }
+        });
     }
 
     private void loadDuLieuChiTiet() {
         modelChiTiet.setRowCount(0);
         int thang = (Integer) spnThangLoc.getValue();
         int nam = (Integer) spnNamLoc.getValue();
-        try {
-            List<ChamCong> list = chamCongService.layDanhSachChamCongTheoThang(thang, nam);
+        DatabaseTask.run(tblChiTiet, () -> chamCongService.layDanhSachChamCongTheoThang(thang, nam), list -> {
             for (ChamCong cc : list) {
                 modelChiTiet.addRow(new Object[]{
                     cc.getMaChamCong(),
@@ -365,22 +361,14 @@ public class ChamCongPanel extends JPanel {
                     cc.getGhiChu() != null ? cc.getGhiChu() : ""
                 });
             }
-        } catch (Exception ex) {
-            if (isShowing()) {
-                JOptionPane.showMessageDialog(this, "Lỗi tải nhật ký chấm công: " + ex.getMessage(),
-                        "Lỗi", JOptionPane.ERROR_MESSAGE);
-            } else {
-                System.err.println("Bỏ qua dialog tải chi tiết chấm công: " + ex.getMessage());
-            }
-        }
+        });
     }
 
     private void loadDuLieuTongHop() {
         modelTongHop.setRowCount(0);
         int thang = (Integer) spnThangTongHop.getValue();
         int nam = (Integer) spnNamTongHop.getValue();
-        try {
-            List<TongHopChamCong> list = chamCongService.layTongHopChamCongThang(thang, nam);
+        DatabaseTask.run(tblTongHop, () -> chamCongService.layTongHopChamCongThang(thang, nam), list -> {
             for (TongHopChamCong th : list) {
                 modelTongHop.addRow(new Object[]{
                     th.getMaNV(),
@@ -396,14 +384,7 @@ public class ChamCongPanel extends JPanel {
             }
             lblTongHopThongKe.setText("Tổng số nhân sự có dữ liệu chấm công: " + list.size()
                     + " (Tháng " + thang + "/" + nam + ")");
-        } catch (Exception ex) {
-            if (isShowing()) {
-                JOptionPane.showMessageDialog(this, "Lỗi tải tổng hợp chấm công tháng: " + ex.getMessage(),
-                        "Lỗi", JOptionPane.ERROR_MESSAGE);
-            } else {
-                System.err.println("Bỏ qua dialog tải tổng hợp chấm công: " + ex.getMessage());
-            }
-        }
+        });
     }
 
     private void xuLyGhiNhanChamCong() {
@@ -430,7 +411,7 @@ public class ChamCongPanel extends JPanel {
             String ghiChu = txtGhiChu.getText().trim();
 
             ChamCong cc = new ChamCong(nvItem.getMaNV(), ngayCC, gioVao, gioRa, trangThai, ghiChu);
-            boolean success = chamCongService.chamCongDonLe(cc);
+            DatabaseTask.runExclusive(this, () -> chamCongService.chamCongDonLe(cc), success -> {
 
             if (success) {
                 JOptionPane.showMessageDialog(this,
@@ -443,6 +424,7 @@ public class ChamCongPanel extends JPanel {
             } else {
                 JOptionPane.showMessageDialog(this, "Ghi nhận không thành công!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
+                    });
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Không thể ghi nhận chấm công: " + ex.getMessage(),
                     "Lỗi nghiệp vụ / CSDL", JOptionPane.ERROR_MESSAGE);
@@ -450,49 +432,15 @@ public class ChamCongPanel extends JPanel {
     }
 
     private void xuLyDiemDanhHangLoat() {
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Bạn có chắc muốn tự động điểm danh CÓ MẶT cho toàn bộ nhân viên đang làm việc cho ngày hôm nay?\n"
-                        + "Lưu ý: Quá trình chạy trong 1 Transaction đảm bảo All-or-Nothing (nếu 1 NV đã chấm công, toàn bộ sẽ rollback).",
-                "Xác nhận điểm danh theo lô", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-
-        if (confirm != JOptionPane.YES_OPTION) {
-            return;
-        }
-
-        try {
-            List<NhanVien> listNV = nhanVienService.layDanhSachNhanVien();
-            List<ChamCong> danhSach = new ArrayList<>();
-            LocalDate today = LocalDate.now();
-            LocalTime gioVao = LocalTime.of(8, 0);
-            LocalTime gioRa = LocalTime.of(17, 0);
-
-            for (NhanVien nv : listNV) {
-                if ("DANG_LAM_VIEC".equals(nv.getTrangThai())) {
-                    ChamCong cc = new ChamCong(nv.getMaNV(), today, gioVao, gioRa, "CO_MAT", "Điểm danh hàng loạt hệ thống");
-                    danhSach.add(cc);
-                }
+        if(JOptionPane.showConfirmDialog(this,"Điểm danh toàn bộ nhân viên hôm nay?","Xác nhận",JOptionPane.YES_NO_OPTION)!=JOptionPane.YES_OPTION) return;
+        DatabaseTask.runExclusive(this, () -> {
+            List<ChamCong> rows=new ArrayList<>();
+            for(NhanVien nv:nhanVienService.layDanhSachNhanVien()) {
+                if("DANG_LAM_VIEC".equals(nv.getTrangThai()) && !nv.getNgayVaoLam().isAfter(LocalDate.now()))
+                    rows.add(new ChamCong(nv.getMaNV(),LocalDate.now(),LocalTime.of(8,0),LocalTime.of(17,0),"CO_MAT","Điểm danh hàng loạt"));
             }
-
-            if (danhSach.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Không có nhân viên nào đang hoạt động để điểm danh!",
-                        "Thông báo", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            chamCongService.nhapChamCongTheoLo(danhSach);
-
-            JOptionPane.showMessageDialog(this,
-                    "Đã điểm danh theo lô thành công cho " + danhSach.size() + " nhân viên trong một Transaction an toàn!",
-                    "Thành công", JOptionPane.INFORMATION_MESSAGE);
-
-            loadDuLieuChiTiet();
-            loadDuLieuTongHop();
-
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Giao dịch nhập theo lô đã bị hủy (ROLLBACK) do phát sinh lỗi:\n" + ex.getMessage(),
-                    "Lỗi Transaction nhập lô", JOptionPane.ERROR_MESSAGE);
-        }
+            chamCongService.nhapChamCongTheoLo(rows); return rows.size();
+        }, count -> { JOptionPane.showMessageDialog(this,"Đã ghi nhận "+count+" nhân viên."); loadDuLieuChiTiet(); loadDuLieuTongHop(); });
     }
 
     private void lamMoiForm() {
@@ -528,10 +476,11 @@ public class ChamCongPanel extends JPanel {
 
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                chamCongService.xoaChamCong(maCC);
+                DatabaseTask.runExclusive(this, () -> { chamCongService.xoaChamCong(maCC); return true; }, ignored -> {
                 JOptionPane.showMessageDialog(this, "Đã xóa lượt chấm công thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 loadDuLieuChiTiet();
                 loadDuLieuTongHop();
+                            });
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Lỗi khi xóa chấm công: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
@@ -549,8 +498,8 @@ public class ChamCongPanel extends JPanel {
 
         int maNV = Integer.parseInt(modelTongHop.getValueAt(selectedRow, 0).toString());
         String hoTen = modelTongHop.getValueAt(selectedRow, 1).toString();
-        int thang = (Integer) spnThangTongHop.getValue();
-        int nam = (Integer) spnNamTongHop.getValue();
+        int thang = Integer.parseInt(modelTongHop.getValueAt(selectedRow, 2).toString());
+        int nam = Integer.parseInt(modelTongHop.getValueAt(selectedRow, 3).toString());
 
         Window parentWindow = SwingUtilities.getWindowAncestor(this);
         DieuChinhChamCongDialog dialog = new DieuChinhChamCongDialog(parentWindow, maNV, hoTen, thang, nam);

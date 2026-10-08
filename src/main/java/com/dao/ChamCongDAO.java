@@ -224,20 +224,6 @@ public class ChamCongDAO {
      */
     public boolean deleteChamCong(int maChamCong) throws SQLException {
         // Kiểm tra xem lượt chấm công này có thuộc về kỳ lương đã chốt không
-        String checkSql = "SELECT bl.TrangThai "
-                        + "FROM dbo.CHAMCONG cc "
-                        + "JOIN dbo.BANGLUONG bl ON MONTH(cc.NgayChamCong) = bl.Thang AND YEAR(cc.NgayChamCong) = bl.Nam "
-                        + "WHERE cc.MaChamCong = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement checkPs = conn.prepareStatement(checkSql)) {
-            checkPs.setInt(1, maChamCong);
-            try (ResultSet rs = checkPs.executeQuery()) {
-                if (rs.next() && "DA_CHOT".equals(rs.getString("TrangThai"))) {
-                    throw new SQLException("Không thể xóa lượt chấm công này vì kỳ lương của tháng đó đã CHỐT! Vui lòng mở lại bảng lương trước nếu muốn điều chỉnh.");
-                }
-            }
-        }
-
         String sql = "DELETE FROM dbo.CHAMCONG WHERE MaChamCong = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -252,22 +238,8 @@ public class ChamCongDAO {
      */
     public boolean updateChamCong(ChamCong cc) throws SQLException {
         // Kiểm tra xem lượt chấm công này có thuộc về kỳ lương đã chốt không
-        String checkSql = "SELECT bl.TrangThai "
-                        + "FROM dbo.CHAMCONG cc "
-                        + "JOIN dbo.BANGLUONG bl ON MONTH(cc.NgayChamCong) = bl.Thang AND YEAR(cc.NgayChamCong) = bl.Nam "
-                        + "WHERE cc.MaChamCong = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement checkPs = conn.prepareStatement(checkSql)) {
-            checkPs.setInt(1, cc.getMaChamCong());
-            try (ResultSet rs = checkPs.executeQuery()) {
-                if (rs.next() && "DA_CHOT".equals(rs.getString("TrangThai"))) {
-                    throw new SQLException("Không thể sửa lượt chấm công này vì kỳ lương của tháng đó đã CHỐT! Vui lòng mở lại bảng lương trước nếu muốn điều chỉnh.");
-                }
-            }
-        }
-
         String sql = "UPDATE dbo.CHAMCONG "
-                   + "SET GioVao = ?, GioRa = ?, TrangThai = ?, GhiChu = ? "
+                   + "SET GioVao = ?, GioRa = ?, TrangThai = ?, GhiChu = ?, NgayChamCong = ? "
                    + "WHERE MaChamCong = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -283,7 +255,8 @@ public class ChamCongDAO {
             }
             ps.setString(3, cc.getTrangThai() != null ? cc.getTrangThai() : "CO_MAT");
             ps.setString(4, cc.getGhiChu());
-            ps.setInt(5, cc.getMaChamCong());
+            ps.setDate(5, Date.valueOf(cc.getNgayChamCong()));
+            ps.setInt(6, cc.getMaChamCong());
 
             return ps.executeUpdate() > 0;
         }

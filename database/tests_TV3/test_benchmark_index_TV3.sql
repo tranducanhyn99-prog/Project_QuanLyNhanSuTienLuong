@@ -6,19 +6,17 @@
 -- ĐỐI TƯỢNG SỞ HỮU: IX_PHUCAP_MaNV_ThangNam TRÊN BẢNG PHUCAPNHANVIEN
 -- ============================================================================
 
-USE QuanLyNhanSuTienLuong;
-GO
 
 PRINT '============================================================================';
 PRINT '  BẮT ĐẦU CHƯƠNG TRÌNH BENCHMARK INDEX: IX_PHUCAP_MaNV_ThangNam (TV3)';
 PRINT '============================================================================';
 
 -- BƯỚC 1: TẠO BẢNG DỮ LIỆU TẠM ĐỂ BENCHMARK ĐỘC LẬP
-IF OBJECT_ID('dbo.PHUCAP_BENCHMARK', 'U') IS NOT NULL
-    DROP TABLE dbo.PHUCAP_BENCHMARK;
+IF OBJECT_ID('tempdb..#PHUCAP_BENCHMARK', 'U') IS NOT NULL
+    DROP TABLE #PHUCAP_BENCHMARK;
 GO
 
-CREATE TABLE dbo.PHUCAP_BENCHMARK (
+CREATE TABLE #PHUCAP_BENCHMARK (
     MaPCNV      INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
     MaNV        INT NOT NULL,
     Thang       INT NOT NULL,
@@ -38,7 +36,7 @@ SET NOCOUNT ON;
     SELECT TOP (30000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS N
     FROM sys.all_columns a CROSS JOIN sys.all_columns b
 )
-INSERT INTO dbo.PHUCAP_BENCHMARK (MaNV, Thang, Nam, TenPhuCap, SoTien, NgayGhiNhan, GhiChu)
+INSERT INTO #PHUCAP_BENCHMARK (MaNV, Thang, Nam, TenPhuCap, SoTien, NgayGhiNhan, GhiChu)
 SELECT
     (N % 200) + 1 AS MaNV,                      -- 200 nhân viên (MaNV 1..200)
     (N % 12) + 1  AS Thang,                     -- Tháng 1..12
@@ -65,9 +63,6 @@ PRINT '1. TRUY VẤN KHI CHƯA CÓ INDEX (TABLE SCAN / CLUSTERED SCAN)';
 PRINT '----------------------------------------------------------------------------';
 
 -- Xóa cache bộ đệm để đảm bảo đo lường đĩa vật lý chính xác
-CHECKPOINT;
-DBCC DROPCLEANBUFFERS;
-DBCC FREEPROCCACHE;
 
 SET STATISTICS IO ON;
 SET STATISTICS TIME ON;
@@ -77,7 +72,7 @@ SELECT
     MaNV, Thang, Nam,
     COUNT(MaPCNV) AS SoKhoanPhuCap,
     SUM(SoTien) AS TongTienPhuCap
-FROM dbo.PHUCAP_BENCHMARK
+FROM #PHUCAP_BENCHMARK
 WHERE MaNV = 25 AND Thang = 9 AND Nam = 2026
 GROUP BY MaNV, Thang, Nam;
 
@@ -93,7 +88,7 @@ PRINT '2. TẠO NON-CLUSTERED INDEX IX_PHUCAP_BENCHMARK_MaNV_ThangNam';
 PRINT '----------------------------------------------------------------------------';
 
 CREATE NONCLUSTERED INDEX IX_PHUCAP_BENCHMARK_MaNV_ThangNam
-ON dbo.PHUCAP_BENCHMARK (MaNV, Thang, Nam)
+ON #PHUCAP_BENCHMARK (MaNV, Thang, Nam)
 INCLUDE (SoTien, TenPhuCap);
 GO
 
@@ -104,9 +99,6 @@ PRINT '-------------------------------------------------------------------------
 PRINT '3. TRUY VẤN KHI ĐÃ CÓ INDEX (INDEX SEEK + COVERING)';
 PRINT '----------------------------------------------------------------------------';
 
-CHECKPOINT;
-DBCC DROPCLEANBUFFERS;
-DBCC FREEPROCCACHE;
 
 SET STATISTICS IO ON;
 SET STATISTICS TIME ON;
@@ -116,7 +108,7 @@ SELECT
     MaNV, Thang, Nam,
     COUNT(MaPCNV) AS SoKhoanPhuCap,
     SUM(SoTien) AS TongTienPhuCap
-FROM dbo.PHUCAP_BENCHMARK
+FROM #PHUCAP_BENCHMARK
 WHERE MaNV = 25 AND Thang = 9 AND Nam = 2026
 GROUP BY MaNV, Thang, Nam;
 
@@ -125,6 +117,7 @@ SET STATISTICS TIME OFF;
 GO
 
 -- Dọn dẹp bảng tạm sau khi đo lường xong
-DROP TABLE dbo.PHUCAP_BENCHMARK;
-PRINT N'Hoàn tất kịch bản benchmark index của TV3.';
+DROP TABLE #PHUCAP_BENCHMARK;
+IF OBJECT_ID('tempdb..#PHUCAP_BENCHMARK') IS NOT NULL THROW 53410,N'Benchmark cleanup failed.',1;
+PRINT N'Hoàn tất benchmark trên temp table; không xóa cache của server.';
 GO

@@ -27,11 +27,12 @@ public class PayrollService {
      * Tính bảng lương cho một tháng/năm cụ thể (TV4)
      */
     public int tinhBangLuongThang(int thang, int nam, int ngayCongChuan) throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "Payroll_Officer");
         validateKyLuong(thang, nam, ngayCongChuan);
 
         // Kiểm tra quyền nếu đã đăng nhập
         Session session = Session.getInstance();
-        if (session.isLoggedIn() && !session.hasRole("DB_Admin", "Payroll_Officer")) {
+        if (!session.isLoggedIn() || !session.hasRole("DB_Admin", "Payroll_Officer")) {
             throw new Exception("Bạn không có quyền tính bảng lương! Chỉ DB_Admin hoặc Payroll_Officer mới được thực hiện.");
         }
 
@@ -46,6 +47,7 @@ public class PayrollService {
      * Lấy toàn bộ danh sách kỳ lương
      */
     public List<BangLuong> layDanhSachBangLuong() throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         return bangLuongDAO.getAll();
     }
 
@@ -53,6 +55,7 @@ public class PayrollService {
      * Alias method cho TV5 UI
      */
     public List<BangLuong> getDanhSachBangLuong() throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         return layDanhSachBangLuong();
     }
 
@@ -60,6 +63,7 @@ public class PayrollService {
      * Tìm kỳ lương theo tháng và năm (TV4)
      */
     public BangLuong timBangLuongTheoKy(int thang, int nam) throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         validateThangNam(thang, nam);
         return bangLuongDAO.findByThangNam(thang, nam);
     }
@@ -68,6 +72,7 @@ public class PayrollService {
      * Alias method cho TV5 UI
      */
     public BangLuong timBangLuong(int thang, int nam) throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         return bangLuongDAO.findByThangNam(thang, nam);
     }
 
@@ -75,6 +80,7 @@ public class PayrollService {
      * Tìm kỳ lương theo ID
      */
     public BangLuong timBangLuongTheoMa(int maBangLuong) throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         if (maBangLuong <= 0) {
             throw new Exception("Mã bảng lương không hợp lệ.");
         }
@@ -85,6 +91,7 @@ public class PayrollService {
      * Lấy danh sách chi tiết bảng lương theo kỳ (TV4)
      */
     public List<ChiTietBangLuong> layChiTietBangLuong(int maBangLuong) throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         if (maBangLuong <= 0) {
             throw new Exception("Vui lòng chọn một kỳ lương hợp lệ.");
         }
@@ -95,6 +102,7 @@ public class PayrollService {
      * Alias method cho TV5 UI
      */
     public List<ChiTietBangLuong> getChiTietByBangLuong(int maBangLuong) throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         return bangLuongDAO.getChiTietByBangLuong(maBangLuong);
     }
 
@@ -107,8 +115,9 @@ public class PayrollService {
      * Kiểm tra quyền: Chỉ DB_Admin hoặc Payroll_Officer mới được chốt.
      */
     public void chotBangLuong(int maBangLuong) throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "Payroll_Officer");
         Session session = Session.getInstance();
-        if (session.isLoggedIn() && !session.hasRole("DB_Admin", "Payroll_Officer")) {
+        if (!session.isLoggedIn() || !session.hasRole("DB_Admin", "Payroll_Officer")) {
             throw new Exception("Bạn không có quyền chốt bảng lương! Chỉ DB_Admin hoặc Payroll_Officer mới được thực hiện.");
         }
 
@@ -128,8 +137,9 @@ public class PayrollService {
      * Kiểm tra quyền: Chỉ DB_Admin hoặc Payroll_Officer mới được mở lại.
      */
     public void huyChotBangLuong(int maBangLuong) throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "Payroll_Officer");
         Session session = Session.getInstance();
-        if (session.isLoggedIn() && !session.hasRole("DB_Admin", "Payroll_Officer")) {
+        if (!session.isLoggedIn() || !session.hasRole("DB_Admin", "Payroll_Officer")) {
             throw new Exception("Bạn không có quyền mở lại bảng lương! Chỉ DB_Admin hoặc Payroll_Officer mới được thực hiện.");
         }
 
@@ -149,8 +159,9 @@ public class PayrollService {
      * Kiểm tra quyền: Chỉ DB_Admin hoặc Payroll_Officer mới được xóa.
      */
     public void xoaBangLuong(int maBangLuong) throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "Payroll_Officer");
         Session session = Session.getInstance();
-        if (session.isLoggedIn() && !session.hasRole("DB_Admin", "Payroll_Officer")) {
+        if (!session.isLoggedIn() || !session.hasRole("DB_Admin", "Payroll_Officer")) {
             throw new Exception("Bạn không có quyền xóa bảng lương! Chỉ DB_Admin hoặc Payroll_Officer mới được thực hiện.");
         }
 
@@ -169,6 +180,7 @@ public class PayrollService {
      * Lấy chi tiết bảng lương theo tháng/năm (TV5)
      */
     public List<ChiTietBangLuong> getChiTietByThangNam(int thang, int nam) throws SQLException {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         return bangLuongDAO.getChiTietByThangNam(thang, nam);
     }
 
@@ -176,6 +188,7 @@ public class PayrollService {
      * Lấy phiếu lương cá nhân của nhân viên đang đăng nhập (TV5)
      */
     public List<ChiTietBangLuong> getPhieuLuongCaNhan() throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer", "Employee");
         Session session = Session.getInstance();
         int maNV = session.getMaNV();
 
@@ -194,8 +207,9 @@ public class PayrollService {
      * Lấy toàn bộ chi tiết lương cho báo cáo tổng hợp (TV5)
      */
     public List<ChiTietBangLuong> getBaoCaoTongHop() throws Exception {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer");
         Session session = Session.getInstance();
-        if (session.isLoggedIn() && !session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer")) {
+        if (!session.isLoggedIn() || !session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer")) {
             throw new Exception("Bạn không có quyền xem báo cáo tổng hợp!");
         }
 

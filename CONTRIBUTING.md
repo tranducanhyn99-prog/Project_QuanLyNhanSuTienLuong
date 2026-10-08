@@ -10,7 +10,7 @@ Tài liệu này quy định cách 5 thành viên làm việc với Git/GitHub �
 - Mỗi branch chỉ nên tập trung vào một nhóm thay đổi liên quan.
 - Mọi thay đổi vào `main` phải thông qua Pull Request.
 - Pull Request phải được Code Owner review và approve trước khi merge.
-- Không commit mật khẩu, token, connection string thật hoặc dữ liệu nhạy cảm.
+- Bộ mật khẩu demo của đồ án được phép lưu trong `database/demo_accounts.json`, theo [DEMO_ACCOUNTS](docs/DEMO_ACCOUNTS.md). Không đưa mật khẩu DBA, token hoặc cấu hình cá nhân vào bộ fixture này.
 
 ## 2. Quy ước tên branch
 

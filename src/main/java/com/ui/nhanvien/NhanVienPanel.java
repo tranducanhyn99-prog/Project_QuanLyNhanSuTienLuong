@@ -6,6 +6,7 @@ import com.model.PhongBan;
 import com.service.DanhMucService;
 import com.service.NhanVienService;
 import com.ui.theme.UITheme;
+import com.ui.theme.DatabaseTask;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -35,6 +36,7 @@ public class NhanVienPanel extends JPanel {
     private final DanhMucService danhMucService = new DanhMucService();
 
     // Table & Model
+    private List<NhanVien> loadedEmployees = java.util.Collections.emptyList();
     private JTable tblNhanVien;
     private DefaultTableModel modelNhanVien;
 
@@ -199,7 +201,9 @@ public class NhanVienPanel extends JPanel {
         UITheme.stylePasswordField(txtMatKhau);
         txtMatKhau.setEnabled(false);
 
-        cboVaiTro = new JComboBox<>(new String[]{"Employee", "HR_Manager", "Payroll_Officer", "DB_Admin"});
+        cboVaiTro = new JComboBox<>(com.session.Session.getInstance().hasRole("DB_Admin")
+                ? new String[]{"Employee", "HR_Manager", "Payroll_Officer", "DB_Admin"}
+                : new String[]{"Employee"});
         UITheme.styleComboBox(cboVaiTro);
         cboVaiTro.setEnabled(false);
 
@@ -252,7 +256,7 @@ public class NhanVienPanel extends JPanel {
 
         tblNhanVien.getSelectionModel().addListSelectionListener(e -> {
             int row = tblNhanVien.getSelectedRow();
-            if (row >= 0) fillFormFromTableRow(row);
+            if (row >= 0) fillFormFromTableRow(tblNhanVien.convertRowIndexToModel(row));
         });
 
         btnThem.addActionListener(e -> xuLyThemNhanVien());
@@ -271,27 +275,20 @@ public class NhanVienPanel extends JPanel {
     }
 
     private void loadComboboxData() {
-        try {
-            cboPhongBan.removeAllItems();
-            List<PhongBan> listPB = danhMucService.layPhongBanDangHoatDong();
-            for (PhongBan pb : listPB) cboPhongBan.addItem(pb);
-
-            cboChucVu.removeAllItems();
-            List<ChucVu> listCV = danhMucService.layTatCaChucVu();
-            for (ChucVu cv : listCV) cboChucVu.addItem(cv);
-        } catch (Exception e) {
-            if (isShowing()) {
-                JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu danh mục: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            } else {
-                System.err.println("Bỏ qua dialog khởi tạo danh mục: " + e.getMessage());
-            }
-        }
+        DatabaseTask.run(cboPhongBan, () -> new java.util.AbstractMap.SimpleEntry<>(
+                danhMucService.layTatCaPhongBan(), danhMucService.layTatCaChucVu()), data -> {
+            cboPhongBan.removeAllItems(); cboChucVu.removeAllItems();
+            data.getKey().forEach(cboPhongBan::addItem);
+            data.getValue().forEach(cboChucVu::addItem);
+            int row = tblNhanVien.getSelectedRow();
+            if (row >= 0) fillFormFromTableRow(tblNhanVien.convertRowIndexToModel(row));
+        });
     }
 
     private void loadTableData() {
         modelNhanVien.setRowCount(0);
-        try {
-            List<NhanVien> list = nhanVienService.layDanhSachNhanVien();
+        DatabaseTask.run(tblNhanVien, () -> nhanVienService.layDanhSachNhanVien(), list -> {
+            loadedEmployees = list;
             for (NhanVien nv : list) {
                 modelNhanVien.addRow(new Object[]{
                     nv.getMaNV(),
@@ -308,19 +305,14 @@ public class NhanVienPanel extends JPanel {
                     nv.getTenDangNhap() != null ? nv.getTenDangNhap() : "[Chưa cấp]"
                 });
             }
-        } catch (Exception e) {
-            if (isShowing()) {
-                JOptionPane.showMessageDialog(this, "Lỗi tải danh sách nhân viên: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            } else {
-                System.err.println("Bỏ qua dialog khởi tạo nhân viên: " + e.getMessage());
-            }
-        }
+        });
     }
 
     private void xuLyTimKiem() {
         modelNhanVien.setRowCount(0);
-        try {
-            List<NhanVien> list = nhanVienService.timKiemTheoTen(txtTimKiem.getText());
+        String search = txtTimKiem.getText();
+        DatabaseTask.run(tblNhanVien, () -> nhanVienService.timKiemTheoTen(search), list -> {
+            loadedEmployees = list;
             for (NhanVien nv : list) {
                 modelNhanVien.addRow(new Object[]{
                     nv.getMaNV(),
@@ -337,12 +329,21 @@ public class NhanVienPanel extends JPanel {
                     nv.getTenDangNhap() != null ? nv.getTenDangNhap() : "[Chưa cấp]"
                 });
             }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Lỗi tìm kiếm: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+        });
     }
 
     private void fillFormFromTableRow(int row) {
+        int id = Integer.parseInt(modelNhanVien.getValueAt(row, 0).toString());
+        NhanVien selected = null;
+        for (NhanVien nv : loadedEmployees) {
+            if (nv.getMaNV() == id) {
+                selected = nv;
+                txtNgayVaoLam.setText(nv.getNgayVaoLam() != null ? nv.getNgayVaoLam().toString() : "");
+                txtDiaChi.setText(nv.getDiaChi() != null ? nv.getDiaChi() : "");
+                break;
+            }
+        }
+        if (selected == null) return;
         txtMaNV.setText(modelNhanVien.getValueAt(row, 0).toString());
         txtHoTen.setText(modelNhanVien.getValueAt(row, 1).toString());
         txtNgaySinh.setText(modelNhanVien.getValueAt(row, 2).toString());
@@ -354,16 +355,14 @@ public class NhanVienPanel extends JPanel {
         cboTrangThai.setSelectedItem(modelNhanVien.getValueAt(row, 10).toString());
 
         // Select PhongBan & ChucVu
-        String tenPB = modelNhanVien.getValueAt(row, 8).toString();
         for (int i = 0; i < cboPhongBan.getItemCount(); i++) {
-            if (cboPhongBan.getItemAt(i).getTenPB().equalsIgnoreCase(tenPB)) {
+            if (cboPhongBan.getItemAt(i).getMaPB() == selected.getMaPB()) {
                 cboPhongBan.setSelectedIndex(i);
                 break;
             }
         }
-        String tenCV = modelNhanVien.getValueAt(row, 9).toString();
         for (int i = 0; i < cboChucVu.getItemCount(); i++) {
-            if (cboChucVu.getItemAt(i).getTenCV().equalsIgnoreCase(tenCV)) {
+            if (cboChucVu.getItemAt(i).getMaCV() == selected.getMaCV()) {
                 cboChucVu.setSelectedIndex(i);
                 break;
             }
@@ -378,10 +377,12 @@ public class NhanVienPanel extends JPanel {
             String pass = new String(txtMatKhau.getPassword());
             String role = cboVaiTro.getSelectedItem().toString();
 
-            int newId = nhanVienService.themNhanVien(nv, taoTK, user, pass, role);
-            JOptionPane.showMessageDialog(this, "Thêm nhân viên thành công! Mã NV: " + newId + (taoTK ? " (Đã cấp tài khoản thành công)" : ""));
+            DatabaseTask.runExclusive(this, () -> nhanVienService.themNhanVien(nv, taoTK, user, pass, role), newId -> {
+            JOptionPane.showMessageDialog(this, "Thêm nhân viên thành công! Mã NV: " + newId
+                    + (taoTK ? "\nĐã tạo hồ sơ tài khoản. DBA cần cấp và mapping SQL login trước khi đăng nhập." : ""));
             lamMoiForm();
             loadTableData();
+                    });
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Thao tác thất bại: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -392,10 +393,11 @@ public class NhanVienPanel extends JPanel {
             if (txtMaNV.getText().isEmpty()) throw new Exception("Vui lòng chọn nhân viên cần cập nhật từ danh sách!");
             NhanVien nv = layThongTinForm();
             nv.setMaNV(Integer.parseInt(txtMaNV.getText()));
-            nhanVienService.capNhatNhanVien(nv);
+            DatabaseTask.runExclusive(this, () -> { nhanVienService.capNhatNhanVien(nv); return true; }, ignored -> {
             JOptionPane.showMessageDialog(this, "Cập nhật thông tin nhân viên thành công!");
             lamMoiForm();
             loadTableData();
+                    });
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Lỗi cập nhật: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -408,10 +410,12 @@ public class NhanVienPanel extends JPanel {
                 "Hệ thống sẽ kiểm tra ràng buộc lương và chấm công trước khi xóa.\nBạn có chắc chắn muốn xóa nhân viên này?", 
                 "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
-                nhanVienService.xoaNhanVien(Integer.parseInt(txtMaNV.getText()));
+                int targetId = Integer.parseInt(txtMaNV.getText());
+                DatabaseTask.runExclusive(this, () -> { nhanVienService.xoaNhanVien(targetId); return true; }, ignored -> {
                 JOptionPane.showMessageDialog(this, "Đã xóa nhân viên thành công!");
                 lamMoiForm();
                 loadTableData();
+                            });
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Lỗi xóa nhân viên: " + e.getMessage(), "Thông báo ràng buộc CSDL", JOptionPane.WARNING_MESSAGE);

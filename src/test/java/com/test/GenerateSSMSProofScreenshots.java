@@ -16,9 +16,13 @@ import java.io.File;
  */
 public class GenerateSSMSProofScreenshots {
 
-    private static final String OUTPUT_DIR = "screenshots";
+    private static final String OUTPUT_DIR = "build/mock-screenshots";
 
     public static void main(String[] args) {
+        if (!Boolean.getBoolean("app.mockScreenshots")) {
+            throw new IllegalStateException("Ảnh dựng chỉ là minh họa. Bật -Dapp.mockScreenshots=true nếu cần; không dùng làm bằng chứng test.");
+        }
+
         System.out.println("==============================================================");
         System.out.println("   BẮT ĐẦU TẠO 5 ẢNH MINH CHỨNG SSMS CHUẨN XÁC CHO TV1        ");
         System.out.println("==============================================================");
@@ -111,6 +115,7 @@ public class GenerateSSMSProofScreenshots {
         g.drawString("✔ KẾT QUẢ: Chi phí thực thi giảm từ 98% xuống 2% (Tối ưu gấp 49 lần nhờ Index IX_NHANVIEN_HoTen)", 30, h - 12);
 
         g.dispose();
+        watermark(img);
         ImageIO.write(img, "PNG", outFile);
         System.out.println("  [OK] Đã tạo: " + outFile.getName());
     }
@@ -159,6 +164,7 @@ public class GenerateSSMSProofScreenshots {
         g.drawString("  • Trạng thái: PASS chuẩn Rubric môn học HQTCSDL.", 35, textY);
 
         g.dispose();
+        watermark(img);
         ImageIO.write(img, "PNG", outFile);
         System.out.println("  [OK] Đã tạo: " + outFile.getName());
     }
@@ -217,6 +223,7 @@ public class GenerateSSMSProofScreenshots {
         g.drawString("✔ MINH CHỨNG: Trigger INSTEAD OF DELETE bảo vệ toàn vẹn dữ liệu thành công (Cơ chế Soft Delete hoạt động đúng thiết kế).", 35, h - 30);
 
         g.dispose();
+        watermark(img);
         ImageIO.write(img, "PNG", outFile);
         System.out.println("  [OK] Đã tạo: " + outFile.getName());
     }
@@ -282,6 +289,7 @@ public class GenerateSSMSProofScreenshots {
         g.drawString("✔ MINH CHỨNG: Tính nguyên tố (Atomicity - All-or-Nothing) của Transaction trong sp_ThemNhanVien hoạt động hoàn hảo!", 35, h - 25);
 
         g.dispose();
+        watermark(img);
         ImageIO.write(img, "PNG", outFile);
         System.out.println("  [OK] Đã tạo: " + outFile.getName());
     }
@@ -387,6 +395,7 @@ public class GenerateSSMSProofScreenshots {
         drawRelationshipLine(g, 310, 560, 420, 560, "1 - N");
 
         g.dispose();
+        watermark(img);
         ImageIO.write(img, "PNG", outFile);
         System.out.println("  [OK] Đã tạo: " + outFile.getName());
     }
@@ -567,5 +576,14 @@ public class GenerateSSMSProofScreenshots {
         g.setColor(new Color(0, 102, 204));
         g.setFont(new Font("Segoe UI", Font.BOLD, 11));
         g.drawString(label, midX - 14, midY + 4);
+    }
+    private static void watermark(java.awt.image.BufferedImage image) {
+        java.awt.Graphics2D graphics = image.createGraphics();
+        graphics.setColor(new java.awt.Color(170, 0, 0));
+        graphics.fillRect(0, 0, image.getWidth(), 36);
+        graphics.setColor(java.awt.Color.WHITE);
+        graphics.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 17));
+        graphics.drawString("MINH HỌA — DỮ LIỆU GIẢ — KHÔNG PHẢI KẾT QUẢ SQL", 12, 25);
+        graphics.dispose();
     }
 }

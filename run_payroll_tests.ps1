@@ -1,8 +1,10 @@
 param(
     [string]$ServerInstance,
     [string]$Database,
-    [string]$User,
-    [string]$Password,
+    [string]$User = $env:TEST_SQL_USER,
+    [string]$Password = $env:TEST_SQL_PASSWORD,
+    [switch]$WindowsAuthentication,
+    [switch]$TrustLocalCertificate,
     [switch]$SkipBenchmark
 )
 
@@ -61,19 +63,12 @@ if (!$serverSpecifiedOnCommandLine) {
 if ([string]::IsNullOrWhiteSpace($Database)) {
     $Database = $jdbcProperties["databaseName"]
 }
-if ([string]::IsNullOrWhiteSpace($Database)) {
-    $Database = "QuanLyNhanSuTienLuong"
+if ($Database -notmatch '^PRJ_Fix_QA_[A-Za-z0-9_]+$') {
+    throw 'SQL tests write fixtures: specify a dedicated -Database PRJ_Fix_QA_...; original databases are refused.'
 }
-if ([string]::IsNullOrWhiteSpace($User)) {
-    $User = $config["db.user"]
-}
-if ([string]::IsNullOrWhiteSpace($Password)) {
-    $Password = $config["db.password"]
-}
-
-if ([string]::IsNullOrWhiteSpace($User) -or [string]::IsNullOrWhiteSpace($Password) -or
-    $Password -eq "YOUR_PASSWORD_HERE") {
-    throw "Thieu tai khoan SQL Server hop le. Hay truyen -User/-Password hoac cau hinh db.user/db.password."
+if (!$WindowsAuthentication -and ([string]::IsNullOrWhiteSpace($User) -or [string]::IsNullOrEmpty($Password))) {
+    Write-Host 'SKIPPED: set TEST_SQL_USER/TEST_SQL_PASSWORD or pass -WindowsAuthentication for the QA DBA.'
+    exit 2
 }
 
 $resultDir = Join-Path $repoRoot "build\test-results"
@@ -97,10 +92,14 @@ function New-TestConnection {
     $builder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
     $builder["Data Source"] = $DataSource
     $builder["Initial Catalog"] = $Database
-    $builder["User ID"] = $User
-    $builder["Password"] = $Password
-    $builder["Encrypt"] = $false
-    $builder["TrustServerCertificate"] = $true
+    if ($WindowsAuthentication) {
+        $builder["Integrated Security"] = $true
+    } else {
+        $builder["User ID"] = $User
+        $builder["Password"] = $Password
+    }
+    $builder["Encrypt"] = $true
+    $builder["TrustServerCertificate"] = [bool]$TrustLocalCertificate
     $builder["Application Name"] = "TV4 Payroll Tests"
 
     $connection = New-Object System.Data.SqlClient.SqlConnection $builder.ConnectionString
@@ -266,6 +265,11 @@ $exitCode = 0
 try {
     Write-TestLog "TV4 - Bat dau bo kiem thu payroll."
     $connection = Open-TestConnection
+    $identityQuery = $connection.CreateCommand()
+    try {
+        $identityQuery.CommandText = 'SELECT DB_NAME()'
+        if ($identityQuery.ExecuteScalar() -ne $Database) { throw 'Unexpected SQL database context.' }
+    } finally { $identityQuery.Dispose() }
 
     Invoke-SqlFile $connection (Join-Path $repoRoot "database\tests\TV4_Payroll_E2E.sql")
     if (!$SkipBenchmark) {

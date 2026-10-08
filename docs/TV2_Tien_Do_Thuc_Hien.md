@@ -6,6 +6,7 @@
 - **Mã phân công:** TV2  
 - **Module phụ trách:** Quản lý Chấm Công, Tổng Hợp Ngày Công Tháng, Giao Diện Chấm Công & Điều Chỉnh Công  
 - **Branch làm việc:** `feature/tv2-week3-evidence`
+- **Rà soát tài liệu:** 08/10/2026. Chứng cứ runtime hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md); benchmark và ảnh cũ bên dưới chỉ là tư liệu lịch sử.
 
 ---
 
@@ -15,7 +16,7 @@
 |:---:|:---:|---|---|:---:|:---:|---|
 | **T1** | 21/09 – 27/09 | • Phân tích nghiệp vụ chấm công theo cặp nhân viên – ngày.<br>• Chốt cấu trúc bảng `CHAMCONG` và các quy tắc: không trùng ngày, giờ ra > giờ vào, nhân viên nghỉ việc không được chấm công mới.<br>• Đặc tả luồng xử lý `ChamCongPanel` → `Service` → `DAO` → SQL Server.<br>• Thiết kế bộ testcase cho dữ liệu chấm công hợp lệ/không hợp lệ. | • Đặc tả nghiệp vụ chấm công.<br>• Thiết kế bảng `CHAMCONG` (1NF - 3NF).<br>• Danh sách constraint/trigger.<br>• Bộ testcase chấm công. | **100%** | **24/09/2026** | Đã hoàn thành toàn bộ tài liệu phân tích nghiệp vụ, thiết kế tích hợp và bộ testcase kịch bản. |
 | **T2** | 28/09 – 04/10 | • Cài đặt DDL/Constraints cho bảng `CHAMCONG`.<br>• Cài đặt Stored Procedure `sp_GhiNhanChamCong`.<br>• Cài đặt 2 Trigger: `trg_ChamCong_KiemTraGio` và `trg_ChamCong_KiemTraNhanVien`.<br>• Cài đặt View `vw_TongHopChamCongThang` và Index `IX_CHAMCONG_MaNV_Ngay`.<br>• Lập trình Java Swing: `ChamCongPanel`, `DieuChinhChamCongDialog`.<br>• Lập trình Model, DAO, Service: `ChamCong`, `ChamCongDAO`, `ChamCongService` (JDBC Transaction All-or-Nothing). | • Script SQL: `database/02_Module_ChamCong_TV2.sql`.<br>• Giao diện chấm công 2 tab (chi tiết & tổng hợp) + dialog điều chỉnh.<br>• Transaction nhập theo lô an toàn.<br>• Mã nguồn Java hoàn thiện. | **100%** | **29/09/2026** | Đã hoàn thành cài đặt CSDL và mã nguồn tầng ứng dụng trong branch làm việc. |
-| **T3** | 05/10 – 11/10 | • Cung cấp dữ liệu ngày công cho TV4 (`sp_TinhBangLuongThang`) và TV1 (`fn_TinhSoNgayCong`).<br>• Đo lường hiệu năng Covering Index `IX_CHAMCONG_MaNV_Ngay` (Execution Plan + `STATISTICS IO`).<br>• Thu thập minh chứng giao diện ứng dụng thực tế.<br>• Hoàn thiện báo cáo chuyên đề và tài liệu tiến độ cá nhân. | • Kết quả benchmark Index trên `#CHAMCONG_BENCHMARK`.<br>• Bộ 5 ảnh benchmark đã lưu trữ.<br>• Ảnh chụp giao diện thực tế.<br>• Báo cáo chuyên đề cuối kỳ `TV2_BaoCao_ChuyenDe_ChamCong_CuoiKy.md`. | **100%** | **06/10/2026** | Đã hoàn tất benchmark Index (574 xuống 5 logical reads, 5 ảnh minh chứng). Bộ 3 ảnh minh chứng giao diện (`TV2_ChamCong_ChiTiet.png`, `TV2_ChamCong_TongHopThang.png`, `TV2_DieuChinhChamCongDialog.png`) đã được chụp từ phiên desktop tương tác thật (ứng dụng Java Swing kết nối CSDL SQL Server thật) và đã được xác thực, lưu trữ tại `screenshots/TV2/`. |
+| **T3** | 05/10 – 11/10 | • Cung cấp dữ liệu chấm công cho payroll; function `fn_TinhSoNgayCong` có trong module 02, nhưng `sp_TinhBangLuongThang` hiện đếm trực tiếp bằng truy vấn khoảng ngày.<br>• Rà soát trigger khóa kỳ, ngày được lưu lại và thao tác DB chạy nền.<br>• Hoàn thiện báo cáo và đối chiếu evidence. | • Mã nguồn TV2 đã tích hợp.<br>• Regression SQL/UI và tài liệu cập nhật. | **100%** | **08/10/2026** | Các suite và race hiện hành được ghi tại [FIX_TASKLIST](FIX_TASKLIST.md). Kết quả benchmark 574→5 và ảnh chụp cũ là tư liệu lịch sử, không phải benchmark hay bằng chứng UI của lần xác minh hiện hành. |
 
 ---
 
@@ -24,8 +25,8 @@
 ### 1. Vai trò và Quy tắc nghiệp vụ cốt lõi
 
 Module chấm công chịu trách nhiệm ghi nhận, theo dõi và tổng hợp thời gian làm việc thực tế của nhân viên:
-1. **Cung cấp dữ liệu nguồn cho TV1 (Nguyễn Minh Trí):** Hàm `fn_TinhSoNgayCong(MaNV, Thang, Nam)`.
-2. **Cung cấp dữ liệu nguồn cho TV4 (Nguyễn Quang Vinh):** Cung cấp số ngày công thực tế (`NgayCongThucTe`) để tính tiền công trong `sp_TinhBangLuongThang`.
+1. `fn_TinhSoNgayCong(MaNV, Thang, Nam)` được cài trong module 02 sau khi tạo `CHAMCONG`; payroll hiện đếm trực tiếp dữ liệu theo khoảng ngày, không gọi function này.
+2. Cung cấp số ngày công thực tế cho `sp_TinhBangLuongThang`, dùng truy vấn range theo ngày trong transaction payroll.
 3. **Cung cấp dữ liệu nguồn cho TV5 (Trần Đức Anh):** Tổng hợp công, giờ làm việc hiển thị trên báo cáo và xuất phiếu lương.
 
 #### Các quy tắc nghiệp vụ (Business Rules):
@@ -83,7 +84,10 @@ Theo đúng ma trận phân công đối tượng SQL của Nhóm 06 trong repos
 - **DAO Layer (`ChamCongDAO.java`):**
   - Gọi `sp_GhiNhanChamCong` thông qua `CallableStatement`.
   - Truy vấn dữ liệu tổng hợp tháng từ View `vw_TongHopChamCongThang` thông qua `PreparedStatement`.
-  - Kiểm tra trạng thái kỳ lương trong `BANGLUONG`: Cấm sửa hoặc xóa bản ghi chấm công nếu kỳ lương tương ứng đã chốt (`DA_CHOT`).
+  - UPDATE/DELETE qua DAO không tự kiểm tra kỳ; trigger SQL `trg_ChamCong_KhongSuaKhiDaChotLuong` tại module 05 bảo vệ INSERT/UPDATE/DELETE và ngày nguồn/đích khi kỳ đã chốt. Race đóng kỳ được kiểm chứng bằng hai connection trong QA.
+
+### 1.1 Ngày công và thao tác nền
+`ChamCongDAO.updateChamCong` ghi cả `NgayChamCong` cùng giờ/trạng thái/ghi chú. Bảo vệ kỳ cũ và kỳ mới do trigger SQL thực thi, kể cả khi gọi trực tiếp SQL. UI dùng `DatabaseTask`/`SwingWorker` để đưa truy vấn và mutation khỏi Swing EDT; callback UI chạy lại trên EDT. Bằng chứng regression hiện hành và giới hạn test xem [FIX_TASKLIST](FIX_TASKLIST.md).
 - **Model Layer (`ChamCong.java`, `TongHopChamCong.java`):**
   - Thực thể POJO đại diện cho bản ghi chấm công và đối tượng tổng hợp công theo tháng.
 
@@ -93,7 +97,7 @@ Theo đúng ma trận phân công đối tượng SQL của Nhóm 06 trong repos
 
 Bộ kịch bản kiểm thử tự động của TV2 được thiết kế tại `database/tests_TV2/test_module_chamcong_TV2.sql` với cơ chế self-seeding token per-run và dọn dẹp cách ly:
 
-**Trạng thái thực thi hiện tại:** Chưa thực thi / chưa có log trong worktree này; danh sách dưới đây là thiết kế kịch bản, không phải kết quả PASS đã xác nhận.
+Danh sách dưới đây là phạm vi thiết kế test. Kết quả thực thi mới nhất và log xem [FIX_TASKLIST](FIX_TASKLIST.md).
 
 1. **TC-CC-01:** Chấm công đơn lẻ hợp lệ qua `sp_GhiNhanChamCong`.
 2. **TC-CC-02:** Chặn trùng lặp cặp `(MaNV, NgayChamCong)` qua SP và qua ràng buộc duy nhất `UQ_CHAMCONG_MaNV_Ngay`.
@@ -112,9 +116,9 @@ Bộ kịch bản kiểm thử tự động của TV2 được thiết kế tạ
 
 ---
 
-## PHẦN 5. BÁO CÁO BENCHMARK HIỆU NĂNG NON-CLUSTERED COVERING INDEX
+## PHẦN 5. BENCHMARK LỊCH SỬ — NON-CLUSTERED COVERING INDEX
 
-Thực nghiệm đo lường hiệu năng của chỉ mục `IX_CHAMCONG_MaNV_Ngay` được thực thi và xác thực độc lập tại `database/test_benchmark_index_TV2.sql`:
+`database/test_benchmark_index_TV2.sql` và kết quả 574→5 bên dưới mô tả benchmark lịch sử; không đại diện cho runtime hiện tại. Log và plan hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md).
 
 ### 1. Bối cảnh kỹ thuật và phương pháp luận
 - **Hiện trạng bảng sản xuất:** Bảng `dbo.CHAMCONG` có sẵn ràng buộc duy nhất `UQ_CHAMCONG_MaNV_Ngay` trên `(MaNV, NgayChamCong)`. Ràng buộc này tạo ra một Non-clustered Index tìm kiếm theo khóa. Do đó, việc so sánh với Table Scan (bỏ toàn bộ index) là phi thực tế trong môi trường sản xuất.
@@ -132,7 +136,7 @@ Thực nghiệm đo lường hiệu năng của chỉ mục `IX_CHAMCONG_MaNV_Ng
 | **Scan Count** | 1 | 1 | Quét theo phạm vi khóa |
 | **Tác động CSDL sản xuất** | Không ảnh hưởng (`#CHAMCONG_BENCHMARK`) | Không ảnh hưởng (`#CHAMCONG_BENCHMARK`) | Bảng `dbo.CHAMCONG` được bảo toàn nguyên vẹn |
 
-### 3. Minh chứng hình ảnh Benchmark đã lưu trữ trong repository
+### 3. Ảnh benchmark lịch sử (không phải evidence hiện tại)
 
 Năm ảnh chụp màn hình chứng minh kết quả thực nghiệm được lưu trữ nguyên vẹn tại thư mục `screenshots/TV2/`:
 1. `screenshots/TV2/TV2_Benchmark_ExecutionPlan_BEFORE.png`: Thể hiện Execution Plan giai đoạn BEFORE gồm toán tử Index Seek trên `UQ_Bench_MaNV_Ngay` kết hợp với Key Lookup (Clustered).
@@ -145,8 +149,7 @@ Năm ảnh chụp màn hình chứng minh kết quả thực nghiệm được l
 
 ## PHẦN 6. TÌNH TRẠNG MINH CHỨNG GIAO DIỆN ỨNG DỤNG JAVA SWING (UI EVIDENCE)
 
-- **Trạng thái:** **ĐÃ THU THẬP & ĐÃ XÁC THỰC (COLLECTED & VERIFIED)**.
-- **Phương thức thu thập:** Cả 3 ảnh chụp giao diện được chụp trực tiếp từ một phiên desktop tương tác thật (interactive desktop session): ứng dụng Java Swing được mở trực tiếp trên môi trường desktop đồ họa, kết nối tới CSDL SQL Server thật (`QuanLyNhanSuTienLuong`), và chụp màn hình thực tế; nội dung ảnh đã được rà soát và xác thực trước khi lưu vào repository.
+- **Trạng thái:** Ảnh bên dưới là tư liệu lịch sử, không chứng minh UI/runtime hiện tại.
 - **Danh mục minh chứng UI đã lưu trữ tại `screenshots/TV2/`:**
   - `screenshots/TV2/TV2_ChamCong_ChiTiet.png`: Tab 1 chấm công chi tiết — form ghi nhận chấm công, nút điểm danh hàng loạt (Transaction) và nhật ký chấm công với dữ liệu thật.
   - `screenshots/TV2/TV2_ChamCong_TongHopThang.png`: Tab 2 tổng hợp ngày công tháng — dữ liệu tổng hợp đọc từ View `vw_TongHopChamCongThang`.
@@ -162,6 +165,6 @@ Năm ảnh chụp màn hình chứng minh kết quả thực nghiệm được l
 - Schema sản xuất `dbo.CHAMCONG` và các đối tượng CSDL liên quan được bảo toàn nguyên vẹn.
 
 ### 2. Các tồn tại kỹ thuật được ghi nhận rõ ràng (Remaining Gaps)
-1. **Minh chứng giao diện Java Swing (Đã hoàn tất):** Cả 3 ảnh chụp giao diện hợp lệ có nội dung trực quan thật cho TV2 (`TV2_ChamCong_ChiTiet.png`, `TV2_ChamCong_TongHopThang.png`, `TV2_DieuChinhChamCongDialog.png`) đã được thu thập từ phiên desktop tương tác thật và đã được xác thực, lưu trữ tại `screenshots/TV2/` (chi tiết tại PHẦN 6).
-2. **Dữ liệu bảng sản xuất `dbo.CHAMCONG`:** Bảng hiện đang duy trì dữ liệu baseline mẫu (1 bản ghi) để đảm bảo luồng chạy an toàn; chưa nạp dữ liệu lịch sử đầy đủ nhiều tháng của toàn thể công ty.
+1. **Ảnh UI:** Ảnh lưu trữ là tư liệu cũ, không phải minh chứng runtime hiện tại. Evidence UI mới nhất xem [FIX_TASKLIST](FIX_TASKLIST.md).
+2. **Dữ liệu `dbo.CHAMCONG`:** Không suy luận số lượng/baseline từ tài liệu cũ. QA fixtures được tạo riêng và dọn bởi runner; database dự án gốc không bị mutate trong xác minh nêu tại [FIX_TASKLIST](FIX_TASKLIST.md).
 3. **Mở rộng cơ chế chấm công:** Hiện tại hỗ trợ chấm công thủ công và điểm danh theo lô qua giao diện; đề xuất mở rộng kết nối API thiết bị chấm công phần cứng (ZKTeco/Hikvision) trong các pha tiếp theo.

@@ -1,74 +1,72 @@
 package com.config;
 
 import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Properties;
 
-public class DatabaseConnection {
-
-    private static String url;
-    private static String user;
-    private static String password;
-
+/** Connections always use the SQL identity authenticated by LoginFrame. */
+public final class DatabaseConnection {
+    private static final String URL;
+    private static volatile Credentials credentials;
+    private static final ThreadLocal<Credentials> workerIdentity = new ThreadLocal<>();
     static {
-        // Nạp tường minh SQL Server JDBC Driver để phát hiện sớm lỗi thiếu thư viện trên classpath
-        try {
-            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-            DriverManager.setLoginTimeout(2);
-        } catch (ClassNotFoundException e) {
-            throw new ExceptionInInitializerError(
-                    "Không tìm thấy SQL Server JDBC Driver (com.microsoft.sqlserver.jdbc.SQLServerDriver)! "
-                            + "Vui lòng kiểm tra classpath hoặc biến môi trường MSSQL_JDBC_JAR."
-            );
-        }
-
-        Properties props = new Properties();
+        try { Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver"); }
+        catch (ClassNotFoundException ex) { throw new ExceptionInInitializerError(ex); }
+        Properties config = new Properties();
         try (InputStream in = DatabaseConnection.class.getResourceAsStream("/config.properties")) {
-            if (in != null) {
-                props.load(in);
-            }
-        } catch (Exception ignored) {}
-
-        // Ưu tiên đọc từ System Properties hoặc Biến môi trường (Environment Variables) để bảo mật
-        url = System.getProperty("db.url");
-        if (url == null || url.trim().isEmpty()) {
-            url = System.getenv("DB_URL");
-        }
-        if (url == null || url.trim().isEmpty()) {
-            url = props.getProperty("db.url", "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhanSuTienLuong;encrypt=false;trustServerCertificate=true");
-        }
-
-        user = System.getProperty("db.user");
-        if (user == null || user.trim().isEmpty()) {
-            user = System.getenv("DB_USER");
-        }
-        if (user == null || user.trim().isEmpty()) {
-            user = props.getProperty("db.user");
-        }
-
-        password = System.getProperty("db.password");
-        if (password == null || password.trim().isEmpty()) {
-            password = System.getenv("DB_PASSWORD");
-        }
-        if (password == null || password.trim().isEmpty()) {
-            password = props.getProperty("db.password");
+            if (in != null) config.load(in);
+        } catch (java.io.IOException ex) { throw new ExceptionInInitializerError(ex); }
+        String configured = System.getProperty("db.url", System.getenv("DB_URL"));
+        URL = configured != null && !configured.trim().isEmpty() ? configured : config.getProperty("db.url",
+                "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhanSuTienLuong;encrypt=true;trustServerCertificate=false");
+        if (URL.matches("(?is).*;\\s*(user|username|password|integratedSecurity|authentication|accessToken|accessTokenCallbackClass)\\s*=.*")) {
+            throw new ExceptionInInitializerError("db.url không được chứa thông tin xác thực.");
         }
     }
-
+    private DatabaseConnection() { }
+    private static final class Credentials {
+        final String user, password;
+        Credentials(String user, String password) { this.user = user; this.password = password; }
+    }
+    public static Connection openForLogin(String user, String password) throws SQLException {
+        Properties properties = new Properties();
+        properties.setProperty("user", user);
+        properties.setProperty("password", password);
+        properties.setProperty("loginTimeout", "5");
+        properties.setProperty("queryTimeout", "30");
+        properties.setProperty("socketTimeout", "60000");
+        return DriverManager.getConnection(URL, properties);
+    }
+    public static synchronized void authenticated(String user, String password) {
+        credentials = new Credentials(user, password);
+    }
+    public static synchronized void logout() { credentials = null; }
+    public static Object identityToken() { return credentials; }
+    public static <T> T withIdentity(Object token, java.util.concurrent.Callable<T> work) throws Exception {
+        if (token == null || token != credentials) throw new SecurityException("Phiên đăng nhập đã thay đổi.");
+        Credentials previous = workerIdentity.get();
+        workerIdentity.set((Credentials) token);
+        try { return work.call(); }
+        finally {
+            if (previous == null) workerIdentity.remove(); else workerIdentity.set(previous);
+        }
+    }
     public static Connection getConnection() throws SQLException {
-        try {
-            return DriverManager.getConnection(url, user, password);
+        Credentials current = workerIdentity.get() != null ? workerIdentity.get() : credentials;
+        if (current == null) throw new SQLException("Vui lòng đăng nhập bằng SQL login cá nhân.", "28000");
+        if (current != credentials) throw new SQLException("Phiên đăng nhập đã thay đổi.", "28000");
+        Connection connection = openForLogin(current.user, current.password);
+        try (CallableStatement statement = connection.prepareCall("{call dbo.sp_LayTaiKhoanHienTai}")) {
+            statement.setQueryTimeout(30);
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next() || !"HOAT_DONG".equals(result.getString("TrangThai"))) {
+                    throw new SQLException("Danh tính SQL chưa được mapping hoặc tài khoản đã khóa.", "28000");
+                }
+            }
+            return connection;
         } catch (SQLException ex) {
-            String safeUser = (user != null && !user.trim().isEmpty()) ? user : "<chưa cấu hình>";
-            String safeUrl = (url != null && !url.trim().isEmpty()) ? url : "<chưa cấu hình>";
-            throw new SQLException(
-                    "Lỗi kết nối CSDL (URL: " + safeUrl + ", User: " + safeUser + "): " + ex.getMessage(),
-                    ex.getSQLState(),
-                    ex.getErrorCode(),
-                    ex
-            );
+            try { connection.close(); } catch (SQLException close) { ex.addSuppressed(close); }
+            throw ex;
         }
     }
 }

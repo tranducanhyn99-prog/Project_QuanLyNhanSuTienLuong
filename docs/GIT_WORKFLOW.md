@@ -137,7 +137,7 @@ Nếu có conflict, xử lý conflict cẩn thận, test lại rồi mới commi
 
 ## 9. Những việc không được làm
 
-- Không commit file chứa password/token.
+- Mật khẩu fixture demo của đồ án được theo dõi trong `database/demo_accounts.json`; xem [DEMO_ACCOUNTS](DEMO_ACCOUNTS.md). Không đưa mật khẩu DBA hoặc token cá nhân vào fixture.
 - Không commit file backup SQL Server dung lượng lớn nếu chưa thống nhất.
 - Không tự ý đổi tên bảng/cột đã được cả nhóm thống nhất.
 - Không merge Pull Request của chính mình khi chưa được Code Owner duyệt.
@@ -150,7 +150,7 @@ Nếu có conflict, xử lý conflict cẩn thận, test lại rồi mới commi
 - [ ] Code build/chạy được trên máy cá nhân.
 - [ ] Đã test chức năng bị thay đổi.
 - [ ] Nếu có SQL, script chạy được trên SQL Server.
-- [ ] Không có password/token trong commit.
+- [ ] Mật khẩu trong thay đổi chỉ thuộc bộ demo được nhóm thống nhất; không kèm mật khẩu DBA hoặc token cá nhân.
 - [ ] Commit message đúng quy ước.
 - [ ] Không có file tạm, log hoặc IDE artifact không cần thiết.
 - [ ] Pull Request mô tả rõ nội dung và cách kiểm thử.

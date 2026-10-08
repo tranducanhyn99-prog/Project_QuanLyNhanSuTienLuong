@@ -7,8 +7,7 @@
 -- ĐỐI TƯỢNG SỞ HỮU: IX_CHAMCONG_MaNV_Ngay TRÊN BẢNG CHAMCONG
 -- ============================================================================
 
-USE QuanLyNhanSuTienLuong;
-GO
+-- Keep the database selected by the caller.
 
 PRINT N'============================================================================';
 PRINT N'  BẮT ĐẦU CHƯƠNG TRÌNH BENCHMARK INDEX: IX_CHAMCONG_MaNV_Ngay (TV2)';
@@ -214,6 +213,7 @@ GO
 
 PRINT N'============================================================================';
 PRINT N'  HOÀN TẤT KỊCH BẢN BENCHMARK INDEX IX_CHAMCONG_MaNV_Ngay CỦA TV2.';
-PRINT N'  BẢNG TẠM #CHAMCONG_BENCHMARK ĐÃ ĐƯỢC DỌN DẸP, CSDL SẢN XUẤT ĐƯỢC BẢO TOÀN 100%.';
+IF OBJECT_ID('tempdb..#CHAMCONG_BENCHMARK') IS NOT NULL THROW 53411,N'Benchmark cleanup failed.',1;
+PRINT N'  Đã dọn bảng tạm benchmark.';
 PRINT N'============================================================================';
 GO
