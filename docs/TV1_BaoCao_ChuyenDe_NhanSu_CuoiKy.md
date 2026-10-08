@@ -6,6 +6,7 @@
 - **Giảng viên hướng dẫn:** TS. Phan Thị Thể  
 - **Phân công chuyên môn:** Thiết kế CSDL (ERD, Relational Schema, Chuẩn hóa 3NF), Module Nhân sự (Phòng ban, Chức vụ, Hồ sơ nhân viên, Tích hợp tài khoản), Rà soát tính nhất quán hệ thống & Đo kiểm hiệu năng Index.  
 - **Thời gian hoàn thành:** Tuần 3 (29/09/2026)  
+- **Rà soát tài liệu:** 08/10/2026. Cấu trúc và behavior đã được đối chiếu với source tích hợp; log/evidence runtime xem [FIX_TASKLIST](FIX_TASKLIST.md).
 
 ---
 
@@ -16,7 +17,7 @@
    - [2.1 Sơ đồ Thực thể Liên kết (ERD) Mức Khái Niệm & Logic](#21-sơ-đồ-thực-thể-liên-kết-erd-mức-khái-niệm--logic)
    - [2.2 Lược đồ Quan hệ (Relational Schema)](#22-lược-đồ-quan-hệ-relational-schema)
    - [2.3 Chứng Minh Quá Trình Chuẩn Hóa Dữ Liệu Từ UNF đến 3NF](#23-chứng-minh-quá-trình-chuẩn-hóa-dữ-liệu-từ-unf-đến-3nf)
-   - [2.4 Bảng Đặc Tả Chi Tiết 9 Bảng CSDL Toàn Hệ Thống](#24-bảng-đặc-tả-chi-tiết-9-bảng-csdl-toàn-hệ-thống)
+   - [2.4 Bảng Đặc Tả Chi Tiết Schema CSDL Toàn Hệ Thống](#24-bảng-đặc-tả-chi-tiết-schema-csdl-toàn-hệ-thống)
    - [2.5 Danh Mục Ràng Buộc Toàn Vẹn & Quy Tắc Nghiệp Vụ](#25-danh-mục-ràng-buộc-toàn-vẹn--quy-tắc-nghiệp-vụ)
 3. [CHƯƠNG 3. RÀ SOÁT TÍNH NHẤT QUÁN TOÀN HỆ THỐNG (CONSISTENCY CHECKLIST)](#chương-3-rà-soát-tính-nhất-quán-toàn-hệ-thống-consistency-checklist)
 4. [CHƯƠNG 4. BÁO CÁO BENCHMARK HIỆU NĂNG CHỈ MỤC (INDEX IX_NHANVIEN_HOTEN)](#chương-4-báo-cáo-benchmark-hiệu-năng-chỉ-mục-index-ix_nhanvien_hoten)
@@ -36,13 +37,14 @@ Hệ thống **Quản lý Nhân sự và Tiền lương** (Nhóm 06) được x�
 
 ### 1.2 Mục tiêu đề tài
 1. **Về mặt Cơ sở dữ liệu (DBMS - SQL Server):**
-   - Xây dựng CSDL chuẩn hóa đạt **Dạng chuẩn 3 (3NF)** với 9 thực thể cốt lõi, không dư thừa dữ liệu, triệt tiêu dị thường thêm/xóa/sửa.
+   - Xây dựng các thực thể nghiệp vụ chuẩn hóa; schema hiện có thêm `LICHSULUONG` để lưu lịch sử mức lương hiệu lực.
    - Thể hiện logic nghiệp vụ cốt lõi tại tầng CSDL thông qua hệ thống **Constraints, Views, Functions, Stored Procedures, Triggers** và các giao dịch **ACID Transactions**.
-   - Thiết lập bảo mật đa tầng với 4 SQL Server Roles/Logins và chính sách `GRANT/REVOKE/DENY`.
+   - Ánh xạ tài khoản với SQL login cá nhân qua `TAIKHOAN.SqlLogin`; DBA provision login và mapping riêng, không dùng shared login mặc định.
    - Tối ưu hóa hiệu năng truy vấn thông qua các chỉ mục Non-clustered Index có minh chứng Execution Plan.
 2. **Về mặt Ứng dụng (Java Swing / JDBC):**
    - Áp dụng mô hình kiến trúc phân tầng chuẩn: **Presentation Layer (Swing UI) $\rightarrow$ Session/Security $\rightarrow$ Service Layer $\rightarrow$ DAO Layer (JDBC) $\rightarrow$ SQL Server Database**.
    - Cung cấp giao diện trực quan, đồng bộ bảng mã Unicode tiếng Việt, xử lý ngoại lệ thân thiện và bảo vệ dữ liệu chống thao tác sai.
+   - Form lưu và nạp lại `NgayVaoLam`; JDBC task chậm dùng `DatabaseTask`/`SwingWorker` ngoài EDT, callback cập nhật UI trên EDT. Regression hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md).
 
 ### 1.3 Phạm vi và các tác nhân hệ thống
 
@@ -65,13 +67,14 @@ Hệ thống **Quản lý Nhân sự và Tiền lương** (Nhóm 06) được x�
 
 ## 2.1 Sơ đồ Thực thể Liên kết (ERD) Mức Khái Niệm & Logic
 
-Hệ thống được thiết kế xoay quanh 9 thực thể chặt chẽ, bảo đảm tính liên kết toàn vẹn dữ liệu:
+Schema hiện có 10 bảng nghiệp vụ, gồm `LICHSULUONG` được bổ sung để lưu lịch sử lương theo hiệu lực:
 
 ```mermaid
 erDiagram
     PHONGBAN ||--o{ NHANVIEN : "trực thuộc (1-N)"
     CHUCVU ||--o{ NHANVIEN : "đảm nhiệm (1-N)"
-    NHANVIEN ||--o| TAIKHOAN : "liên kết định danh (1-0..1)"
+    NHANVIEN ||--o{ TAIKHOAN : "hồ sơ tài khoản (0..N, MaNV nullable)"
+    NHANVIEN ||--o{ LICHSULUONG : "lịch sử lương (1-N)"
     NHANVIEN ||--o{ CHAMCONG : "điểm danh (1-N)"
     NHANVIEN ||--o{ PHUCAPNHANVIEN : "hưởng (1-N)"
     NHANVIEN ||--o{ KHAUTRUNHANVIEN : "chịu khấu trừ (1-N)"
@@ -101,6 +104,7 @@ erDiagram
         varchar SoDienThoai UK "10 số bắt đầu bằng 0"
         varchar Email UK "Email duy nhất"
         date NgayVaoLam "Ngày bắt đầu làm việc"
+        date NgayNghiViec "Ngày nghỉ việc (nullable)"
         decimal LuongCoBan "Lương thỏa thuận > 0"
         int MaPB FK "Khóa ngoại -> PHONGBAN"
         int MaCV FK "Khóa ngoại -> CHUCVU"
@@ -109,12 +113,19 @@ erDiagram
 
     TAIKHOAN {
         int MaTK PK "Mã tài khoản (Identity)"
-        int MaNV FK "Khóa ngoại -> NHANVIEN (1-1)"
+        int MaNV FK "Khóa ngoại -> NHANVIEN (nullable)"
         varchar TenDangNhap UK "Tên đăng nhập duy nhất"
-        char MatKhau "Băm SHA-256 (64 ký tự hex)"
+        varchar MatKhau "VARCHAR(255), hash PBKDF2 versioned"
         varchar VaiTro "DB_Admin | HR_Manager | Payroll_Officer | Employee"
         varchar TrangThai "HOAT_DONG | KHOA"
+        sysname SqlLogin "Ánh xạ SQL login cá nhân (nullable)"
         date NgayTao "Ngày cấp"
+    }
+
+    LICHSULUONG {
+        int MaNV PK, FK
+        date TuThang PK
+        decimal LuongCoBan
     }
 
     CHAMCONG {
@@ -174,19 +185,20 @@ erDiagram
 
 1. **`PHONGBAN`** (**<u>`MaPB`</u>**, `TenPB`, `SoDienThoai`, `TrangThai`)
 2. **`CHUCVU`** (**<u>`MaCV`</u>**, `TenCV`, `PhuCapChucVu`)
-3. **`NHANVIEN`** (**<u>`MaNV`</u>**, `HoTen`, `NgaySinh`, `GioiTinh`, `CCCD`, `DiaChi`, `SoDienThoai`, `Email`, `NgayVaoLam`, `LuongCoBan`, `MaPB`*, `MaCV`*, `TrangThai`)
+3. **`NHANVIEN`** (**<u>`MaNV`</u>**, `HoTen`, `NgaySinh`, `GioiTinh`, `CCCD`, `DiaChi`, `SoDienThoai`, `Email`, `NgayVaoLam`, `NgayNghiViec` nullable, `LuongCoBan`, `MaPB`*, `MaCV`*, `TrangThai`)
    - *FK*: `MaPB` $\rightarrow$ `PHONGBAN(MaPB)`
    - *FK*: `MaCV` $\rightarrow$ `CHUCVU(MaCV)`
-4. **`TAIKHOAN`** (**<u>`MaTK`</u>**, `MaNV`*, `TenDangNhap`, `MatKhau`, `VaiTro`, `TrangThai`, `NgayTao`, `NgaySuaCuoi`)
+4. **`TAIKHOAN`** (**<u>`MaTK`</u>**, `MaNV` nullable FK, `TenDangNhap`, `MatKhau VARCHAR(255)` (PBKDF2 versioned), `VaiTro`, `TrangThai`, `SqlLogin` nullable unique, `NgayTao`, `NgaySuaCuoi`). `MaNV` chưa có unique constraint nên schema không đảm bảo quan hệ 1-1.
+5. **`LICHSULUONG`** (**<u>`MaNV`</u>**, **<u>`TuThang`</u>**, `LuongCoBan`): lịch sử mức lương hiệu lực, liên kết về `NHANVIEN`.
    - *FK*: `MaNV` $\rightarrow$ `NHANVIEN(MaNV)`
-5. **`CHAMCONG`** (**<u>`MaChamCong`</u>**, `MaNV`*, `NgayChamCong`, `GioVao`, `GioRa`, `TrangThai`)
+6. **`CHAMCONG`** (**<u>`MaChamCong`</u>**, `MaNV`*, `NgayChamCong`, `GioVao`, `GioRa`, `TrangThai`)
    - *FK*: `MaNV` $\rightarrow$ `NHANVIEN(MaNV)`
-6. **`PHUCAPNHANVIEN`** (**<u>`MaPhuCap`</u>**, `MaNV`*, `TenPhuCap`, `SoTien`, `Thang`, `Nam`)
+7. **`PHUCAPNHANVIEN`** (**<u>`MaPhuCap`</u>**, `MaNV`*, `TenPhuCap`, `SoTien`, `Thang`, `Nam`)
    - *FK*: `MaNV` $\rightarrow$ `NHANVIEN(MaNV)`
-7. **`KHAUTRUNHANVIEN`** (**<u>`MaKhauTru`</u>**, `MaNV`*, `TenKhauTru`, `SoTien`, `Thang`, `Nam`)
+8. **`KHAUTRUNHANVIEN`** (**<u>`MaKhauTru`</u>**, `MaNV`*, `TenKhauTru`, `SoTien`, `Thang`, `Nam`)
    - *FK*: `MaNV` $\rightarrow$ `NHANVIEN(MaNV)`
-8. **`BANGLUONG`** (**<u>`MaBangLuong`</u>**, `Thang`, `Nam`, `NgayCongChuan`, `TrangThai`, `NgayTao`, `NgayChot`)
-9. **`CHITIETBANGLUONG`** (**<u>`MaChiTiet`</u>**, `MaBangLuong`*, `MaNV`*, `LuongCoBan`, `SoNgayCong`, `TienCong`, `TongPhuCap`, `TongKhauTru`, `ThucNhan`, `NgayTinh`)
+9. **`BANGLUONG`** (**<u>`MaBangLuong`</u>**, `Thang`, `Nam`, `NgayCongChuan`, `TrangThai`, `NgayTao`, `NgayChot`)
+10. **`CHITIETBANGLUONG`** (**<u>`MaChiTiet`</u>**, `MaBangLuong`*, `MaNV`*, `LuongCoBan`, `SoNgayCong`, `TienCong`, `TongPhuCap`, `TongKhauTru`, `ThucNhan`, `NgayTinh`)
    - *FK*: `MaBangLuong` $\rightarrow$ `BANGLUONG(MaBangLuong)`
    - *FK*: `MaNV` $\rightarrow$ `NHANVIEN(MaNV)`
 
@@ -243,7 +255,7 @@ $\Rightarrow$ **Lược đồ tự động thỏa mãn 2NF.**
 - **Giải pháp chuẩn hóa (Tách quan hệ không mất mát thông tin - Lossless Decomposition):**
   - **Tách thực thể `PHONGBAN`:** `(MaPB (PK), TenPB, SoDienThoai, TrangThai)`
   - **Tách thực thể `CHUCVU`:** `(MaCV (PK), TenCV, PhuCapChucVu)`
-  - **Tách thực thể `TAIKHOAN`:** `(MaTK (PK), MaNV (FK), TenDangNhap, MatKhau, VaiTro, TrangThai, NgayTao)`
+  - **Tách thực thể `TAIKHOAN`:** `(MaTK (PK), MaNV nullable FK, TenDangNhap, MatKhau VARCHAR(255) PBKDF2, VaiTro, TrangThai, SqlLogin nullable, NgayTao)`.
   - **Bảng `NHANVIEN` còn lại:** `(MaNV (PK), HoTen, NgaySinh, GioiTinh, CCCD, DiaChi, SoDienThoai, Email, NgayVaoLam, LuongCoBan, MaPB (FK), MaCV (FK), TrangThai)`
 - **Kiểm tra điều kiện chuẩn 3NF sau khi tách:**
   - Mọi phụ thuộc hàm $X \rightarrow A$ đều thỏa mãn: hoặc $X$ là siêu khóa (Superkey), hoặc $A$ là thuộc tính khóa (Prime attribute).
@@ -254,9 +266,9 @@ $\Rightarrow$ **Hệ thống cơ sở dữ liệu chính thức đạt Dạng Ch
 
 ---
 
-## 2.4 Bảng Đặc Tả Chi Tiết 9 Bảng CSDL Toàn Hệ Thống
+## 2.4 Bảng Đặc Tả Chi Tiết Schema CSDL Toàn Hệ Thống
 
-*(Chi tiết định nghĩa các bảng `PHONGBAN`, `CHUCVU`, `NHANVIEN`, `TAIKHOAN`, `CHAMCONG`, `PHUCAPNHANVIEN`, `KHAUTRUNHANVIEN`, `BANGLUONG`, `CHITIETBANGLUONG` được đồng bộ 100% giữa tài liệu phân tích, script `01_Module_NhanSu_TV1.sql` đến `05_Security_Payroll_TV5.sql` và source code Java).*
+Schema đã được mở rộng sau báo cáo gốc: `NHANVIEN.NgayNghiViec` nullable và bảng `LICHSULUONG(MaNV, TuThang, LuongCoBan)` lưu lịch sử lương. `TAIKHOAN.SqlLogin` được thêm trong module 05; hash PBKDF2 versioned lưu ở `MatKhau VARCHAR(255)`. Đối chiếu runtime hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md); các SQL scripts là nguồn chuẩn cho schema.
 
 ---
 
@@ -264,7 +276,7 @@ $\Rightarrow$ **Hệ thống cơ sở dữ liệu chính thức đạt Dạng Ch
 
 | Loại ràng buộc | Tên đối tượng CSDL | Cột áp dụng | Quy tắc nghiệp vụ |
 |---|---|---|---|
-| **CHECK** | `CHK_NHANVIEN_DoTuoi` | `NgaySinh, NgayVaoLam` | Người lao động phải đủ từ 18 tuổi trở lên (`DATEDIFF(YEAR, NgaySinh, NgayVaoLam) >= 18`). |
+| **CHECK** | `CHK_NHANVIEN_DoTuoi` | `NgaySinh, NgayVaoLam` | Tài liệu gốc mô tả tuổi từ ngày sinh/ngày vào làm; SQL hiện dùng `DATEDIFF(YEAR,...)`, không phải tính tuổi chính xác theo ngày sinh nhật. |
 | **CHECK** | `CHK_NHANVIEN_CCCD` | `CCCD` | Căn cước công dân phải gồm đúng 12 ký tự số (`LEN(CCCD) = 12 AND NOT LIKE '%[^0-9]%'`). |
 | **CHECK** | `CHK_NHANVIEN_SDT` | `SoDienThoai` | Số điện thoại di động phải gồm 10 chữ số và bắt đầu bằng số `0` (`LIKE '0%'`). |
 | **CHECK** | `CHK_NHANVIEN_Email` | `Email` | Email phải tuân thủ đúng định dạng hòm thư điện tử (`LIKE '%_@__%.__%'`). |
@@ -276,24 +288,25 @@ $\Rightarrow$ **Hệ thống cơ sở dữ liệu chính thức đạt Dạng Ch
 | **UNIQUE** | `UQ_NHANVIEN_Email` | `Email` | Hòm thư công vụ là duy nhất cho mỗi cá nhân. |
 | **UNIQUE** | `UQ_NHANVIEN_SDT` | `SoDienThoai` | Số điện thoại cá nhân là duy nhất. |
 | **UNIQUE** | `UQ_TAIKHOAN_TenDangNhap` | `TenDangNhap` | Tên đăng nhập không được trùng lặp. |
-| **TRIGGER** | `trg_NhanVien_KhongXoaKhiDaPhatSinhLuong` | `NHANVIEN` | **Soft Delete:** Chặn lệnh xóa vật lý khi nhân viên đã có chấm công hoặc chi tiết lương. Bắt buộc chuyển `TrangThai = 'NGHI_VIEC'`. |
+| **TRIGGER** | `trg_NhanVien_KhongXoaKhiDaPhatSinhLuong` | `NHANVIEN` | Được cài trong module 05 sau khi các bảng phụ thuộc tồn tại; chặn xóa vật lý nhân viên có dữ liệu phát sinh. |
 
 ---
 
 # CHƯƠNG 3. RÀ SOÁT TÍNH NHẤT QUÁN TOÀN HỆ THỐNG (CONSISTENCY CHECKLIST)
 
-TV1 đã thực hiện đối soát chéo toàn diện giữa **Tài liệu đặc tả**, **Script SQL Server** và **Mã nguồn ứng dụng Java Swing**:
+Đây là đối chiếu ở thời điểm báo cáo gốc, không còn là xác nhận toàn diện của source hiện tại. Các dòng đã thay đổi hoặc giới hạn hiện hành được nêu dưới đây; runtime evidence xem [FIX_TASKLIST](FIX_TASKLIST.md):
 
 | STT | Đối tượng kiểm tra | Tài liệu đặc tả | Script SQL thực tế | Mã nguồn Java (Model/DAO) | Kết luận |
 |:---:|---|---|---|---|:---:|
-| 1 | Bảng `PHONGBAN` | `MaPB, TenPB, SoDienThoai, TrangThai` | `01_Module_NhanSu_TV1.sql` | `PhongBan.java`, `PhongBanDAO.java` | ✅ Khớp 100% |
-| 2 | Bảng `CHUCVU` | `MaCV, TenCV, PhuCapChucVu` | `01_Module_NhanSu_TV1.sql` | `ChucVu.java`, `ChucVuDAO.java` | ✅ Khớp 100% |
-| 3 | Bảng `NHANVIEN` | 13 cột: `MaNV, HoTen, NgaySinh, GioiTinh, CCCD, DiaChi, SoDienThoai, Email, NgayVaoLam, LuongCoBan, MaPB, MaCV, TrangThai` | `01_Module_NhanSu_TV1.sql` | `NhanVien.java`, `NhanVienDAO.java`, `NhanVienService.java` | ✅ Khớp 100% |
-| 4 | Bảng `TAIKHOAN` | `MaTK, MaNV, TenDangNhap, MatKhau, VaiTro, TrangThai, NgayTao` | `01_Module_NhanSu_TV1.sql` & `05_Security_Payroll_TV5.sql` | `TaiKhoan.java`, `TaiKhoanDAO.java`, `AuthService.java` | ✅ Khớp 100% |
-| 5 | Stored Procedure `sp_ThemNhanVien` | 15 tham số vào + 1 OUT `NewMaNV`, hỗ trợ transaction tạo tài khoản | `01_Module_NhanSu_TV1.sql` | `NhanVienDAO.themNhanVien(...)` | ✅ Khớp 100% |
-| 6 | Function `fn_TinhSoNgayCong` | `@MaNV, @Thang, @Nam -> DECIMAL(4,1)` | `01_Module_NhanSu_TV1.sql` | Được gọi trong `04_Module_TinhLuong_TV4.sql` | ✅ Khớp 100% |
-| 7 | View `vw_NhanVien_PhongBan_ChucVu` | JOIN `NHANVIEN, PHONGBAN, CHUCVU, TAIKHOAN` | `01_Module_NhanSu_TV1.sql` | `NhanVienDAO.getAll()`, `searchByHoTen()` | ✅ Khớp 100% |
-| 8 | Index `IX_NHANVIEN_HoTen` | Non-clustered trên `HoTen` INCLUDE 6 cột | `01_Module_NhanSu_TV1.sql` | Phục vụ tìm kiếm nhanh trên `NhanVienPanel` | ✅ Khớp 100% |
+| 1 | Bảng `PHONGBAN` | `MaPB, TenPB, SoDienThoai, TrangThai` | `01_Module_NhanSu_TV1.sql` | `PhongBan.java`, `PhongBanDAO.java` | Giữ nguyên theo schema; không phải runtime test |
+| 2 | Bảng `CHUCVU` | `MaCV, TenCV, PhuCapChucVu` | `01_Module_NhanSu_TV1.sql` | `ChucVu.java`, `ChucVuDAO.java` | Giữ nguyên theo schema; không phải runtime test |
+| 3 | Bảng `NHANVIEN` | Bao gồm `NgayNghiViec` nullable | Module 01 | Java model/DAO dùng các trường hồ sơ; `NgayNghiViec` phục vụ SQL payroll | Schema bổ sung sau báo cáo gốc |
+| 4 | Bảng `TAIKHOAN` | `MatKhau VARCHAR(255)` versioned PBKDF2; `SqlLogin` nullable unique, `MaNV` nullable | Module 01 và migration module 05 | Java auth dùng login SQL cá nhân; DBA mapping qua `SqlLogin` | Schema và auth đã thay đổi |
+| 5 | `sp_ThemNhanVien` | Transaction tạo hồ sơ; HR chỉ cấp role Employee | Module 01 | DAO gọi procedure; tài khoản chờ DBA provision SQL login | Không thay cho DBA provisioning |
+| 6 | `fn_TinhSoNgayCong` | `@MaNV, @Thang, @Nam -> DECIMAL(4,1)` | Module 02 sau `CHAMCONG` | Payroll hiện đếm trực tiếp theo date range trong transaction, không gọi function | Không còn khớp mô tả cũ |
+| 7 | View `vw_NhanVien_PhongBan_ChucVu` | JOIN `NHANVIEN, PHONGBAN, CHUCVU, TAIKHOAN` | `01_Module_NhanSu_TV1.sql` | `NhanVienDAO.getAll()`, `searchByHoTen()` | Giữ nguyên theo schema; không phải runtime test |
+| 8 | Index `IX_NHANVIEN_HoTen` | Non-clustered trên `HoTen` INCLUDE 6 cột | Module 01 | Phục vụ truy vấn theo tên | Benchmark hiện hành xem FIX_TASKLIST; không dùng số liệu cũ dưới đây |
+| 9 | `LICHSULUONG` | `(MaNV, TuThang, LuongCoBan)` | Module 01 | Payroll dùng lịch sử mức lương theo kỳ | Bổ sung sau báo cáo gốc |
 
 ---
 
@@ -321,7 +334,9 @@ FROM NHANVIEN
 WHERE HoTen LIKE N'Nguyễn Văn%';
 ```
 
-### 4.3 Kết quả so sánh Before / After Index
+### 4.3 Kết quả benchmark lịch sử (không phải evidence hiện tại)
+
+Các số liệu sau phản ánh fixture của báo cáo cũ, không phải benchmark runtime hiện tại. Bằng chứng bản sửa hiện hành (75→10 logical reads trên bảng tạm, log và execution plan) xem [FIX_TASKLIST](FIX_TASKLIST.md). Không dùng thời gian CPU/elapsed/query cost bên dưới làm tuyên bố hiệu năng hiện tại.
 
 | Chỉ số đo lường | Trước khi có Index (`DROP INDEX`) | Sau khi có Index (`IX_NHANVIEN_HoTen`) | Mức độ cải thiện |
 |---|:---:|:---:|:---:|
@@ -347,13 +362,13 @@ $\Rightarrow$ **Kết luận:** Chỉ mục `IX_NHANVIEN_HoTen` đạt hiệu n�
 
 - **Slide 1: Trang tiêu đề:** Họ tên: Nguyễn Minh Trí (TV1 - MSSV 24110359). Đề tài: Hệ thống Quản lý Nhân sự & Tiền lương (Nhóm 06).
 - **Slide 2: Tổng quan & Cơ cấu tổ chức:** Giới thiệu bài toán nhân sự, các thực thể nền tảng `PHONGBAN`, `CHUCVU`, `NHANVIEN`.
-- **Slide 3: Sơ đồ ERD & Lược đồ quan hệ:** Trình chiếu sơ đồ quan hệ 9 bảng, giải thích các mối kết hợp 1-N và 1-1.
+- **Slide 3: Sơ đồ ERD & Lược đồ quan hệ:** Trình chiếu schema 10 bảng, gồm `LICHSULUONG`; không khẳng định TAIKHOAN–NHANVIEN là 1-1 vì `MaNV` không unique.
 - **Slide 4: Quá trình Chuẩn hóa 3NF:** Phân tích FDs và diễn giải quá trình tách bảng từ UNF $\rightarrow$ 1NF $\rightarrow$ 2NF $\rightarrow$ 3NF, chứng minh triệt tiêu dị thường dữ liệu.
 - **Slide 5: Quy tắc nghiệp vụ & Constraints:** Trình bày các ràng buộc CHECK (tuổi $\ge 18$, định dạng CCCD, SĐT, Email, lương $>0$).
 - **Slide 6: Đối tượng CSDL của TV1:** Giới thiệu ma trận: SP `sp_ThemNhanVien`, Trigger `trg_NhanVien_KhongXoaKhiDaPhatSinhLuong`, Function `fn_TinhSoNgayCong`, View `vw_NhanVien_PhongBan_ChucVu`, Index `IX_NHANVIEN_HoTen`.
-- **Slide 7: Demo Transaction tạo Nhân viên + Tài khoản:** Minh họa cơ chế Atomic All-or-Nothing trong `sp_ThemNhanVien` và test case rollback khi trùng tên đăng nhập.
+- **Slide 7: Demo Transaction tạo nhân viên + profile:** Minh họa transaction tạo profile Employee; DBA cấp SQL login/mapping riêng.
 - **Slide 8: Demo Trigger Soft Delete:** Thao tác xóa nhân viên đã có chấm công/lương và hiển thị thông báo lỗi bảo vệ dữ liệu.
-- **Slide 9: Benchmark hiệu năng Index:** Biểu đồ so sánh trước/sau khi đánh `IX_NHANVIEN_HoTen` (Logical Reads giảm từ 428 $\rightarrow$ 4).
+- **Slide 9: Benchmark Index:** 428→4 là số liệu historical; evidence benchmark hiện hành (75→10 trên bảng tạm) xem [FIX_TASKLIST](FIX_TASKLIST.md).
 - **Slide 10: Tổng kết & Đóng góp:** Tóm tắt mức độ hoàn thành nhiệm vụ 100% trong cả 3 tuần.
 
 ---
@@ -368,11 +383,11 @@ $\Rightarrow$ **Kết luận:** Chỉ mục `IX_NHANVIEN_HoTen` đạt hiệu n�
 #### Câu 2: Tại sao trong hệ thống nhân sự không được phép xóa cứng (DELETE) nhân viên mà phải dùng Soft Delete và Trigger?
 > **Trả lời:**  
 > "Thưa Thầy/Cô, trong quản lý thực tế, hồ sơ nhân viên là thực thể gốc liên kết với nhiều chứng từ pháp lý và lịch sử tài chính: bảng chấm công (`CHAMCONG`), các khoản thưởng phạt (`PHUCAPNHANVIEN`, `KHAUTRUNHANVIEN`) và chi tiết bảng lương (`CHITIETBANGLUONG`). Nếu ta thực hiện lệnh `DELETE` vật lý, khóa ngoại sẽ bị lỗi hoặc làm mất toàn bộ vết kiểm toán tài chính của doanh nghiệp trong quá khứ.  
-> Do đó, em đã cài đặt Trigger `trg_NhanVien_KhongXoaKhiDaPhatSinhLuong` loại `INSTEAD OF DELETE`. Khi có lệnh DELETE, trigger sẽ kiểm tra: nếu nhân viên đã từng có dữ liệu chấm công hoặc lương, trigger lập tức gọi `RAISERROR` và `ROLLBACK TRANSACTION`, yêu cầu người dùng chỉ được chuyển `TrangThai = 'NGHI_VIEC'`. Trường hợp nhân viên mới nhập bị sai và chưa phát sinh bất kỳ bản ghi phụ thuộc nào, trigger mới cho phép xóa sạch tài khoản liên kết và xóa nhân viên."
+> Trigger `trg_NhanVien_KhongXoaKhiDaPhatSinhLuong` (module 05, `INSTEAD OF DELETE`) chặn khi có chấm công hoặc chi tiết lương; các FK khác cũng có thể từ chối xóa nếu còn dữ liệu phụ thuộc. Khi chưa có các quan hệ phát sinh, trigger xóa lịch sử lương và profile tài khoản trước khi xóa nhân viên."
 
 #### Câu 3: Hãy trình bày cơ chế hoạt động của Transaction trong Stored Procedure `sp_ThemNhanVien`?
 > **Trả lời:**  
-> "Thưa Thầy/Cô, khi tuyển dụng nhân viên mới, hệ thống cho phép tạo kèm tài khoản đăng nhập trong cùng một thao tác. Để đảm bảo tính nguyên tử (Atomicity), em gom cả 2 thao tác INSERT vào chung một Transaction:
+> "Thưa Thầy/Cô, khi tạo nhân viên, procedure có thể tạo thêm hồ sơ tài khoản ứng dụng Employee trong cùng một transaction. Đây chưa phải SQL login để đăng nhập; DBA cấp login SQL cá nhân và map vào `TAIKHOAN.SqlLogin` riêng. Transaction bao gồm:
 > 1. Đầu tiên mở `BEGIN TRANSACTION`.
 > 2. Kiểm tra tính hợp lệ của `MaPB` và `MaCV`.
 > 3. Thực hiện `INSERT INTO NHANVIEN` và lấy `SCOPE_IDENTITY()` gán vào `@NewMaNV`.
@@ -384,8 +399,6 @@ $\Rightarrow$ **Kết luận:** Chỉ mục `IX_NHANVIEN_HoTen` đạt hiệu n�
 > "Thưa Thầy/Cô, nếu đưa tất cả các cột (`MaNV`, `SoDienThoai`, `Email`, `MaPB`, `MaCV`, `TrangThai`) vào khóa của Index (Key Columns), cây B-Tree sẽ có kích thước khóa rất lớn, làm tăng dung lượng lưu trữ trên đĩa, tốn bộ nhớ đệm Buffer Pool và giảm hiệu suất khi thực hiện INSERT/UPDATE trên bảng `NHANVIEN`.  
 > Bằng cách chỉ đặt `HoTen` làm Key Column và dùng `INCLUDE` cho các cột hiển thị còn lại, các thuộc tính này chỉ được lưu ở tầng lá (Leaf Level) mà không tham gia vào cấu trúc sắp xếp của các node chỉ mục gốc. Điều này vừa giúp kích thước cây B-Tree gọn nhẹ, vừa tạo thành một **Covering Index** hoàn chỉnh giúp loại bỏ hoàn toàn thao tác `Key Lookup` khi truy vấn."
 
-#### Câu 5: Hàm `fn_TinhSoNgayCong` của em hoạt động thế nào và phối hợp với các thành viên khác ra sao?
+#### Câu 5: Hàm `fn_TinhSoNgayCong` hoạt động thế nào?
 > **Trả lời:**  
-> "Thưa Thầy/Cô, `fn_TinhSoNgayCong` là một hàm Scalar Function nhận vào 3 tham số: `@MaNV, @Thang, @Nam`. Hàm sẽ truy vấn bảng `CHAMCONG` do TV2 (Quân) phụ trách, đếm tổng số bản ghi có trạng thái đi làm hợp lệ (`CO_MAT`, `DI_TRE`, `VE_SOM`) trong tháng/năm đó và trả về kiểu `DECIMAL(4,1)`.  
-> Hàm này được TV4 (Vinh) gọi trực tiếp trong Stored Procedure `sp_TinhBangLuongThang` để tính tiền công thực tế cho từng nhân viên theo công thức:  
-> `TienCong = (LuongCoBan / NgayCongChuan) * fn_TinhSoNgayCong(...)`. Điều này thể hiện sự liên kết chặt chẽ và nhất quán giữa các module trong nhóm."
+> "`fn_TinhSoNgayCong` là scalar function nhận `@MaNV, @Thang, @Nam`, đếm các trạng thái `CO_MAT`, `DI_TRE`, `VE_SOM` và trả `DECIMAL(4,1)`. Được cài trong module 02 sau khi có `CHAMCONG`. Payroll hiện dùng `COUNT` trực tiếp với khoảng ngày trong transaction, không gọi function này; công thức sử dụng giá trị ngày công tính được."

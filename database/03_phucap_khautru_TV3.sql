@@ -1,3 +1,12 @@
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
+GO
+
 -- ============================================================================
 -- PROJECT: Quản Lý Nhân Sự và Tiền Lương (DBMS330284) - Nhóm 06
 -- MODULE: Phụ Cấp, Khấu Trừ & Nghiệp Vụ Liên Quan
@@ -97,30 +106,8 @@ GO
 
 -- 5. TRIGGER: trg_PhuCap_KhongSuaKhiDaChotLuong (TV3)
 -- Chặn thêm, sửa, xóa phụ cấp khi kỳ lương trong BANGLUONG đã 'DA_CHOT'
-CREATE OR ALTER TRIGGER dbo.trg_PhuCap_KhongSuaKhiDaChotLuong
-ON dbo.PHUCAPNHANVIEN
-FOR INSERT, UPDATE, DELETE
-AS
-BEGIN
-    SET NOCOUNT ON;
+-- Closed-period guards are installed by module 05.
 
-    IF EXISTS (
-        SELECT 1
-        FROM (
-            SELECT Thang, Nam FROM inserted
-            UNION
-            SELECT Thang, Nam FROM deleted
-        ) d
-        INNER JOIN dbo.BANGLUONG bl ON d.Thang = bl.Thang AND d.Nam = bl.Nam
-        WHERE bl.TrangThai = 'DA_CHOT'
-    )
-    BEGIN
-        RAISERROR (N'Nghiệp vụ bị chặn: Kỳ lương này đã CHỐT SỔ! Không được phép thêm, sửa hoặc xóa phụ cấp.', 16, 1);
-        ROLLBACK TRANSACTION;
-        RETURN;
-    END;
-END;
-GO
 
 -- 6. STORED PROCEDURE NGHIỆP VỤ: sp_ThemPhuCapNhanVien (TV3)
 CREATE OR ALTER PROCEDURE dbo.sp_ThemPhuCapNhanVien
@@ -190,7 +177,7 @@ BEGIN
         SELECT
             @MaBangLuong = MaBangLuong,
             @TrangThai   = TrangThai
-        FROM dbo.BANGLUONG
+        FROM dbo.BANGLUONG WITH (UPDLOCK, HOLDLOCK)
         WHERE Thang = @Thang AND Nam = @Nam;
 
         IF @MaBangLuong IS NULL
@@ -222,34 +209,16 @@ GO
 -- ============================================================================
 -- PHẦN 8: BỘ DỮ LIỆU MẪU DEMO PHỤ CẤP & KHẤU TRỪ THEO KỲ (SEED DATA)
 -- ============================================================================
--- Làm sạch dữ liệu demo của kỳ 09/2026 và 10/2026 để tránh trùng lặp
-DELETE FROM dbo.PHUCAPNHANVIEN WHERE Thang IN (9, 10) AND Nam = 2026;
-DELETE FROM dbo.KHAUTRUNHANVIEN WHERE Thang IN (9, 10) AND Nam = 2026;
-GO
+-- Optional demo data: run 06_Demo_Data.sql after all schema modules.
 
--- 8.1. Dữ liệu Phụ cấp tháng 09/2026
-INSERT INTO dbo.PHUCAPNHANVIEN (MaNV, Thang, Nam, TenPhuCap, SoTien, NgayGhiNhan, GhiChu) VALUES
-(1, 9, 2026, N'Phụ cấp ăn trưa', 730000, '2026-09-01', N'Phụ cấp cố định theo tháng'),
-(1, 9, 2026, N'Hỗ trợ xăng xe', 500000, '2026-09-01', N'Công tác ngoại thành'),
-(2, 9, 2026, N'Phụ cấp ăn trưa', 730000, '2026-09-01', N'Phụ cấp cố định'),
-(3, 9, 2026, N'Phụ cấp ăn trưa', 730000, '2026-09-01', N'Phụ cấp cố định'),
-(3, 9, 2026, N'Phụ cấp trách nhiệm', 1500000, '2026-09-05', N'Trưởng nhóm phân hệ lương'),
-(4, 9, 2026, N'Phụ cấp ăn trưa', 730000, '2026-09-01', N'Phụ cấp cố định'),
-(5, 9, 2026, N'Phụ cấp độc hại', 1000000, '2026-09-10', N'Phòng Lab/Máy chủ');
-
--- 8.2. Dữ liệu Khấu trừ tháng 09/2026
-INSERT INTO dbo.KHAUTRUNHANVIEN (MaNV, Thang, Nam, TenKhauTru, SoTien, NgayGhiNhan, LyDo) VALUES
-(1, 9, 2026, N'Tạm ứng lương', 2000000, '2026-09-15', N'Ứng lương giải quyết việc cá nhân'),
-(2, 9, 2026, N'Khấu trừ đi trễ', 150000, '2026-09-20', N'Đi trễ 3 lần có biên bản'),
-(3, 9, 2026, N'Tạm ứng lương', 1000000, '2026-09-15', N'Ứng lương giữa tháng'),
-(4, 9, 2026, N'Bồi hoàn tài sản', 500000, '2026-09-22', N'Làm hư chuột máy tính');
-
--- 8.3. Dữ liệu Phụ cấp & Khấu trừ tháng 10/2026 (Kiểm thử đa kỳ)
-INSERT INTO dbo.PHUCAPNHANVIEN (MaNV, Thang, Nam, TenPhuCap, SoTien, NgayGhiNhan, GhiChu) VALUES
-(1, 10, 2026, N'Phụ cấp ăn trưa', 730000, '2026-10-01', N'Kỳ tháng 10'),
-(2, 10, 2026, N'Phụ cấp ăn trưa', 730000, '2026-10-01', N'Kỳ tháng 10'),
-(3, 10, 2026, N'Phụ cấp ăn trưa', 730000, '2026-10-01', N'Kỳ tháng 10');
-
-INSERT INTO dbo.KHAUTRUNHANVIEN (MaNV, Thang, Nam, TenKhauTru, SoTien, NgayGhiNhan, LyDo) VALUES
-(1, 10, 2026, N'Tạm ứng lương', 1500000, '2026-10-15', N'Ứng lương tháng 10');
+CREATE OR ALTER FUNCTION dbo.fn_TongPhuCap(@MaNV INT, @Thang INT, @Nam INT)
+RETURNS DECIMAL(18,2)
+AS
+BEGIN
+    DECLARE @Tong DECIMAL(18,2);
+    SELECT @Tong = ISNULL(SUM(SoTien), 0)
+    FROM dbo.PHUCAPNHANVIEN
+    WHERE MaNV = @MaNV AND Thang = @Thang AND Nam = @Nam;
+    RETURN ISNULL(@Tong, 0);
+END;
 GO

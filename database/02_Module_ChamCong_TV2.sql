@@ -1,3 +1,12 @@
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
+GO
+
 -- ============================================================================
 -- PROJECT: HỆ THỐNG QUẢN LÝ NHÂN SỰ VÀ TIỀN LƯƠNG (DBMS330284)
 -- HỌC PHẦN: HỆ QUẢN TRỊ CƠ SỞ DỮ LIỆU - NHÓM 06
@@ -226,4 +235,30 @@ SELECT
 FROM dbo.CHAMCONG cc
 JOIN dbo.NHANVIEN nv ON cc.MaNV = nv.MaNV
 GROUP BY cc.MaNV, nv.HoTen, YEAR(cc.NgayChamCong), MONTH(cc.NgayChamCong);
+GO
+
+CREATE OR ALTER FUNCTION fn_TinhSoNgayCong
+(
+    @MaNV INT,
+    @Thang INT,
+    @Nam INT
+)
+RETURNS DECIMAL(4,1)
+AS
+BEGIN
+    DECLARE @SoNgayCong DECIMAL(4,1) = 0;
+
+    -- Kiểm tra bảng CHAMCONG nếu bảng đã tồn tại (khớp thiết kế của TV2)
+    IF EXISTS (SELECT * FROM sys.tables WHERE name = N'CHAMCONG')
+    BEGIN
+        SELECT @SoNgayCong = COUNT(1)
+        FROM CHAMCONG
+        WHERE MaNV = @MaNV
+          AND MONTH(NgayChamCong) = @Thang
+          AND YEAR(NgayChamCong) = @Nam
+          AND TrangThai IN (N'CO_MAT', N'DI_TRE', N'VE_SOM');
+    END
+
+    RETURN @SoNgayCong;
+END;
 GO

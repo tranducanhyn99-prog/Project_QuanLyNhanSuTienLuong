@@ -2,11 +2,18 @@
 
 **Thành viên:** Nguyễn Quang Vinh – MSSV 24110385
 
-**Ngày thực thi:** 30/09/2026
+**Ngày thực thi ban đầu:** 30/09/2026
+**Rà soát/cập nhật:** 08/10/2026
 
 **Phạm vi:** tầng SQL của luồng tính lương tháng, transaction/rollback, khóa sau chốt, concurrency cùng kỳ và benchmark truy vấn nguồn.
 
-## 1. Kết luận
+## 1. Phạm vi kết quả
+
+Các số liệu bên dưới ghi lần chạy ban đầu ngày 30/09/2026 nếu không nêu ngày khác. Chúng là kết quả lịch sử của fixture và môi trường khi đó, không chứng minh trạng thái runtime mới hơn.
+
+Lần tích hợp mới nhất ngày 08/10/2026 chạy trên database `PRJ_Fix_QA_20261008_101955_11b4e24c` và kết thúc thành công. Runner đã drop database QA. E2E TV4 đạt 10/10; benchmark đã chạy; bốn race đóng kỳ với attendance/allowance/deduction/payroll detail bị từ chối, chờ 1,033–1,101 ms và giữ nguyên dữ liệu nguồn. Log: `build/sql-verification/20261008_101955_11b4e24c/TV4_Payroll_E2E.log`, `benchmark_TV4_Payroll_Benchmark.log`, `Closed_Source_Concurrency.log`, `cleanup.log`.
+
+## 2. Kết luận của lần đo lịch sử
 
 Các hạng mục kiểm thử của TV4 đã được chạy bằng fixture độc lập và đều đạt:
 
@@ -14,15 +21,15 @@ Các hạng mục kiểm thử của TV4 đã được chạy bằng fixture đ�
 - Tính lại kỳ `CHUA_CHOT` giữ nguyên một header và thay chi tiết nguyên tử.
 - Lỗi khi chèn chi tiết khôi phục chính xác snapshot header/chi tiết; lần retry kế tiếp thành công.
 - Kỳ `DA_CHOT` bị khóa sửa/xóa; `sp_HuyChotBangLuong` chỉ mở lại theo transition được kiểm soát.
-- Hai session tính cùng kỳ được tuần tự hóa; Session B thực tế bị block 20.586 ms và không tạo dữ liệu trùng.
-- Benchmark xác minh truy vấn chấm công, phụ cấp, khấu trừ và cấu trúc index; covering seek khấu trừ giảm từ 547 xuống 4 logical reads trong lần đo tham khảo.
+- Hai session tính cùng kỳ được tuần tự hóa; lần chạy ngày 07/10 đo Session B bị block 20 631 ms (khoảng 20 giây) và không tạo dữ liệu trùng (xem phần 6).
+- Benchmark ngày 30/09 đo covering seek khấu trừ giảm từ 547 xuống 4 logical reads; lần đo mới hơn 08/10 ghi 547 và 4 trên fixture 128 dòng. Số đo không phải ngưỡng PASS hay bảo đảm production.
 - Mọi fixture E2E, benchmark và concurrency đều được cleanup; identity của các bảng benchmark không thay đổi.
 
-Chỉ module, test, runner và tài liệu do TV4 phụ trách được sửa. Trigger chi tiết và phân quyền của TV5 chỉ được dùng/kiểm tra như dependency tích hợp; không sửa mã nguồn TV5.
+Ghi chú về phạm vi chỉnh sửa chỉ áp dụng cho lượt TV4 được ghi ngày 30/09; lần tích hợp mới hơn cũng cài và kiểm tra module 05 như dependency, không suy ra từ đó rằng toàn bộ dự án chỉ thay đổi trong phạm vi TV4.
 
-## 2. Các lỗi đã sửa
+## 3. Hành vi hiện thực trong source
 
-### 2.1 Transaction không được chiếm quyền của caller
+### 3.1 Transaction không được chiếm quyền của caller
 
 Hai procedure TV4 `sp_TinhBangLuongThang` và `sp_HuyChotBangLuong` nay phân biệt hai trường hợp:
 
@@ -31,7 +38,7 @@ Hai procedure TV4 `sp_TinhBangLuongThang` và `sp_HuyChotBangLuong` nay phân bi
 
 `XACT_ABORT` được xử lý theo phạm vi procedure để lỗi bên trong không làm mất transaction do caller sở hữu. E2E kiểm tra cả lỗi validation trước transaction nội bộ và lỗi sau khi đã tạo savepoint; `@@TRANCOUNT`, `XACT_STATE()` và cấu hình `XACT_ABORT` của caller vẫn được giữ đúng.
 
-### 2.2 Một lần tính dùng tập nguồn nhất quán
+### 3.2 Một lần tính dùng tập nguồn nhất quán
 
 Procedure khóa kỳ bằng `UPDLOCK, HOLDLOCK`, sau đó giữ khóa trên tập nhân viên đang làm và dữ liệu nguồn của kỳ (`CHAMCONG`, `PHUCAPNHANVIEN`, `KHAUTRUNHANVIEN`) trong cùng transaction. Ngày công được đếm trực tiếp bằng khoảng ngày nửa mở:
 
@@ -42,7 +49,9 @@ AND NgayChamCong < DATEADD(MONTH, 1, DATEFROMPARTS(@Nam, @Thang, 1))
 
 Cách này tránh `MONTH()`/`YEAR()` trên cột ngày và cho phép optimizer dùng index theo khoảng ngày.
 
-### 2.3 Trigger khóa sau chốt và nghiệp vụ mở lại
+Procedure cũng giữ nhân viên nghỉ việc nếu người đó có đủ điều kiện trong kỳ (ví dụ ngày nghỉ việc từ đầu kỳ trở đi hoặc có attendance/allowance/deduction trong kỳ). Khi tính kỳ quá khứ, mức lương ưu tiên lấy từ chi tiết đã lưu của kỳ đó, sau đó lấy lịch sử gần nhất từ `LICHSULUONG` có hiệu lực trước đầu kỳ, rồi mới dùng mức lương hiện tại. Test `Fix_Regression.sql` ngày 08/10 xác nhận kỳ cũ vẫn giữ nhân viên đã nghỉ và mức lương cũ; log: `build/sql-verification/20261008_101955_11b4e24c/Fix_Regression.log`. Mức lương lịch sử chưa được lưu từ trước migration không thể tự khôi phục.
+
+### 3.3 Trigger khóa sau chốt và nghiệp vụ mở lại
 
 `trg_BangLuong_KhongSuaKhiDaChot` vẫn chặn sửa/xóa kỳ đã chốt, nhưng cho phép đúng transition mà procedure mở lại cần:
 
@@ -52,31 +61,34 @@ Cách này tránh `MONTH()`/`YEAR()` trên cột ngày và cho phép optimizer d
 
 Nhờ đó `sp_HuyChotBangLuong` hoạt động mà không làm yếu quy tắc bất biến của kỳ đã chốt.
 
-### 2.4 Runner không được chuyển nhầm database
+### 3.4 Runner và quyền SQL
 
-Runner nhận database đích từ `-Database` hoặc `databaseName` trong cấu hình, bỏ qua lệnh `USE` cấp cao trong file test và chỉ fallback từ TCP sang `.` khi host cấu hình thực sự là local. Nếu người chạy truyền `-ServerInstance`, runner không tự chuyển sang instance khác. Runner ghi lại result set, SQL messages và trạng thái PASS/FAIL nhưng không ghi mật khẩu.
+`run_payroll_tests.ps1` yêu cầu database có prefix `PRJ_Fix_QA_`; database gốc `QuanLyNhanSuTienLuong` bị từ chối. Truyền rõ `-ServerInstance` và `-Database`. Kết nối dùng `-WindowsAuthentication` hoặc biến môi trường `TEST_SQL_USER`/`TEST_SQL_PASSWORD`; script không lấy mật khẩu từ `config.properties` và không ghi mật khẩu vào log. Nếu bỏ `-Database`, runner có thể đọc tên trong cấu hình ứng dụng, nhưng vẫn áp dụng chặn QA prefix. Khi truyền server trên command line, runner không tự chuyển sang instance khác. Đây là runner TV4; `run_sql_verification.ps1` là runner khác, tự tạo và dọn QA database ngẫu nhiên bằng SQLCMD/Windows auth.
 
-## 3. Môi trường và cách chạy
+## 4. Môi trường và cách chạy
 
 | Thành phần | Giá trị của lần đo |
 |---|---|
 | SQL Server | Microsoft SQL Server 2022 RTM, 16.0.1000.6 |
-| Database | `QuanLyNhanSuTienLuong` |
+| Database ghi trong báo cáo cũ | `QuanLyNhanSuTienLuong` (chỉ là thông tin lịch sử ngày 30/09; không dùng làm đích chạy lại) |
 | Kết nối thực thi thành công | Local Shared Memory (`.`) |
 | Java/Javac | 25.0.2 |
 | JDBC driver dùng để compile/test ứng dụng | `mssql-jdbc-12.6.1.jre11.jar` |
+| Database runner cho phép ghi | Chỉ tên bắt đầu `PRJ_Fix_QA_` |
 
 Chạy E2E và benchmark:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -File .\run_payroll_tests.ps1 `
-  -ServerInstance .
+  -ServerInstance localhost `
+  -Database PRJ_Fix_QA_<ten_database> `
+  -WindowsAuthentication
 ```
 
-Có thể thêm `-SkipBenchmark` để chỉ chạy E2E. Hai script concurrency phải chạy thủ công trong hai session riêng; runner không tuyên bố đã chạy concurrency.
+Có thể thêm `-SkipBenchmark` để chỉ chạy E2E. Thay `<ten_database>` bằng database QA đã chuẩn bị; runner không tự tạo database. Hai script concurrency phải chạy thủ công trong hai session riêng; runner không tuyên bố đã chạy concurrency.
 
-## 4. Kết quả E2E và rollback
+## 5. Kết quả E2E và rollback
 
 Script: `database/tests/TV4_Payroll_E2E.sql`
 
@@ -97,7 +109,7 @@ Oracle công thức không gọi lại chính function cần kiểm thử. `Tien
 
 Trước khi force lỗi, script snapshot đầy đủ header (`MaBangLuong`, kỳ, ngày công chuẩn, trạng thái, ngày tạo, ngày chốt) và toàn bộ chi tiết. Sau lỗi, hai phép `EXCEPT` hai chiều xác nhận không có dòng bị thêm, mất hoặc sửa. Trigger khóa được xác minh theo đúng error number/message nghiệp vụ, nên lỗi quyền hay lỗi khóa ngoại không thể bị tính nhầm là PASS.
 
-## 5. Kết quả concurrency
+## 6. Kết quả concurrency
 
 Scripts:
 
@@ -108,7 +120,7 @@ Session A sở hữu fixture, khóa chính xác kỳ `01/2020`, tính lương tr
 
 | Chỉ số | Kết quả thực đo |
 |---|---:|
-| Thời gian Session B từ lúc gọi đến hoàn tất | 20.586 ms |
+| Thời gian Session B từ lúc gọi đến hoàn tất | 20 631 ms (khoảng 20 giây; lần chạy lịch sử 07/10) |
 | Ngưỡng blocking được assertion tự động kiểm tra | ≥ 15.000 ms |
 | Header cho cùng tháng/năm | 1 |
 | `MaBangLuong` của A và B | Giống nhau |
@@ -116,41 +128,41 @@ Session A sở hữu fixture, khóa chính xác kỳ `01/2020`, tính lương tr
 | Nhóm trùng `(MaBangLuong, MaNV)` | 0 |
 | Fixture còn lại sau cleanup | 0 |
 
-Lần đo ngày 30/09/2026 dùng hai kết nối `SqlClient` độc lập, tương đương hai session SSMS. Output đã lược bỏ thông tin kết nối:
+Lần đo lịch sử ngày 07/10/2026 dùng hai kết nối `SqlClient` độc lập, tương đương hai session SSMS. Output đã lược bỏ thông tin kết nối:
 
 ```text
 [A] SESSION A DA GIU LOCK trong 20 giay. CHAY SESSION B NGAY BAY GIO.
-[B] Hoan tat sau 20586 ms. Blocking da duoc chung minh.
+[B] Hoan tat sau 20631 ms. Blocking da duoc chung minh.
 ```
 
 Session A chỉ cleanup các khóa do chính nó tạo. Nếu kỳ demo đã tồn tại hoặc còn marker của lần chạy bị ngắt, script dừng an toàn thay vì xóa dữ liệu không rõ chủ sở hữu.
 
-## 6. Benchmark truy vấn nguồn và index khấu trừ
+## 7. Benchmark truy vấn nguồn và index khấu trừ
 
 Script: `database/tests/TV4_Payroll_Benchmark.sql`
 
-Fixture của lần đo ngày 30/09/2026 gồm 2.465 dòng chấm công, 30.000 dòng phụ cấp và 30.000 dòng khấu trừ, tất cả dùng khóa âm trong một transaction luôn rollback. Script kiểm tra chữ ký index `IX_KHAUTRU_MaNV_ThangNam`, bật `STATISTICS IO/TIME/XML`, xác minh kết quả truy vấn và so sánh hai access path khấu trừ trên cùng dữ liệu/cache.
+Fixture của lần đo ban đầu ngày 30/09/2026 được ghi là 2.465 dòng chấm công và 30.000 dòng mỗi loại allowance/deduction. Lần chạy mới ngày 08/10/2026 báo 2.473 dòng chấm công và 30.000 dòng mỗi loại; mục tiêu allowance/deduction có 128 dòng. Cả hai đều là dữ liệu fixture, được rollback, không phải production workload. Benchmark kiểm tra chữ ký index `IX_KHAUTRU_MaNV_ThangNam`, `STATISTICS IO/TIME/XML`, kết quả truy vấn và access paths.
 
 | Truy vấn đo | Dòng đích | Logical reads |
 |---|---:|---:|
-| Kiểm tra chấm công của kỳ | 30 | 8 |
-| Đếm ngày công theo nhân viên + khoảng ngày | 30 | 2 |
-| Tổng phụ cấp nguồn | 128 | 7 |
+| Kiểm tra chấm công của kỳ | 30 (lịch sử) / 8 (08/10) | 8 |
+| Đếm ngày công theo nhân viên + khoảng ngày | 30 (lịch sử) / 8 (08/10) | 2 |
+| Tổng phụ cấp nguồn | 128 | 7 (lịch sử) / 8 (08/10) |
 | Khấu trừ – forced clustered scan | 128 | 547 |
 | Khấu trừ – forced covering seek | 128 | 4 |
 | Khấu trừ – access path tự nhiên của truy vấn payroll | 128 | 4 |
 
-Scan và seek trả cùng 128 dòng và cùng tổng khấu trừ `133356.00`; truy vấn phụ cấp trả 128 dòng với tổng `261356.00`. Mức giảm logical reads tham khảo của seek so với scan là khoảng 99,27%.
+Ngày 08/10, scan và seek trả cùng 128 dòng, tổng khấu trừ `133356.00`; truy vấn phụ cấp trả 128 dòng với tổng `261356.00`. Seek có 4 logical reads so với 547 của scan trong lần chạy này. Mức giảm khoảng 99,27% chỉ mô tả phép đo đó.
 
 Các con số IO/thời gian phụ thuộc dữ liệu, cache và máy chạy, nên không được dùng làm ngưỡng PASS cố định. Tiêu chí tự động là cấu trúc index đúng, truy vấn nguồn trả đúng dữ liệu, scan/seek tương đương về kết quả, và rollback sạch. Sau rollback, số fixture bằng 0 và identity của cả ba bảng nguồn giữ nguyên.
 
-## 7. Phạm vi và dependency còn lại
+## 8. Phạm vi và dependency còn lại
 
 - Bộ tự động xác minh tầng SQL/transaction/index; không tự động thao tác UI `BangLuongPanel` hay xác minh hiển thị Java.
 - `vw_TongKhauTruThang` là object tra cứu/báo cáo, không nằm trên đường thực thi hiện tại của `sp_TinhBangLuongThang`.
 - Runner E2E cần tài khoản kiểm thử có quyền tạo/xóa trigger fixture, dùng `IDENTITY_INSERT` và DML trên các bảng liên quan; nó không phải bài kiểm thử quyền của role nghiệp vụ.
 
-## 8. Kịch bản demo cá nhân
+## 9. Kịch bản demo cá nhân
 
 1. Chạy runner và chỉ ra 10 dòng PASS của E2E cùng result set cuối.
 2. Giải thích snapshot hai chiều và trigger theo session dùng để chứng minh rollback/retry.
@@ -159,7 +171,7 @@ Các con số IO/thời gian phụ thuộc dữ liệu, cache và máy chạy, n
 5. Trình bày savepoint khi procedure tham gia transaction của caller và trigger mở lại có kiểm soát.
 6. Chạy lại hoặc truy vấn cleanup để chứng minh không còn fixture.
 
-## 9. Artifact bàn giao
+## 10. Artifact bàn giao
 
 | Artifact | Mục đích |
 |---|---|

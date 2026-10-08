@@ -1,3 +1,12 @@
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
+GO
+
 -- ============================================================================
 -- PROJECT: Quan Ly Nhan Su va Tien Luong
 -- HOC PHAN: He Quan Tri Co So Du Lieu (DBMS330284)
@@ -287,9 +296,21 @@ BEGIN
         -- Cursor ben duoi chi doc snapshot nay, khong tron gia tri truoc/sau
         -- mot UPDATE LuongCoBan/TrangThai dong thoi.
         INSERT INTO @NhanVienNguon (MaNV, LuongCoBan)
-        SELECT MaNV, LuongCoBan
-        FROM dbo.NHANVIEN WITH (HOLDLOCK)
-        WHERE TrangThai = N'DANG_LAM_VIEC';
+        SELECT nv.MaNV, COALESCE(CASE WHEN DATEFROMPARTS(@Nam,@Thang,1)<DATEFROMPARTS(YEAR(GETDATE()),MONTH(GETDATE()),1) THEN old.LuongCoBan END,h.LuongCoBan,nv.LuongCoBan)
+        FROM dbo.NHANVIEN nv WITH (HOLDLOCK)
+        OUTER APPLY (SELECT TOP(1) hl.LuongCoBan FROM dbo.LICHSULUONG hl WITH(HOLDLOCK)
+                     WHERE hl.MaNV=nv.MaNV AND hl.TuThang<=DATEFROMPARTS(@Nam,@Thang,1)
+                     ORDER BY hl.TuThang DESC) h
+        OUTER APPLY (SELECT TOP(1) ct.LuongCoBan FROM dbo.CHITIETBANGLUONG ct
+                     JOIN dbo.BANGLUONG bl ON bl.MaBangLuong=ct.MaBangLuong
+                     WHERE ct.MaNV=nv.MaNV AND bl.Thang=@Thang AND bl.Nam=@Nam) old
+        WHERE nv.NgayVaoLam<DATEADD(MONTH,1,DATEFROMPARTS(@Nam,@Thang,1))
+          AND (nv.TrangThai=N'DANG_LAM_VIEC' OR nv.NgayNghiViec>=DATEFROMPARTS(@Nam,@Thang,1)
+               OR EXISTS(SELECT 1 FROM dbo.CHAMCONG cc WHERE cc.MaNV=nv.MaNV
+                    AND cc.NgayChamCong>=DATEFROMPARTS(@Nam,@Thang,1)
+                    AND cc.NgayChamCong<DATEADD(MONTH,1,DATEFROMPARTS(@Nam,@Thang,1)))
+               OR EXISTS(SELECT 1 FROM dbo.PHUCAPNHANVIEN pc WHERE pc.MaNV=nv.MaNV AND pc.Thang=@Thang AND pc.Nam=@Nam)
+               OR EXISTS(SELECT 1 FROM dbo.KHAUTRUNHANVIEN kt WHERE kt.MaNV=nv.MaNV AND kt.Thang=@Thang AND kt.Nam=@Nam));
 
         SET @SourceLockCount = @@ROWCOUNT;
 

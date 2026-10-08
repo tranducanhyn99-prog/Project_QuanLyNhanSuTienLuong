@@ -4,6 +4,7 @@ import com.model.ChucVu;
 import com.model.PhongBan;
 import com.service.DanhMucService;
 import com.ui.theme.UITheme;
+import com.ui.theme.DatabaseTask;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -216,42 +217,30 @@ public class DanhMucPanel extends JPanel {
 
     private void loadDataPhongBan() {
         modelPhongBan.setRowCount(0);
-        try {
-            List<PhongBan> list = danhMucService.layTatCaPhongBan();
+        DatabaseTask.run(tblPhongBan, () -> danhMucService.layTatCaPhongBan(), list -> {
             for (PhongBan pb : list) {
                 modelPhongBan.addRow(new Object[]{pb.getMaPB(), pb.getTenPB(), pb.getSoDienThoai(), pb.getTrangThai()});
             }
-        } catch (Exception e) {
-            if (isShowing()) {
-                JOptionPane.showMessageDialog(this, "Lỗi tải danh mục Phòng Ban: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            } else {
-                System.err.println("Bỏ qua dialog khởi tạo Phòng Ban: " + e.getMessage());
-            }
-        }
+        });
     }
 
     private void loadDataChucVu() {
         modelChucVu.setRowCount(0);
-        try {
-            List<ChucVu> list = danhMucService.layTatCaChucVu();
+        DatabaseTask.run(tblChucVu, () -> danhMucService.layTatCaChucVu(), list -> {
             for (ChucVu cv : list) {
                 modelChucVu.addRow(new Object[]{cv.getMaCV(), cv.getTenCV(), cv.getPhuCapChucVu()});
             }
-        } catch (Exception e) {
-            if (isShowing()) {
-                JOptionPane.showMessageDialog(this, "Lỗi tải danh mục Chức Vụ: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            } else {
-                System.err.println("Bỏ qua dialog khởi tạo Chức Vụ: " + e.getMessage());
-            }
-        }
+        });
     }
 
     private void xuLyThemPB() {
         try {
-            danhMucService.themPhongBan(txtTenPB.getText(), txtSdtPB.getText());
+            String name=txtTenPB.getText(),phone=txtSdtPB.getText();
+            DatabaseTask.runExclusive(this, () -> { danhMucService.themPhongBan(name, phone); return true; }, ignored -> {
             JOptionPane.showMessageDialog(this, "Thêm phòng ban thành công!");
             lamMoiPB();
             loadDataPhongBan();
+                    });
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -260,15 +249,18 @@ public class DanhMucPanel extends JPanel {
     private void xuLySuaPB() {
         try {
             if (txtMaPB.getText().isEmpty()) throw new Exception("Vui lòng chọn phòng ban cần sửa!");
-            danhMucService.capNhatPhongBan(
-                Integer.parseInt(txtMaPB.getText()),
-                txtTenPB.getText(),
-                txtSdtPB.getText(),
-                cboTrangThaiPB.getSelectedItem().toString()
-            );
+            int id=Integer.parseInt(txtMaPB.getText());
+            String name=txtTenPB.getText(),phone=txtSdtPB.getText(),status=cboTrangThaiPB.getSelectedItem().toString();
+            DatabaseTask.runExclusive(this, () -> { danhMucService.capNhatPhongBan(
+                id,
+                name,
+                phone,
+                status
+            ); return true; }, ignored -> {
             JOptionPane.showMessageDialog(this, "Cập nhật phòng ban thành công!");
             lamMoiPB();
             loadDataPhongBan();
+                    });
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -279,10 +271,12 @@ public class DanhMucPanel extends JPanel {
             if (txtMaPB.getText().isEmpty()) throw new Exception("Vui lòng chọn phòng ban cần xóa!");
             int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa phòng ban này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
-                danhMucService.xoaPhongBan(Integer.parseInt(txtMaPB.getText()));
+                int id=Integer.parseInt(txtMaPB.getText());
+                DatabaseTask.runExclusive(this, () -> { danhMucService.xoaPhongBan(id); return true; }, ignored -> {
                 JOptionPane.showMessageDialog(this, "Đã xóa phòng ban thành công!");
                 lamMoiPB();
                 loadDataPhongBan();
+                            });
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Không thể xóa phòng ban (có thể do đã có nhân viên trực thuộc): " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -300,10 +294,12 @@ public class DanhMucPanel extends JPanel {
     private void xuLyThemCV() {
         try {
             BigDecimal phuCap = new BigDecimal(txtPhuCapCV.getText().trim().isEmpty() ? "0" : txtPhuCapCV.getText().trim());
-            danhMucService.themChucVu(txtTenCV.getText(), phuCap);
+            String name=txtTenCV.getText();
+            DatabaseTask.runExclusive(this, () -> { danhMucService.themChucVu(name, phuCap); return true; }, ignored -> {
             JOptionPane.showMessageDialog(this, "Thêm chức vụ thành công!");
             lamMoiCV();
             loadDataChucVu();
+                    });
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -313,10 +309,13 @@ public class DanhMucPanel extends JPanel {
         try {
             if (txtMaCV.getText().isEmpty()) throw new Exception("Vui lòng chọn chức vụ cần sửa!");
             BigDecimal phuCap = new BigDecimal(txtPhuCapCV.getText().trim().isEmpty() ? "0" : txtPhuCapCV.getText().trim());
-            danhMucService.capNhatChucVu(Integer.parseInt(txtMaCV.getText()), txtTenCV.getText(), phuCap);
+            int id=Integer.parseInt(txtMaCV.getText());
+            String name=txtTenCV.getText();
+            DatabaseTask.runExclusive(this, () -> { danhMucService.capNhatChucVu(id, name, phuCap); return true; }, ignored -> {
             JOptionPane.showMessageDialog(this, "Cập nhật chức vụ thành công!");
             lamMoiCV();
             loadDataChucVu();
+                    });
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -327,10 +326,12 @@ public class DanhMucPanel extends JPanel {
             if (txtMaCV.getText().isEmpty()) throw new Exception("Vui lòng chọn chức vụ cần xóa!");
             int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa chức vụ này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
-                danhMucService.xoaChucVu(Integer.parseInt(txtMaCV.getText()));
+                int id=Integer.parseInt(txtMaCV.getText());
+                DatabaseTask.runExclusive(this, () -> { danhMucService.xoaChucVu(id); return true; }, ignored -> {
                 JOptionPane.showMessageDialog(this, "Đã xóa chức vụ thành công!");
                 lamMoiCV();
                 loadDataChucVu();
+                            });
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Không thể xóa chức vụ (có thể do đã có nhân viên đảm nhận): " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);

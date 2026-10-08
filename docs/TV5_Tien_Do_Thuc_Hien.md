@@ -1,3 +1,13 @@
+> **Cập nhật 08/10/2026:** Bảng tiến độ và các mốc T1–T3 bên dưới là ghi chép lịch sử ngày 21–29/09, không phải trạng thái nghiệm thu hiện tại. Các mô tả source/bảo mật đã được cập nhật theo SQL login cá nhân, PBKDF2 và quyền SQL hiện hành. Kết quả xác minh mới nhất có ngày và log tại [FIX_TASKLIST](FIX_TASKLIST.md); quy trình cài đặt ở [SECURE_SETUP](SECURE_SETUP.md).
+
+### Trạng thái xác minh hiện tại (08/10/2026)
+
+- `AuthService` mở kết nối bằng SQL login người dùng nhập; `sp_LayTaiKhoanHienTai` ánh xạ `ORIGINAL_LOGIN()` sang `TAIKHOAN.SqlLogin` và đối chiếu role SQL, vai trò ứng dụng, trạng thái. Session Java chỉ dùng cho UI; DAO dùng đúng credential đăng nhập qua identity token và từ chối worker nếu phiên đã đổi.
+- Mật khẩu ứng dụng mới dùng PBKDF2-HMAC-SHA256, 600.000 vòng, salt ngẫu nhiên 16 byte và khóa 32 byte. SHA-256 legacy chỉ được migrate sau khi SQL login và mật khẩu ứng dụng đều xác thực.
+- Cấu hình ứng dụng chỉ chứa URL; SQL login/password không nằm trong URL hay config. Tài khoản phải được DBA cấp/mapping tường minh. Reset mật khẩu và khóa/mở đồng bộ SQL login cần quyền server phù hợp (`ALTER ANY LOGIN`); `db_owner` của DB_Admin không tự cung cấp quyền đó.
+- `role_Employee` chỉ đọc view lọc bằng `ORIGINAL_LOGIN()`. HR không được chốt lương hoặc quản trị tài khoản; Payroll không được sửa hồ sơ nhân sự. Ma trận chi tiết ở [SECURE_SETUP](SECURE_SETUP.md).
+- Kiểm chứng mới: 104 assertions Java offline, T18 hidden LoginFrame desktop 20 assertions, 50 SQL identity checks và PS5 SQL verification exit 0. Danh tính QA và hướng dẫn chạy GUI được ghi riêng ở `DEMO_ACCOUNTS.md` và `GUI_TEST_GUIDE.md`.
+
 # TV5 – BÁO CÁO TIẾN ĐỘ THỰC HIỆN & THIẾT KẾ MODULE BẢO MẬT, CHỐT LƯƠNG & BÁO CÁO
 # Đề tài: Hệ thống Quản lý Nhân sự và Tiền lương – Nhóm 06 – DBMS330284
 
@@ -41,20 +51,20 @@ Căn cứ ma trận phân công tại `Ke_hoach_phan_cong_Project_DBMS_Nhom06.md
 ```
 [Presentation Layer]
   ├── com.ui.auth.LoginFrame (Màn hình đăng nhập, SwingWorker non-blocking)
-  ├── com.ui.main.MainFrame (Khung giao diện chính, JTabbedPane, lọc menu theo vai trò)
+  ├── com.ui.main.MainFrame (Khung giao diện chính, sidebar/CardLayout, lọc menu theo vai trò)
   ├── com.ui.baocao.BaoCaoPanel (Báo cáo lương chi tiết qua View, tích hợp nút Chốt lương)
   └── com.ui.admin.TaiKhoanPanel (Quản trị tài khoản: Khóa/Mở khóa, Đặt lại mật khẩu, Đổi vai trò)
 
 [Session & Security Layer]
   ├── com.session.Session (Singleton lưu trữ phiên làm việc, hasRole(), getDisplayName())
-  └── com.util.PasswordUtil (Băm mật khẩu SHA-256 an toàn chuẩn FIPS)
+  └── com.util.PasswordUtil (PBKDF2 salted; đọc và migrate SHA-256 legacy)
 
 [Service Layer]
   ├── com.service.AuthService (Xác thực đăng nhập, kiểm tra tài khoản khóa, quản trị tài khoản)
   └── com.service.PayrollService (Kiểm tra quyền, gọi chốt bảng lương, truy vấn báo cáo qua View)
 
 [DAO Layer]
-  ├── com.dao.TaiKhoanDAO (findByCredentials, getAll, updateTrangThai, resetPassword, updateVaiTro)
+  ├── com.dao.TaiKhoanDAO (findCurrentIdentity, migrateOwnPassword, getAll, updateTrangThai, resetPassword, updateVaiTro)
   └── com.dao.BangLuongDAO (chotBangLuong via CallableStatement, getChiTietByBangLuong via View)
 
 [Model Layer]
@@ -78,17 +88,18 @@ Căn cứ ma trận phân công tại `Ke_hoach_phan_cong_Project_DBMS_Nhom06.md
 
 ### Tầng 2: Phân quyền tại Cơ sở Dữ liệu (SQL Server Roles & Logins)
 - Được cài đặt đầy đủ trong file `database/05_Security_Payroll_TV5.sql`:
-  - 4 Server Logins: `login_DBAdmin`, `login_HRManager`, `login_PayrollOfficer`, `login_Employee`.
-  - 4 Database Users: `user_DBAdmin`, `user_HRManager`, `user_PayrollOfficer`, `user_Employee`.
+  - DBA cấp riêng SQL login, database user, role và mapping `TAIKHOAN.SqlLogin`; schema install không tự tạo tài khoản/mật khẩu mẫu.
   - 4 Database Roles:
-    - `role_DBAdmin`: Thành viên của `db_owner`, có toàn quyền quản trị.
-    - `role_HRManager`: Được `GRANT SELECT, INSERT, UPDATE` trên `NHANVIEN`, `PHONGBAN`, `CHUCVU`, `PHUCAPNHANVIEN`, `KHAUTRUNHANVIEN`; bị `DENY EXECUTE` trên `sp_ChotBangLuong`; bị `DENY` trên bảng `TAIKHOAN`.
-    - `role_PayrollOfficer`: Được `GRANT SELECT, INSERT` trên `BANGLUONG`, `CHITIETBANGLUONG`; `GRANT EXECUTE` trên `sp_ChotBangLuong`, `fn_TinhThucNhan`; bị `DENY INSERT, UPDATE, DELETE` trên `NHANVIEN`, `PHONGBAN`, `CHUCVU`.
-    - `role_Employee`: Bị `DENY` toàn bộ 9 bảng dữ liệu; chỉ được `GRANT SELECT` trên View `vw_BangLuongChiTiet`.
+    - `role_DBAdmin`: thành viên `db_owner` của database ứng dụng; không mặc nhiên có `ALTER ANY LOGIN`/`sysadmin` ở server.
+    - `role_HRManager`: nhân sự, danh mục, chấm công, phụ cấp/khấu trừ; không được tính/chốt hoặc xóa kỳ lương, không truy cập `TAIKHOAN`.
+    - `role_PayrollOfficer`: CRUD phụ cấp/khấu trừ và xử lý kỳ lương; chỉ đọc nhân sự/chấm công, bị từ chối sửa hai nhóm dữ liệu này.
+    - `role_Employee`: chỉ đọc `vw_PhieuLuongCaNhan`, lọc theo `ORIGINAL_LOGIN()`.
 
 ---
 
 ## PHẦN 5. KỊCH BẢN KIỂM THỬ SẴN SÀNG CHO BUỔI BÁO CÁO (DEMO GVHD)
+
+Các dòng dưới đây là hiện vật và đánh giá tại mốc Tuần 3 (29/09/2026). Ảnh, benchmark và số 41/41 trong bảng không phải bằng chứng kiểm thử source hiện tại; dùng kết quả/log ngày 08/10 ở đầu tài liệu.
 
 ### 1. Kịch bản Concurrency (sp_ChotBangLuong)
 - **Tình huống:** Kế toán A và Kế toán B cùng mở kỳ lương tháng 9/2026 và cùng ấn nút "Chốt bảng lương" tại cùng một thời điểm.
@@ -112,10 +123,10 @@ Căn cứ theo yêu cầu Rubric đánh giá đồ án môn học DBMS330284, TV
 | 1 | `database/test_benchmark_index_TV5.sql` | SQL Script | Kịch bản đo lường hiệu năng Covering Index `IX_NHANVIEN_MaPB_MaCV` với 10,000 dòng dữ liệu test; đo `STATISTICS IO`, `STATISTICS TIME`, so sánh Clustered Index Scan vs Index Seek. | ✅ Đã kiểm chứng (Giảm Logical Reads từ 94 xuống 2) |
 | 2 | `database/test_security_roles_TV5.sql` | SQL Script | Kịch bản kiểm thử phân quyền 4 Database Roles bằng cơ chế `EXECUTE AS USER` (`user_DBAdmin`, `user_HRManager`, `user_PayrollOfficer`, `user_Employee`) với các lệnh kiểm tra chặn `DENY`. | ✅ Đã kiểm chứng |
 | 3 | `database/test_concurrency_demo_TV5.sql` | SQL Script | Kịch bản chi tiết mô phỏng 2 Session SSMS chạy song song cùng gọi `sp_ChotBangLuong` với `UPDLOCK, HOLDLOCK` và `WAITFOR DELAY`, chứng minh chặn Lost Update và Race Condition. | ✅ Đã kiểm chứng |
-| 4 | `src/test/java/com/test/FullSystemIntegrationTest.java` | Java Source | Bộ kiểm thử tích hợp tự động toàn diện hệ thống 41 tiêu chí: Password Hashing SHA-256, Session RBAC, khởi tạo 6 DAO, 6 Service, toàn bộ UI Swing và Schema CSDL 9 bảng. | ✅ 41/41 tiêu chí PASSED |
+| 4 | `src/test/java/com/test/FullSystemIntegrationTest.java` | Java Source | Tư liệu kiểm thử mốc 29/09; số 41/41 và mô tả SHA-256 là lịch sử, không đại diện regression suite hiện tại. | Lịch sử; xem log hiện hành ở trên |
 | 5 | `src/test/java/com/test/CaptureScreenshots.java` | Java Source | Công cụ Java tự động kết xuất ảnh giao diện người dùng ra định dạng PNG chuẩn độ phân giải cao cho báo cáo và slide thuyết trình. | ✅ 10/10 ảnh đã kết xuất |
 | 6 | `screenshots/` (10 ảnh PNG) | Thư mục ảnh | 10 ảnh giao diện đầy đủ các phân hệ: Login, Dashboard, Hồ sơ NV, Chấm công chi tiết, Tổng hợp tháng, Dialog điều chỉnh, Phụ cấp & Khấu trừ, Tính lương, Báo cáo chốt lương, Quản trị tài khoản. | ✅ Sẵn sàng chèn báo cáo |
 | 7 | `screenshots/TV5/` (7 ảnh minh chứng) | Thư mục minh chứng | Bộ 7 ảnh minh chứng kỹ thuật độc lập của TV5: `TV5_Benchmark_ExecutionPlan.png`, `TV5_Benchmark_StatisticsIO.png`, `TV5_Security_Roles_Verification.png`, `TV5_Trigger_KhoaChiTietLuong.png`, `TV5_Concurrency_2Sessions.png`, `TV5_BaoCao_ChotLuong.png`, `TV5_TaiKhoan_QuanTri.png`. | ✅ Đầy đủ 7/7 ảnh |
-| 8 | `run_tuan3_tv5.ps1` | PowerShell Script | Script một chạm tự động hóa toàn bộ: biên dịch Java sạch, chạy bộ kiểm thử tích hợp 41 tiêu chí và chụp ảnh màn hình giao diện. | ✅ Exit code 0 |
-| 9 | `docs/Chuong3_Bao_Mat_Va_Concurrency_TV5.md` | Tài liệu học thuật | Văn bản học thuật hoàn chỉnh phục vụ ghép trực tiếp vào Chương 3 của cuốn Báo cáo đồ án nhóm (Kiến trúc bảo mật 2 tầng, Phân quyền RBAC, Mã hóa SHA-256, Concurrency Control, Benchmark Index có ảnh SSMS minh chứng). | ✅ Đã sẵn sàng |
+| 8 | `run_tuan3_tv5.ps1` | PowerShell Script | Runner của mốc Tuần 3; dùng runner hiện hành trong `SECURE_SETUP.md` để kiểm tra source mới. | Lịch sử |
+| 9 | `docs/Chuong3_Bao_Mat_Va_Concurrency_TV5.md` | Tài liệu học thuật | Chương cập nhật SQL login cá nhân, PBKDF2, RBAC và giới hạn của số liệu/ảnh lịch sử. | Cập nhật 08/10/2026 |
 

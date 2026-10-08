@@ -1,3 +1,12 @@
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
+GO
+
 -- ============================================================================
 -- PROJECT: Quản Lý Nhân Sự và Tiền Lương
 -- HỌC PHẦN: Hệ Quản Trị Cơ Sở Dữ Liệu (DBMS330284)
@@ -151,29 +160,23 @@ GO
 -- PHẦN A3: TRIGGER THEO PHÂN CÔNG (TV5: trg_ChiTietLuong_KhongSuaKhiDaChot)
 -- Ngăn UPDATE hoặc DELETE trên CHITIETBANGLUONG khi bảng lương đã chốt
 -- ============================================================================
-CREATE OR ALTER TRIGGER trg_ChiTietLuong_KhongSuaKhiDaChot
-ON CHITIETBANGLUONG
-AFTER UPDATE, DELETE
+CREATE OR ALTER TRIGGER dbo.trg_ChiTietLuong_KhongSuaKhiDaChot
+ON dbo.CHITIETBANGLUONG
+AFTER INSERT, UPDATE, DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
-
-    -- Kiểm tra xem có dòng nào bị sửa/xóa thuộc về bảng lương đã chốt
-    -- (Dùng bảng 'deleted' vì cả UPDATE và DELETE đều populate bảng này)
-    IF EXISTS (
-        SELECT 1
-        FROM deleted d
-        JOIN BANGLUONG bl ON d.MaBangLuong = bl.MaBangLuong
-        WHERE bl.TrangThai = 'DA_CHOT'
-    )
+    DECLARE @Closed INT;
+    SELECT @Closed = MAX(CASE WHEN bl.TrangThai = 'DA_CHOT' THEN 1 ELSE 0 END)
+    FROM dbo.BANGLUONG bl WITH (UPDLOCK, HOLDLOCK)
+    JOIN (SELECT MaBangLuong FROM inserted UNION SELECT MaBangLuong FROM deleted) p
+      ON bl.MaBangLuong = p.MaBangLuong;
+    IF @Closed = 1
     BEGIN
-        RAISERROR(
-            N'Không được phép sửa hoặc xóa chi tiết bảng lương đã chốt! Vui lòng liên hệ quản trị viên nếu cần điều chỉnh.',
-            16, 1
-        );
+        RAISERROR(N'Không được phép sửa hoặc xóa chi tiết bảng lương đã chốt! Không được thêm hoặc chuyển chi tiết vào kỳ đã chốt.', 16, 1);
         ROLLBACK TRANSACTION;
         RETURN;
-    END
+    END;
 END;
 GO
 
@@ -186,7 +189,11 @@ GO
 -- Dùng UPDLOCK + HOLDLOCK để ngăn concurrency (2 Payroll_Officer cùng chốt).
 -- TRY...CATCH + Transaction đầy đủ.
 -- ============================================================================
-CREATE OR ALTER PROCEDURE dbo.sp_ChotBangLuong
+-- sp_ names can also exist in master; test local object before ALTER.
+IF OBJECT_ID(N'dbo.sp_ChotBangLuong',N'P') IS NULL
+    EXEC(N'CREATE PROCEDURE dbo.sp_ChotBangLuong AS RETURN;');
+GO
+ALTER PROCEDURE dbo.sp_ChotBangLuong
     @MaBangLuong INT
 AS
 BEGIN
@@ -376,7 +383,7 @@ GO
 -- ═══════════════════════════════════════════════════════════════════
 
 -- GRANT chỉ xem phiếu lương qua View
-GRANT SELECT ON vw_BangLuongChiTiet TO role_Employee;
+REVOKE SELECT ON vw_BangLuongChiTiet FROM role_Employee;
 
 -- DENY tất cả bảng nghiệp vụ
 DENY SELECT, INSERT, UPDATE, DELETE ON NHANVIEN          TO role_Employee;
@@ -402,119 +409,293 @@ GO
 -- ═══════════════════════════════════════════════════════════════════
 
 -- Tạo Login (ở server level)
-USE master;
+-- Demo identities/data are optional; see 06_Demo_Data.sql.
+
+GRANT DELETE ON dbo.PHONGBAN TO role_HRManager;
+GRANT DELETE ON dbo.CHUCVU TO role_HRManager;
+GRANT DELETE ON dbo.NHANVIEN TO role_HRManager;
+GRANT DELETE ON dbo.PHUCAPNHANVIEN TO role_HRManager;
+GRANT DELETE ON dbo.KHAUTRUNHANVIEN TO role_HRManager;
+GRANT DELETE ON dbo.PHUCAPNHANVIEN TO role_PayrollOfficer;
+GRANT DELETE ON dbo.KHAUTRUNHANVIEN TO role_PayrollOfficer;
+GRANT EXECUTE ON dbo.sp_TinhBangLuongThang TO role_PayrollOfficer;
+GRANT EXECUTE ON dbo.sp_HuyChotBangLuong TO role_PayrollOfficer;
+GRANT EXECUTE ON dbo.sp_XoaBangLuongChuaChot TO role_PayrollOfficer;
+GRANT EXECUTE ON dbo.sp_XoaKyLuongChuaChot TO role_PayrollOfficer;
+GRANT EXECUTE ON dbo.fn_TinhTienCong TO role_PayrollOfficer;
+GRANT EXECUTE ON dbo.fn_TongPhuCap TO role_PayrollOfficer;
+GRANT EXECUTE ON dbo.fn_TongKhauTru TO role_PayrollOfficer;
+GRANT EXECUTE ON dbo.fn_TongKhauTru TO role_HRManager;
 GO
 
-IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = 'login_DBAdmin')
-    CREATE LOGIN login_DBAdmin WITH PASSWORD = 'Admin@2026!', CHECK_POLICY = OFF;
-IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = 'login_HRManager')
-    CREATE LOGIN login_HRManager WITH PASSWORD = 'HR@2026!', CHECK_POLICY = OFF;
-IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = 'login_PayrollOfficer')
-    CREATE LOGIN login_PayrollOfficer WITH PASSWORD = 'Payroll@2026!', CHECK_POLICY = OFF;
-IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = 'login_Employee')
-    CREATE LOGIN login_Employee WITH PASSWORD = 'Emp@2026!', CHECK_POLICY = OFF;
-GO
-
-PRINT N'[TV5] Đã tạo 4 Login SQL Server.';
-GO
-
--- Tạo User và gán Role (ở database level)
-USE QuanLyNhanSuTienLuong;
-GO
-
-IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'user_DBAdmin')
-    CREATE USER user_DBAdmin FOR LOGIN login_DBAdmin;
-IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'user_HRManager')
-    CREATE USER user_HRManager FOR LOGIN login_HRManager;
-IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'user_PayrollOfficer')
-    CREATE USER user_PayrollOfficer FOR LOGIN login_PayrollOfficer;
-IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'user_Employee')
-    CREATE USER user_Employee FOR LOGIN login_Employee;
-GO
-
--- Gán User vào Role
-ALTER ROLE role_DBAdmin        ADD MEMBER user_DBAdmin;
-ALTER ROLE role_HRManager      ADD MEMBER user_HRManager;
-ALTER ROLE role_PayrollOfficer ADD MEMBER user_PayrollOfficer;
-ALTER ROLE role_Employee       ADD MEMBER user_Employee;
-GO
-
-PRINT N'[TV5] Đã tạo 4 User và gán vào Role tương ứng.';
-GO
-
--- ============================================================================
--- PHẦN C: DỮ LIỆU MẪU TÀI KHOẢN (để test Login)
--- Mật khẩu mặc định đều là '123456' → SHA-256 hash
--- SHA-256("123456") = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
--- ============================================================================
-DECLARE @hashDefault CHAR(64) = '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92';
-
--- Tài khoản DB_Admin (không gắn nhân viên)
-IF NOT EXISTS (SELECT 1 FROM TAIKHOAN WHERE TenDangNhap = 'admin')
+CREATE OR ALTER TRIGGER dbo.trg_PhuCap_KhongSuaKhiDaChotLuong
+ON dbo.PHUCAPNHANVIEN
+AFTER INSERT, UPDATE, DELETE
+AS
 BEGIN
-    INSERT INTO TAIKHOAN (MaNV, TenDangNhap, MatKhau, VaiTro, TrangThai)
-    VALUES (NULL, 'admin', @hashDefault, 'DB_Admin', 'HOAT_DONG');
-    PRINT N'[TV5] Đã tạo tài khoản admin (DB_Admin).';
-END
-
--- Tài khoản HR_Manager (gắn nhân viên MaNV=1 nếu tồn tại)
-IF NOT EXISTS (SELECT 1 FROM TAIKHOAN WHERE TenDangNhap = 'hr_manager')
-BEGIN
-    IF EXISTS (SELECT 1 FROM NHANVIEN WHERE MaNV = 1)
-        INSERT INTO TAIKHOAN (MaNV, TenDangNhap, MatKhau, VaiTro, TrangThai)
-        VALUES (1, 'hr_manager', @hashDefault, 'HR_Manager', 'HOAT_DONG');
-    ELSE
-        INSERT INTO TAIKHOAN (MaNV, TenDangNhap, MatKhau, VaiTro, TrangThai)
-        VALUES (NULL, 'hr_manager', @hashDefault, 'HR_Manager', 'HOAT_DONG');
-    PRINT N'[TV5] Đã tạo tài khoản hr_manager (HR_Manager).';
-END
-
--- Tài khoản Payroll_Officer (gắn nhân viên MaNV=2 nếu tồn tại)
-IF NOT EXISTS (SELECT 1 FROM TAIKHOAN WHERE TenDangNhap = 'payroll_officer')
-BEGIN
-    IF EXISTS (SELECT 1 FROM NHANVIEN WHERE MaNV = 2)
-        INSERT INTO TAIKHOAN (MaNV, TenDangNhap, MatKhau, VaiTro, TrangThai)
-        VALUES (2, 'payroll_officer', @hashDefault, 'Payroll_Officer', 'HOAT_DONG');
-    ELSE
-        INSERT INTO TAIKHOAN (MaNV, TenDangNhap, MatKhau, VaiTro, TrangThai)
-        VALUES (NULL, 'payroll_officer', @hashDefault, 'Payroll_Officer', 'HOAT_DONG');
-    PRINT N'[TV5] Đã tạo tài khoản payroll_officer (Payroll_Officer).';
-END
-
--- Tài khoản Employee (gắn nhân viên MaNV=3 nếu tồn tại)
-IF NOT EXISTS (SELECT 1 FROM TAIKHOAN WHERE TenDangNhap = 'employee01')
-BEGIN
-    IF EXISTS (SELECT 1 FROM NHANVIEN WHERE MaNV = 3)
-        INSERT INTO TAIKHOAN (MaNV, TenDangNhap, MatKhau, VaiTro, TrangThai)
-        VALUES (3, 'employee01', @hashDefault, 'Employee', 'HOAT_DONG');
-    ELSE
-        INSERT INTO TAIKHOAN (MaNV, TenDangNhap, MatKhau, VaiTro, TrangThai)
-        VALUES (NULL, 'employee01', @hashDefault, 'Employee', 'HOAT_DONG');
-    PRINT N'[TV5] Đã tạo tài khoản employee01 (Employee).';
-END
-
--- Tài khoản bị khóa (dùng test tình huống tài khoản KHOA)
-IF NOT EXISTS (SELECT 1 FROM TAIKHOAN WHERE TenDangNhap = 'locked_user')
-BEGIN
-    INSERT INTO TAIKHOAN (MaNV, TenDangNhap, MatKhau, VaiTro, TrangThai)
-    VALUES (NULL, 'locked_user', @hashDefault, 'Employee', 'KHOA');
-    PRINT N'[TV5] Đã tạo tài khoản locked_user (bị khóa, dùng test).';
-END
+    SET NOCOUNT ON;
+    DECLARE @Closed INT;
+    SELECT @Closed = MAX(CASE WHEN bl.TrangThai = 'DA_CHOT' THEN 1 ELSE 0 END)
+    FROM dbo.BANGLUONG bl WITH (UPDLOCK, HOLDLOCK)
+    JOIN (SELECT Thang, Nam FROM inserted UNION SELECT Thang, Nam FROM deleted) p ON bl.Thang = p.Thang AND bl.Nam = p.Nam;
+    IF @Closed = 1
+    BEGIN
+        RAISERROR(N'Kỳ lương đã chốt: không được thay đổi phụ cấp.', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+END;
 GO
 
--- ============================================================================
--- HOÀN TẤT
--- ============================================================================
-PRINT N'';
-PRINT N'============================================================';
-PRINT N'[TV5] Script hoàn tất. Các đối tượng đã tạo:';
-PRINT N'  • BANGLUONG, CHITIETBANGLUONG (DDL theo TV4, IF NOT EXISTS)';
-PRINT N'  • IX_NHANVIEN_MaPB_MaCV (Index)';
-PRINT N'  • fn_TinhThucNhan (Function)';
-PRINT N'  • vw_BangLuongChiTiet (View)';
-PRINT N'  • trg_ChiTietLuong_KhongSuaKhiDaChot (Trigger)';
-PRINT N'  • sp_ChotBangLuong (Stored Procedure + UPDLOCK)';
-PRINT N'  • 4 Role + 4 Login + 4 User + GRANT/REVOKE/DENY';
-PRINT N'  • 5 tài khoản mẫu (mật khẩu: 123456)';
-PRINT N'============================================================';
+CREATE OR ALTER TRIGGER dbo.trg_KhauTru_KhongSuaKhiDaChotLuong
+ON dbo.KHAUTRUNHANVIEN
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @Closed INT;
+    SELECT @Closed = MAX(CASE WHEN bl.TrangThai = 'DA_CHOT' THEN 1 ELSE 0 END)
+    FROM dbo.BANGLUONG bl WITH (UPDLOCK, HOLDLOCK)
+    JOIN (SELECT Thang, Nam FROM inserted UNION SELECT Thang, Nam FROM deleted) p ON bl.Thang = p.Thang AND bl.Nam = p.Nam;
+    IF @Closed = 1
+    BEGIN
+        RAISERROR(N'Kỳ lương đã chốt: không được thay đổi khấu trừ.', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+END;
+GO
+
+CREATE OR ALTER TRIGGER dbo.trg_ChamCong_KhongSuaKhiDaChotLuong
+ON dbo.CHAMCONG
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @Closed INT;
+    SELECT @Closed = MAX(CASE WHEN bl.TrangThai = 'DA_CHOT' THEN 1 ELSE 0 END)
+    FROM dbo.BANGLUONG bl WITH (UPDLOCK, HOLDLOCK)
+    JOIN (SELECT MONTH(NgayChamCong) AS Thang, YEAR(NgayChamCong) AS Nam FROM inserted UNION SELECT MONTH(NgayChamCong), YEAR(NgayChamCong) FROM deleted) p ON bl.Thang = p.Thang AND bl.Nam = p.Nam;
+    IF @Closed = 1
+    BEGIN
+        RAISERROR(N'Kỳ lương đã chốt: không được thay đổi chấm công.', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+END;
+GO
+
+ALTER TABLE dbo.TAIKHOAN ALTER COLUMN MatKhau VARCHAR(255) NOT NULL;
+GO
+
+-- Trusted identity: provision SqlLogin explicitly; never take MaNV/role from client context.
+IF COL_LENGTH('dbo.TAIKHOAN', 'SqlLogin') IS NULL
+    ALTER TABLE dbo.TAIKHOAN ADD SqlLogin SYSNAME NULL;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.TAIKHOAN') AND name='UQ_TAIKHOAN_SqlLogin')
+    CREATE UNIQUE INDEX UQ_TAIKHOAN_SqlLogin ON dbo.TAIKHOAN(SqlLogin) WHERE SqlLogin IS NOT NULL;
+GO
+CREATE OR ALTER PROCEDURE dbo.sp_LayTaiKhoanHienTai
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT tk.MaTK,tk.MaNV,tk.TenDangNhap,tk.MatKhau,tk.VaiTro,tk.TrangThai,
+           tk.NgayTao,tk.NgaySuaCuoi,nv.HoTen AS HoTenNV
+    FROM dbo.TAIKHOAN tk LEFT JOIN dbo.NHANVIEN nv ON nv.MaNV=tk.MaNV
+    WHERE tk.SqlLogin=ORIGINAL_LOGIN()
+      AND ((tk.VaiTro='DB_Admin' AND IS_ROLEMEMBER('role_DBAdmin')=1)
+        OR (tk.VaiTro='HR_Manager' AND IS_ROLEMEMBER('role_HRManager')=1)
+        OR (tk.VaiTro='Payroll_Officer' AND IS_ROLEMEMBER('role_PayrollOfficer')=1)
+        OR (tk.VaiTro='Employee' AND IS_ROLEMEMBER('role_Employee')=1));
+END;
+GO
+CREATE OR ALTER PROCEDURE dbo.sp_MigrateMatKhau @Hash VARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF @Hash NOT LIKE 'pbkdf2-sha256$%' THROW 51020,N'Invalid password hash format.',1;
+    UPDATE dbo.TAIKHOAN SET MatKhau=@Hash,NgaySuaCuoi=GETDATE()
+    WHERE SqlLogin=ORIGINAL_LOGIN() AND TrangThai='HOAT_DONG';
+    IF @@ROWCOUNT<>1 THROW 51021,N'Identity is not active/mapped.',1;
+END;
+GO
+CREATE OR ALTER VIEW dbo.vw_PhieuLuongCaNhan
+AS
+SELECT bl.*
+FROM dbo.vw_BangLuongChiTiet bl
+JOIN dbo.TAIKHOAN tk ON tk.MaNV=bl.MaNV
+WHERE tk.SqlLogin=ORIGINAL_LOGIN() AND tk.TrangThai='HOAT_DONG';
+GO
+GRANT EXECUTE ON dbo.sp_LayTaiKhoanHienTai TO role_DBAdmin,role_HRManager,role_PayrollOfficer,role_Employee;
+GRANT EXECUTE ON dbo.sp_MigrateMatKhau TO role_DBAdmin,role_HRManager,role_PayrollOfficer,role_Employee;
+GRANT SELECT ON dbo.vw_PhieuLuongCaNhan TO role_Employee;
+GO
+CREATE OR ALTER PROCEDURE dbo.sp_AdminResetPassword
+    @MaTK INT, @Hash VARCHAR(255), @Password NVARCHAR(MAX)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF ISNULL(IS_ROLEMEMBER('role_DBAdmin'),0)<>1
+        THROW 51022,N'Admin role required.',1;
+    IF @Hash IS NULL OR @Hash NOT LIKE 'pbkdf2-sha256$%'
+       OR @Password IS NULL OR DATALENGTH(@Password) NOT BETWEEN 16 AND 256
+        THROW 51023,N'Password must contain 8-128 characters and a versioned hash.',1;
+    DECLARE @Login SYSNAME, @Sql NVARCHAR(MAX);
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        SELECT @Login=SqlLogin FROM dbo.TAIKHOAN WITH(UPDLOCK,HOLDLOCK) WHERE MaTK=@MaTK;
+        IF @Login IS NULL THROW 51024,N'DBA must provision/map the SQL login first.',1;
+        SET @Sql=N'ALTER LOGIN '+QUOTENAME(@Login)+N' WITH PASSWORD = N'+QUOTENAME(@Password,CHAR(39))+N';';
+        EXEC sys.sp_executesql @Sql;
+        UPDATE dbo.TAIKHOAN SET MatKhau=@Hash,NgaySuaCuoi=GETDATE() WHERE MaTK=@MaTK;
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE()<>0 ROLLBACK;
+        THROW;
+    END CATCH;
+END;
+GO
+CREATE OR ALTER PROCEDURE dbo.sp_AdminSetRole @MaTK INT, @VaiTro VARCHAR(30)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF ISNULL(IS_ROLEMEMBER('role_DBAdmin'),0)<>1 THROW 51022,N'Admin role required.',1;
+    DECLARE @Target SYSNAME=CASE @VaiTro WHEN 'DB_Admin' THEN 'role_DBAdmin'
+        WHEN 'HR_Manager' THEN 'role_HRManager' WHEN 'Payroll_Officer' THEN 'role_PayrollOfficer'
+        WHEN 'Employee' THEN 'role_Employee' END;
+    IF @Target IS NULL THROW 51025,N'Invalid role.',1;
+    DECLARE @Login SYSNAME,@User SYSNAME,@Sql NVARCHAR(MAX)=N'';
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        SELECT @Login=SqlLogin FROM dbo.TAIKHOAN WITH(UPDLOCK,HOLDLOCK) WHERE MaTK=@MaTK;
+        IF @Login IS NULL THROW 51024,N'DBA must provision/map the SQL login first.',1;
+        IF @Login=ORIGINAL_LOGIN() THROW 51026,N'Cannot change your own SQL role in the current session.',1;
+        SELECT @User=name FROM sys.database_principals WHERE sid=SUSER_SID(@Login) AND type='S';
+        IF @User IS NULL THROW 51027,N'SQL user mapping not found.',1;
+        SELECT @Sql=@Sql+N'ALTER ROLE '+QUOTENAME(r.name)+N' DROP MEMBER '+QUOTENAME(@User)+N';'
+        FROM sys.database_role_members m JOIN sys.database_principals r ON r.principal_id=m.role_principal_id
+        WHERE m.member_principal_id=USER_ID(@User)
+          AND r.name IN ('role_DBAdmin','role_HRManager','role_PayrollOfficer','role_Employee');
+        SET @Sql=@Sql+N'ALTER ROLE '+QUOTENAME(@Target)+N' ADD MEMBER '+QUOTENAME(@User)+N';';
+        EXEC sys.sp_executesql @Sql;
+        UPDATE dbo.TAIKHOAN SET VaiTro=@VaiTro,NgaySuaCuoi=GETDATE() WHERE MaTK=@MaTK;
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE()<>0 ROLLBACK;
+        THROW;
+    END CATCH;
+END;
+GO
+GRANT EXECUTE ON dbo.sp_AdminResetPassword TO role_DBAdmin;
+GRANT EXECUTE ON dbo.sp_AdminSetRole TO role_DBAdmin;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_AdminSetStatus @MaTK INT, @TrangThai VARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF ISNULL(IS_ROLEMEMBER('role_DBAdmin'),0)<>1 THROW 51022,N'Admin role required.',1;
+    IF @TrangThai NOT IN ('KHOA','HOAT_DONG') OR @TrangThai IS NULL THROW 51028,N'Invalid status.',1;
+    DECLARE @Login SYSNAME,@Sql NVARCHAR(MAX);
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        SELECT @Login=SqlLogin FROM dbo.TAIKHOAN WITH(UPDLOCK,HOLDLOCK) WHERE MaTK=@MaTK;
+        IF @Login IS NULL THROW 51024,N'DBA must provision/map the SQL login first.',1;
+        IF @Login=ORIGINAL_LOGIN() THROW 51026,N'Cannot disable your own current login.',1;
+        SET @Sql=N'ALTER LOGIN '+QUOTENAME(@Login)+CASE WHEN @TrangThai='KHOA' THEN N' DISABLE;' ELSE N' ENABLE;' END;
+        EXEC sys.sp_executesql @Sql;
+        UPDATE dbo.TAIKHOAN SET TrangThai=@TrangThai,NgaySuaCuoi=GETDATE() WHERE MaTK=@MaTK;
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE()<>0 ROLLBACK;
+        THROW;
+    END CATCH;
+END;
+GO
+GRANT EXECUTE ON dbo.sp_AdminSetStatus TO role_DBAdmin;
+GO
+
+-- Explicit DBA operation. Schema installation never provisions passwords/logins.
+CREATE OR ALTER PROCEDURE dbo.sp_DBAProvisionIdentity
+    @Login NVARCHAR(MAX),@Password NVARCHAR(MAX),@Hash VARCHAR(255),@VaiTro VARCHAR(30),@MaNV INT=NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF ISNULL(IS_SRVROLEMEMBER('sysadmin'),0)<>1 THROW 51030,N'Provisioning requires a server DBA.',1;
+    DECLARE @Role SYSNAME=CASE @VaiTro WHEN 'DB_Admin' THEN 'role_DBAdmin'
+        WHEN 'HR_Manager' THEN 'role_HRManager' WHEN 'Payroll_Officer' THEN 'role_PayrollOfficer'
+        WHEN 'Employee' THEN 'role_Employee' END;
+    IF @Role IS NULL OR @Login IS NULL OR LEN(@Login) NOT BETWEEN 1 AND 50
+       OR @Login COLLATE Latin1_General_100_BIN2 LIKE N'%[^a-zA-Z0-9_.-]%'
+       OR @Hash IS NULL OR @Hash NOT LIKE 'pbkdf2-sha256$%'
+       OR @Password IS NULL OR DATALENGTH(@Password) NOT BETWEEN 16 AND 256
+        THROW 51031,N'Invalid provisioning input.',1;
+    IF @VaiTro='Employee' AND NOT EXISTS(SELECT 1 FROM dbo.NHANVIEN WHERE MaNV=@MaNV)
+        THROW 51032,N'Employee must be linked to an existing employee record.',1;
+    DECLARE @Sql NVARCHAR(MAX);
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        IF SUSER_ID(@Login) IS NOT NULL OR USER_ID(@Login) IS NOT NULL
+            THROW 51033,N'Login/user already exists: use the reviewed migration procedure instead.',1;
+        IF EXISTS(SELECT 1 FROM dbo.TAIKHOAN WITH(UPDLOCK,HOLDLOCK) WHERE TenDangNhap=@Login AND SqlLogin IS NOT NULL)
+            THROW 51034,N'Application account is already mapped.',1;
+        SET @Sql=N'CREATE LOGIN '+QUOTENAME(@Login)+N' WITH PASSWORD=N'+QUOTENAME(@Password,CHAR(39))
+            +N', CHECK_POLICY=ON, CHECK_EXPIRATION=OFF; CREATE USER '+QUOTENAME(@Login)
+            +N' FOR LOGIN '+QUOTENAME(@Login)+N'; ALTER ROLE '+QUOTENAME(@Role)+N' ADD MEMBER '+QUOTENAME(@Login)+N';';
+        EXEC sys.sp_executesql @Sql;
+        UPDATE dbo.TAIKHOAN SET MaNV=@MaNV,MatKhau=@Hash,VaiTro=@VaiTro,TrangThai='HOAT_DONG',SqlLogin=@Login,NgaySuaCuoi=GETDATE()
+        WHERE TenDangNhap=@Login;
+        IF @@ROWCOUNT=0
+            INSERT dbo.TAIKHOAN(MaNV,TenDangNhap,MatKhau,VaiTro,TrangThai,SqlLogin)
+            VALUES(@MaNV,@Login,@Hash,@VaiTro,'HOAT_DONG',@Login);
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE()<>0 ROLLBACK;
+        THROW;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER TRIGGER trg_NhanVien_KhongXoaKhiDaPhatSinhLuong
+ON NHANVIEN
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Kiểm tra xem nhân viên chuẩn bị xóa có phát sinh lương trong CHITIETBANGLUONG hoặc bảng chấm công không
+    IF EXISTS (
+        SELECT 1
+        FROM deleted d
+        WHERE (EXISTS (SELECT 1 FROM sys.tables WHERE name = N'CHITIETBANGLUONG')
+               AND EXISTS (SELECT 1 FROM CHITIETBANGLUONG ct WHERE ct.MaNV = d.MaNV))
+           OR (EXISTS (SELECT 1 FROM sys.tables WHERE name = N'CHAMCONG')
+               AND EXISTS (SELECT 1 FROM CHAMCONG cc WHERE cc.MaNV = d.MaNV))
+    )
+    BEGIN
+        RAISERROR (N'Không được phép xóa nhân viên đã có dữ liệu chấm công hoặc lương. Vui lòng chuyển trạng thái sang NGHI_VIEC!', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END
+
+    -- Nếu chưa phát sinh bất kỳ dữ liệu nghiệp vụ nào, cho phép xóa mềm/xóa tài khoản trước rồi xóa nhân viên
+    BEGIN TRY
+        DELETE FROM dbo.LICHSULUONG WHERE MaNV IN (SELECT MaNV FROM deleted);
+        DELETE FROM TAIKHOAN WHERE MaNV IN (SELECT MaNV FROM deleted);
+        DELETE FROM NHANVIEN WHERE MaNV IN (SELECT MaNV FROM deleted);
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
+        RAISERROR (@ErrMsg, 16, 1);
+        ROLLBACK TRANSACTION;
+    END CATCH
+END;
 GO

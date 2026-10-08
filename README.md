@@ -11,6 +11,21 @@ Mục tiêu của dự án là xây dựng một ứng dụng quản lý nhân s
 - **Microsoft SQL Server**: hệ quản trị cơ sở dữ liệu chính.
 - **Git + GitHub**: quản lý mã nguồn, tài liệu và lịch sử đóng góp.
 
+## Chạy bản sửa hiện tại
+
+Ứng dụng đăng nhập bằng **SQL login riêng cho từng người**, được DBA mapping vào tài khoản ứng dụng. Cấu hình chỉ chứa `db.url`; không dùng tài khoản SQL chung hoặc `sa` làm danh tính mặc định. Cài schema 01→05, cấp login qua `com.tools.ProvisionIdentity`, rồi chạy `start_app.ps1`. Seed 06 chỉ dùng khi chủ động cần dữ liệu demo.
+
+Để trình bày đồ án, dùng [tài khoản và mật khẩu demo](docs/DEMO_ACCOUNTS.md), [kịch bản test giao diện](docs/GUI_TEST_GUIDE.md) và launcher `start_gui_qa.ps1`. Trên máy khác, cài QA rồi chạy `setup_gui_accounts.ps1` để cấp cùng bộ SQL login/mapping.
+
+Xem [hướng dẫn cài đặt/migration](docs/SECURE_SETUP.md), [tasklist và trạng thái xác minh](docs/FIX_TASKLIST.md), [review ban đầu](docs/SOURCE_REVIEW.md).
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\run_verification.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\start_app.ps1
+```
+
+Runner biên dịch Java 11 và chạy regression offline. `-LiveSql` chạy thêm các smoke check chỉ đọc bằng tài khoản QA đã mapping, lấy `TEST_SQL_USER`/`TEST_SQL_PASSWORD` từ môi trường và database từ `DB_URL`. Exit 0 = PASS, 1 = FAIL, 2 = SKIPPED. Payroll E2E, concurrency, grants và login thật có các test SQL/identity riêng; smoke không thay thế các test đó. Log ở `build/test-results/` và `build/fix-verification/`. Ảnh tracked cũ có số liệu dựng, không là minh chứng cho bản sửa hiện tại.
+
 ## Chức năng chính dự kiến
 
 - Đăng nhập và phân quyền theo vai trò.
@@ -70,14 +85,21 @@ Project_QuanLyNhanSuTienLuong/
 
 ### 3. Báo cáo Chuyên đề Tổng kết & Minh chứng Thực nghiệm
 - [TV1 – Thiết kế CSDL Chuyên sâu, Chuẩn hóa 3NF & Benchmark Index](docs/TV1_BaoCao_ChuyenDe_NhanSu_CuoiKy.md)
-- [TV1 – Bảng Yêu cầu Minh chứng Thực nghiệm Rubric](docs/TV1_Yeu_Cau_Bo_Sung_Minh_Chung.md)
+- [Tasklist và minh chứng xác minh hiện tại](docs/FIX_TASKLIST.md)
 - [TV1 – Bộ 20 Test Cases Kiểm thử Module Nhân sự](docs/TV1_NhanSu_Test_Cases.md)
 - [TV5 – Chương 3 – Kiến trúc Bảo mật 2 tầng, Concurrency & Benchmark Index](docs/Chuong3_Bao_Mat_Va_Concurrency_TV5.md)
 
 ### 4. Scripts Kiểm thử & Tự động hóa
-- `run_tuan3_tv1.ps1`: Chạy toàn bộ kiểm thử Unit/Integration, Benchmark và Chụp màn hình cho **TV1 (Nguyễn Minh Trí)**.
-- `run_tuan3_tv5.ps1`: Chạy toàn bộ kiểm thử Tích hợp hệ thống, RBAC và Chụp 10 màn hình cho **TV5 (Trần Đức Anh)**.
-- `database/test_benchmark_index_TV1.sql`: Đo kiểm hiệu năng Index `IX_NHANVIEN_HoTen` (Scan vs Seek).
+- `run_verification.ps1` / `run_tests_cli.ps1`: Biên dịch Java 11 và chạy kiểm tra offline; tùy chọn live SQL.
+- `test_roles.ps1`: Chạy regression Session/service/sidebar offline.
+- `run_tuan3_tv1.ps1`: Smoke chỉ đọc Java HR; SQL transaction/trigger/benchmark chạy riêng.
+- `run_tuan3_tv5.ps1`: Regression offline và smoke login/schema live; không tạo ảnh dựng.
+- `run_payroll_tests.ps1`: TV4 E2E/benchmark trên database riêng có prefix `PRJ_Fix_QA_`; concurrency chạy SessionA/SessionB riêng.
+- `run_sql_verification.ps1`: Tạo QA tên ngẫu nhiên, install/rerun/seed/module/security/payroll, benchmark tùy chọn và cleanup ngay cả khi lỗi.
+- `run_identity_tests.ps1`: Tạo login cá nhân QA, kiểm tra danh tính/quyền/thay mật khẩu/trạng thái/vai trò/ngày DAO rồi dọn fixture.
+- `setup_gui_accounts.ps1`: Cấp bộ năm tài khoản demo được lưu trong `database/demo_accounts.json`; `-VerifyOnly` kiểm tra đăng nhập đã có.
+- `start_gui_qa.ps1`: Mở giao diện bằng database QA tường minh; hỗ trợ `-Database` cho máy khác.
+- `database/test_benchmark_index_TV1.sql`: Đo Scan/Seek trên bảng tạm, không chèn 5.000 nhân viên vào bảng thật.
 - `database/test_module_nhansu_TV1.sql`: Kiểm thử tự động 6 đối tượng CSDL của TV1 (SP, Transaction, Trigger, Function, View, Index).
 
 ## Quy trình Git/GitHub
@@ -122,9 +144,9 @@ fix: rollback transaction khi tính lương thất bại
 docs: cập nhật ERD
 ```
 
-## Bảo mật cấu hình
+## Cấu hình và tài khoản đồ án
 
-Không commit mật khẩu, connection string thật hoặc file chứa thông tin nhạy cảm. Các file như `.env`, `config.properties` và `*.bak` đã được đưa vào `.gitignore`.
+Nhóm chủ động lưu rõ mật khẩu của bộ tài khoản demo trong `database/demo_accounts.json` để chia sẻ và trình bày đồ án. Thông tin role/mapping và cách cấp trên máy khác ở [DEMO_ACCOUNTS](docs/DEMO_ACCOUNTS.md). File cấu hình riêng, mật khẩu DBA, token và backup vẫn không thuộc bộ fixture demo; `.env`, `config.properties` và `*.bak` tiếp tục được gitignore.
 
 ---
 

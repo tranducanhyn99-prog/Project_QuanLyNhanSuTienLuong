@@ -5,8 +5,7 @@
 -- ĐỐI TƯỢNG SỞ HỮU: IX_NHANVIEN_MaPB_MaCV (COVERING INDEX)
 -- ============================================================================
 
-USE QuanLyNhanSuTienLuong;
-GO
+-- Keep the database selected by the caller.
 
 PRINT '============================================================================';
 PRINT '   BẮT ĐẦU ĐO LƯỜNG HIỆU NĂNG CHỈ MỤC IX_NHANVIEN_MaPB_MaCV (TV5)';
@@ -102,8 +101,8 @@ GO
 
 PRINT '============================================================================';
 PRINT '   KẾT LUẬN BENCHMARK INDEX TV5:';
-PRINT '   - Không có Index: Quét toàn bộ bảng (Clustered Index Scan), số logical reads lớn.';
-PRINT '   - Có Covering Index: Chuyển thành Index Seek, số logical reads giảm > 90%.';
-PRINT '   - Mệnh đề INCLUDE triệt tiêu hoàn toàn thao tác Key Lookup / Bookmark Lookup.';
+PRINT '   - So sánh logical reads từ STATISTICS IO của chính lần chạy này.';
+PRINT '   - Kiểm tra operator và Key Lookup trong actual execution plan; không dùng tỷ lệ hardcode.';
+PRINT '   - Kết quả temp dataset không phải cam kết hiệu năng dữ liệu thực.';
 PRINT '============================================================================';
 GO

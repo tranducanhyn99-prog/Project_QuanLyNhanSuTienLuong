@@ -2,7 +2,6 @@ package com.ui.auth;
 
 import com.model.TaiKhoan;
 import com.service.AuthService;
-import com.session.Session;
 import com.ui.main.MainFrame;
 import com.ui.theme.UITheme;
 
@@ -38,6 +37,7 @@ public class LoginFrame extends JFrame {
     private JButton        btnDangNhap;
     private JButton        btnThoat;
     private JLabel         lblStatus;
+    private boolean loginInProgress;
 
     public LoginFrame() {
         UITheme.setupGlobalUI();
@@ -175,10 +175,10 @@ public class LoginFrame extends JFrame {
         JPanel chipsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
         chipsPanel.setOpaque(false);
 
-        addQuickLoginChip(chipsPanel, "Admin", "admin", "123456");
-        addQuickLoginChip(chipsPanel, "HR Manager", "hrmanager", "123456");
-        addQuickLoginChip(chipsPanel, "Kế toán", "payroll", "123456");
-        addQuickLoginChip(chipsPanel, "Nhân viên", "employee", "123456");
+        addQuickLoginChip(chipsPanel, "Admin", "admin", "");
+        addQuickLoginChip(chipsPanel, "HR Manager", "hr_manager", "");
+        addQuickLoginChip(chipsPanel, "Kế toán", "payroll_officer", "");
+        addQuickLoginChip(chipsPanel, "Nhân viên", "employee01", "");
 
         samplePanel.add(lblSampleTitle, BorderLayout.NORTH);
         samplePanel.add(chipsPanel, BorderLayout.CENTER);
@@ -186,7 +186,7 @@ public class LoginFrame extends JFrame {
         // Footer
         JPanel footerPanel = new JPanel(new BorderLayout());
         footerPanel.setOpaque(false);
-        footerPanel.add(samplePanel, BorderLayout.CENTER);
+        if (Boolean.getBoolean("app.demo")) footerPanel.add(samplePanel, BorderLayout.CENTER);
 
         card.add(headerPanel, BorderLayout.NORTH);
         card.add(formPanel, BorderLayout.CENTER);
@@ -238,8 +238,11 @@ public class LoginFrame extends JFrame {
     }
 
     private void handleLogin(ActionEvent e) {
+        if (loginInProgress) return;
         String tenDangNhap = txtTenDangNhap.getText().trim();
-        String matKhau = new String(txtMatKhau.getPassword());
+        char[] entered = txtMatKhau.getPassword();
+        String matKhau = new String(entered);
+        java.util.Arrays.fill(entered, '\0');
 
         if (tenDangNhap.isEmpty() || matKhau.isEmpty()) {
             lblStatus.setText("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!");
@@ -247,7 +250,10 @@ public class LoginFrame extends JFrame {
             return;
         }
 
+        loginInProgress = true;
         btnDangNhap.setEnabled(false);
+        txtTenDangNhap.setEnabled(false);
+        txtMatKhau.setEnabled(false);
         lblStatus.setText("Đang xác thực thông tin...");
         lblStatus.setForeground(UITheme.INFO_TEXT);
 
@@ -259,10 +265,10 @@ public class LoginFrame extends JFrame {
 
             @Override
             protected void done() {
-                btnDangNhap.setEnabled(true);
                 try {
                     TaiKhoan taiKhoan = get();
                     if (taiKhoan == null) {
+                        finishLoginAttempt();
                         lblStatus.setText("Tên đăng nhập hoặc mật khẩu không chính xác!");
                         lblStatus.setForeground(UITheme.DANGER_TEXT);
                         txtMatKhau.setText("");
@@ -270,13 +276,12 @@ public class LoginFrame extends JFrame {
                         return;
                     }
 
-                    Session.getInstance().login(taiKhoan);
-
                     lblStatus.setText("Đăng nhập thành công!");
                     lblStatus.setForeground(UITheme.SUCCESS_TEXT);
-
+                    txtMatKhau.setText("");
                     openMainFrame();
                 } catch (Exception ex) {
+                    finishLoginAttempt();
                     Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
                     String msg = cause.getMessage();
                     if (msg == null || msg.trim().isEmpty()) {
@@ -292,12 +297,17 @@ public class LoginFrame extends JFrame {
         worker.execute();
     }
 
+    private void finishLoginAttempt() {
+        loginInProgress = false;
+        btnDangNhap.setEnabled(true);
+        txtTenDangNhap.setEnabled(true);
+        txtMatKhau.setEnabled(true);
+    }
+
     private void openMainFrame() {
-        SwingUtilities.invokeLater(() -> {
-            MainFrame mainFrame = new MainFrame();
-            mainFrame.setVisible(true);
-            this.dispose();
-        });
+        MainFrame mainFrame = new MainFrame();
+        mainFrame.setVisible(true);
+        this.dispose();
     }
 
     private void setupFrame() {

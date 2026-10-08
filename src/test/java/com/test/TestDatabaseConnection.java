@@ -1,39 +1,25 @@
 package com.test;
 
 import com.config.DatabaseConnection;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import com.service.AuthService;
+import java.sql.*;
 
-public class TestDatabaseConnection {
-    public static void main(String[] args) {
-        System.out.println("Kiểm tra kết nối CSDL qua config.properties...");
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            System.out.println(">>> KẾT NỐI THÀNH CÔNG! <<<");
-            System.out.println("Database Product: " + conn.getMetaData().getDatabaseProductName());
-            System.out.println("Database Version: " + conn.getMetaData().getDatabaseProductVersion());
-
-            try (Statement st = conn.createStatement();
-                 ResultSet rs = st.executeQuery("SELECT DB_NAME() AS CurrentDB, SUSER_SNAME() AS CurrentUser")) {
-                if (rs.next()) {
-                    System.out.println("Current Database: " + rs.getString("CurrentDB"));
-                    System.out.println("Current User: " + rs.getString("CurrentUser"));
-                }
-            }
-
-            // Kiểm tra bảng TAIKHOAN
-            try (Statement st = conn.createStatement();
-                 ResultSet rs = st.executeQuery("SELECT COUNT(*) AS TotalTK FROM TAIKHOAN")) {
-                if (rs.next()) {
-                    System.out.println("Số lượng tài khoản trong bảng TAIKHOAN: " + rs.getInt("TotalTK"));
-                }
-            } catch (Exception ex) {
-                System.err.println("Cảnh báo: Không thể truy vấn bảng TAIKHOAN: " + ex.getMessage());
-            }
-
-        } catch (Throwable ex) {
-            System.err.println(">>> KẾT NỐI THẤT BẠI! <<<");
-            ex.printStackTrace();
+/** Read-only connection check under a mapped personal SQL identity. */
+public final class TestDatabaseConnection {
+    public static void main(String[] args) throws Exception {
+        String user=System.getenv("TEST_SQL_USER"), password=System.getenv("TEST_SQL_PASSWORD");
+        if(user==null || user.isBlank() || password==null || password.isEmpty()) {
+            System.err.println("SKIPPED: set TEST_SQL_USER/TEST_SQL_PASSWORD and DB_URL to the QA database.");
+            System.exit(2);
         }
+        AuthService auth=new AuthService();
+        try {
+            auth.login(user,password);
+            try(Connection connection=DatabaseConnection.getConnection(); Statement sql=connection.createStatement();
+                ResultSet result=sql.executeQuery("SELECT DB_NAME(),ORIGINAL_LOGIN()")) {
+                if(!result.next() || !user.equalsIgnoreCase(result.getString(2))) throw new AssertionError("SQL identity mismatch");
+                System.out.println("PASS live connection: "+result.getString(1)+" / "+result.getString(2)+" / "+connection.getMetaData().getDatabaseProductVersion());
+            }
+        } finally { auth.logout(); }
     }
 }

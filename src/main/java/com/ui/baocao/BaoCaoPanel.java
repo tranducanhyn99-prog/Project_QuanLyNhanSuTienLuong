@@ -5,6 +5,7 @@ import com.model.ChiTietBangLuong;
 import com.service.PayrollService;
 import com.session.Session;
 import com.ui.theme.UITheme;
+import com.ui.theme.DatabaseTask;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -51,6 +52,7 @@ public class BaoCaoPanel extends JPanel {
     private JButton              btnHuyChot;
     private JButton              btnXoaKyBaoCao;
     private JButton              btnLamMoi;
+    private boolean loadingPeriods;
 
     public BaoCaoPanel() {
         initComponents();
@@ -182,7 +184,7 @@ public class BaoCaoPanel extends JPanel {
                 && !session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer");
 
         if (!isEmployee) {
-            cboKyLuong.addActionListener(e -> loadChiTietByKyLuong());
+            cboKyLuong.addActionListener(e -> { if (!loadingPeriods) loadChiTietByKyLuong(); });
         }
 
         btnLamMoi.addActionListener(e -> {
@@ -214,86 +216,51 @@ public class BaoCaoPanel extends JPanel {
             return;
         }
 
-        SwingWorker<List<BangLuong>, Void> worker = new SwingWorker<List<BangLuong>, Void>() {
-            @Override
-            protected List<BangLuong> doInBackground() throws Exception {
-                return payrollService.getDanhSachBangLuong();
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    List<BangLuong> list = get();
-                    cboKyLuong.removeAllItems();
+        BangLuong previous = (BangLuong) cboKyLuong.getSelectedItem();
+        clearPeriodDetails("Đang tải danh sách kỳ lương...");
+        DatabaseTask.run(cboKyLuong, () -> payrollService.getDanhSachBangLuong(), list -> {
+            loadingPeriods = true;
+            try {
+                cboKyLuong.removeAllItems();
+                for (BangLuong bl : list) cboKyLuong.addItem(bl);
+                if (previous != null) {
                     for (BangLuong bl : list) {
-                        cboKyLuong.addItem(bl);
+                        if (bl.getMaBangLuong() == previous.getMaBangLuong()) cboKyLuong.setSelectedItem(bl);
                     }
-                    if (!list.isEmpty()) {
-                        cboKyLuong.setSelectedIndex(0);
-                    } else {
-                        modelBaoCao.setRowCount(0);
-                        lblTongThucNhan.setText("Tổng thực nhận: 0");
-                        lblTrangThai.setText("Chưa có kỳ lương nào.");
-                        lblTrangThai.setForeground(Color.GRAY);
-                    }
-                } catch (Exception ex) {
-                    showError("Lỗi tải danh sách kỳ lương: " + ex.getMessage());
                 }
+            } finally {
+                loadingPeriods = false;
             }
-        };
-        worker.execute();
+            loadChiTietByKyLuong();
+        });
     }
 
-    /**
-     * Load chi tiết theo kỳ lương được chọn.
-     */
     private void loadChiTietByKyLuong() {
         BangLuong selected = (BangLuong) cboKyLuong.getSelectedItem();
+        clearPeriodDetails(selected == null ? "Chưa có kỳ lương nào." : "Đang tải " + selected.getDisplayLabel() + "...");
         if (selected == null) return;
-
-        // Cập nhật trạng thái
-        updateTrangThaiLabel(selected);
-
-        SwingWorker<List<ChiTietBangLuong>, Void> worker = new SwingWorker<List<ChiTietBangLuong>, Void>() {
-            @Override
-            protected List<ChiTietBangLuong> doInBackground() throws Exception {
-                return payrollService.getChiTietByBangLuong(selected.getMaBangLuong());
+        DatabaseTask.run(tblBaoCao, () -> payrollService.getChiTietByBangLuong(selected.getMaBangLuong()), list -> {
+            BangLuong current = (BangLuong) cboKyLuong.getSelectedItem();
+            if (current != null && current.getMaBangLuong() == selected.getMaBangLuong()) {
+                populateTableAdmin(list);
+                updateTrangThaiLabel(current);
             }
-
-            @Override
-            protected void done() {
-                try {
-                    List<ChiTietBangLuong> list = get();
-                    populateTableAdmin(list);
-                } catch (Exception ex) {
-                    showError("Lỗi tải chi tiết bảng lương: " + ex.getMessage());
-                }
-            }
-        };
-        worker.execute();
+        });
     }
 
-    /**
-     * Load phiếu lương cá nhân (Employee).
-     */
-    private void loadPhieuLuongCaNhan() {
-        SwingWorker<List<ChiTietBangLuong>, Void> worker = new SwingWorker<List<ChiTietBangLuong>, Void>() {
-            @Override
-            protected List<ChiTietBangLuong> doInBackground() throws Exception {
-                return payrollService.getPhieuLuongCaNhan();
-            }
+    private void clearPeriodDetails(String status) {
+        DatabaseTask.invalidate(tblBaoCao);
+        modelBaoCao.setRowCount(0);
+        lblTongThucNhan.setText("Tổng thực nhận: 0 VNĐ");
+        lblTrangThai.setText(status);
+        lblTrangThai.setForeground(Color.GRAY);
+        btnChotLuong.setEnabled(false);
+        btnHuyChot.setEnabled(false);
+        btnXoaKyBaoCao.setEnabled(false);
+    }
 
-            @Override
-            protected void done() {
-                try {
-                    List<ChiTietBangLuong> list = get();
-                    populateTableEmployee(list);
-                } catch (Exception ex) {
-                    showError("Lỗi tải phiếu lương: " + ex.getMessage());
-                }
-            }
-        };
-        worker.execute();
+    private void loadPhieuLuongCaNhan() {
+        DatabaseTask.run(tblBaoCao, () -> payrollService.getPhieuLuongCaNhan(), this::populateTableEmployee);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -383,38 +350,10 @@ public class BaoCaoPanel extends JPanel {
 
         if (choice != JOptionPane.YES_OPTION) return;
 
-        btnChotLuong.setEnabled(false);
-        btnChotLuong.setText("Đang chốt...");
-
-        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
-            private Exception error;
-
-            @Override
-            protected Void doInBackground() {
-                try {
-                    payrollService.chotBangLuong(selected.getMaBangLuong());
-                } catch (Exception ex) {
-                    error = ex;
-                }
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                btnChotLuong.setEnabled(true);
-                btnChotLuong.setText("Chốt bảng lương");
-
-                if (error != null) {
-                    showError(error.getMessage());
-                } else {
-                    JOptionPane.showMessageDialog(BaoCaoPanel.this,
-                        "Đã chốt bảng lương " + selected.getDisplayLabel() + " thành công!",
-                        "Thành công", JOptionPane.INFORMATION_MESSAGE);
-                    loadKyLuong(); // Reload để cập nhật trạng thái
-                }
-            }
-        };
-        worker.execute();
+        DatabaseTask.runExclusive(this, () -> { payrollService.chotBangLuong(selected.getMaBangLuong()); return true; }, ok -> {
+            JOptionPane.showMessageDialog(this, "Đã chốt bảng lương.");
+            loadKyLuong();
+        });
     }
 
     private void handleHuyChotLuong() {
@@ -443,38 +382,10 @@ public class BaoCaoPanel extends JPanel {
 
         if (choice != JOptionPane.YES_OPTION) return;
 
-        btnHuyChot.setEnabled(false);
-        btnHuyChot.setText("Đang mở lại...");
-
-        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
-            private Exception error;
-
-            @Override
-            protected Void doInBackground() {
-                try {
-                    payrollService.huyChotBangLuong(selected.getMaBangLuong());
-                } catch (Exception ex) {
-                    error = ex;
-                }
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                btnHuyChot.setEnabled(true);
-                btnHuyChot.setText("Mở lại bảng lương (Hủy chốt)");
-
-                if (error != null) {
-                    showError(error.getMessage());
-                } else {
-                    JOptionPane.showMessageDialog(BaoCaoPanel.this,
-                        "Đã mở lại bảng lương " + selected.getDisplayLabel() + " thành công!\nHiện tại bạn có thể điều chỉnh ngày công và tính lại bảng lương.",
-                        "Thành công", JOptionPane.INFORMATION_MESSAGE);
-                    loadKyLuong();
-                }
-            }
-        };
-        worker.execute();
+        DatabaseTask.runExclusive(this, () -> { payrollService.huyChotBangLuong(selected.getMaBangLuong()); return true; }, ok -> {
+            JOptionPane.showMessageDialog(this, "Đã mở lại bảng lương.");
+            loadKyLuong();
+        });
     }
 
     private void handleXoaKyBaoCao() {
@@ -502,9 +413,10 @@ public class BaoCaoPanel extends JPanel {
         if (choice != JOptionPane.YES_OPTION) return;
 
         try {
-            payrollService.xoaBangLuong(selected.getMaBangLuong());
+            DatabaseTask.runExclusive(this, () -> { payrollService.xoaBangLuong(selected.getMaBangLuong()); return true; }, ignored -> {
             JOptionPane.showMessageDialog(this, "Đã xóa bảng lương " + selected.getDisplayLabel() + " thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
             loadKyLuong();
+                    });
         } catch (Exception ex) {
             showError("Lỗi khi xóa bảng lương: " + ex.getMessage());
         }

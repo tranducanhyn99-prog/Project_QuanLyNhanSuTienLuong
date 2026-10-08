@@ -21,6 +21,22 @@ import java.sql.*;
  */
 public class TaiKhoanDAO {
 
+    public TaiKhoan findCurrentIdentity(Connection connection) throws SQLException {
+        try (CallableStatement statement = connection.prepareCall("{call dbo.sp_LayTaiKhoanHienTai}");
+             ResultSet result = statement.executeQuery()) {
+            if (!result.next()) return null;
+            TaiKhoan account = mapResultSet(result);
+            account.setMatKhau(result.getString("MatKhau"));
+            return account;
+        }
+    }
+
+    public void migrateOwnPassword(Connection connection, String hash) throws SQLException {
+        try (CallableStatement statement = connection.prepareCall("{call dbo.sp_MigrateMatKhau(?)}")) {
+            statement.setString(1, hash); statement.execute();
+        }
+    }
+
     /**
      * Tìm tài khoản theo TenDangNhap và MatKhau (đã hash SHA-256).
      * JOIN với NHANVIEN để lấy HoTen hiển thị trên Session.
@@ -30,28 +46,8 @@ public class TaiKhoanDAO {
      * @return TaiKhoan nếu tìm thấy; null nếu sai thông tin
      * @throws SQLException nếu lỗi kết nối hoặc truy vấn
      */
-    public TaiKhoan findByCredentials(String tenDangNhap, String matKhauHash) throws SQLException {
-        String sql =
-            "SELECT tk.MaTK, tk.MaNV, tk.TenDangNhap, tk.VaiTro, tk.TrangThai, " +
-            "       tk.NgayTao, tk.NgaySuaCuoi, " +
-            "       nv.HoTen AS HoTenNV " +
-            "FROM TAIKHOAN tk " +
-            "LEFT JOIN NHANVIEN nv ON tk.MaNV = nv.MaNV " +
-            "WHERE tk.TenDangNhap = ? AND tk.MatKhau = ?";
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, tenDangNhap);
-            ps.setString(2, matKhauHash);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return mapResultSet(rs);
-                }
-            }
-        }
-        return null;
+    public TaiKhoan findByCredentials(String username, String hash) throws SQLException {
+        throw new SQLException("Use AuthService.login with the user's SQL identity.", "28000");
     }
 
     /**
@@ -136,38 +132,31 @@ public class TaiKhoanDAO {
      * Cập nhật trạng thái tài khoản (HOAT_DONG <-> KHOA).
      */
     public boolean updateTrangThai(int maTK, String trangThai) throws SQLException {
-        String sql = "UPDATE TAIKHOAN SET TrangThai = ?, NgaySuaCuoi = GETDATE() WHERE MaTK = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, trangThai);
-            ps.setInt(2, maTK);
-            return ps.executeUpdate() > 0;
+        try (Connection connection = DatabaseConnection.getConnection();
+             CallableStatement statement = connection.prepareCall("{call dbo.sp_AdminSetStatus(?, ?)}")) {
+            statement.setInt(1, maTK); statement.setString(2, trangThai);
+            statement.execute(); return true;
         }
     }
 
     /**
-     * Đặt lại mật khẩu (hash SHA-256).
+     * Đặt lại mật khẩu SQL login và hash PBKDF2 qua procedure quản trị.
      */
-    public boolean resetPassword(int maTK, String matKhauHash) throws SQLException {
-        String sql = "UPDATE TAIKHOAN SET MatKhau = ?, NgaySuaCuoi = GETDATE() WHERE MaTK = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, matKhauHash);
-            ps.setInt(2, maTK);
-            return ps.executeUpdate() > 0;
+    public boolean resetPassword(int id, String hash, String plainPassword) throws SQLException {
+        try (Connection connection = DatabaseConnection.getConnection();
+             CallableStatement statement = connection.prepareCall("{call dbo.sp_AdminResetPassword(?, ?, ?)}")) {
+            statement.setInt(1,id); statement.setString(2,hash); statement.setString(3,plainPassword);
+            statement.execute(); return true;
         }
     }
 
     /**
      * Cập nhật vai trò tài khoản.
      */
-    public boolean updateVaiTro(int maTK, String vaiTro) throws SQLException {
-        String sql = "UPDATE TAIKHOAN SET VaiTro = ?, NgaySuaCuoi = GETDATE() WHERE MaTK = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, vaiTro);
-            ps.setInt(2, maTK);
-            return ps.executeUpdate() > 0;
+    public boolean updateVaiTro(int id, String role) throws SQLException {
+        try (Connection connection = DatabaseConnection.getConnection();
+             CallableStatement statement = connection.prepareCall("{call dbo.sp_AdminSetRole(?, ?)}")) {
+            statement.setInt(1,id); statement.setString(2,role); statement.execute(); return true;
         }
     }
 

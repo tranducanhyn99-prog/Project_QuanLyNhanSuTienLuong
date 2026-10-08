@@ -13,7 +13,8 @@
 --   7. Transaction: Quản trị Giao dịch Nhập Lô (All-or-Nothing Commit & Rollback)
 -- ============================================================================
 
-USE QuanLyNhanSuTienLuong;
+-- Keep the caller's QA database context.
+IF DB_NAME() NOT LIKE 'PRJ[_]Fix[_]QA[_]%' THROW 53101,N'Use a dedicated QA database.',1;
 GO
 
 PRINT '============================================================================';
@@ -23,7 +24,8 @@ GO
 
 -- ============================================================================
 -- PHẦN KHỞI TẠO: BẢNG KẾT QUẢ VÀ CONTEXT DỮ LIỆU ĐỘNG (SELF-SEEDING AN TOÀN)
--- Sử dụng token ngẫu nhiên per-run để tạo nhân viên riêng, tự dọn dẹp sạch 100%
+-- Fixture riêng per-run; cleanup ở cuối khi thành công. Dùng run_sql_verification.ps1
+-- để database riêng được dọn trong finally cả khi assertion dừng giữa các batch GO.
 -- ============================================================================
 IF OBJECT_ID('tempdb..#TestSummary') IS NOT NULL
     DROP TABLE #TestSummary;
@@ -228,6 +230,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-02.1: SP không chặn ghi nhận trùng lặp trong ngày!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%đã có bản ghi%' THROW;
     INSERT INTO #TestSummary (TestCase, TestGroup, Description, Result, Detail)
     VALUES ('TC-CC-02.1', N'Constraint & SP Validation', N'Chặn trùng lặp ngày qua SP (sp_GhiNhanChamCong)', 'PASS', ERROR_MESSAGE());
     PRINT N'-> [PASS] TC-CC-02.1: Đã chặn trùng lặp qua SP thành công: ' + ERROR_MESSAGE();
@@ -243,6 +246,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-02.2: Ràng buộc UQ_CHAMCONG_MaNV_Ngay không hoạt động!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>2627 OR ERROR_MESSAGE() NOT LIKE N'%UQ_CHAMCONG_MaNV_Ngay%' THROW;
     INSERT INTO #TestSummary (TestCase, TestGroup, Description, Result, Detail)
     VALUES ('TC-CC-02.2', N'Database Constraint', N'Ràng buộc duy nhất UQ_CHAMCONG_MaNV_Ngay', 'PASS', ERROR_MESSAGE());
     PRINT N'-> [PASS] TC-CC-02.2: Đã kích hoạt UQ_CHAMCONG_MaNV_Ngay thành công: ' + ERROR_MESSAGE();
@@ -253,7 +257,9 @@ GO
 -- TC-CC-03: Chặn nhân viên không tồn tại trong hệ thống (FK_CHAMCONG_NHANVIEN)
 -- ----------------------------------------------------------------------------
 DECLARE @Ngay DATE, @OutId INT;
-DECLARE @FakeMaNV INT = -999999;
+DECLARE @FakeMaNV INT = 2147483647;
+IF EXISTS(SELECT 1 FROM dbo.NHANVIEN WHERE MaNV=@FakeMaNV)
+    THROW 53102,N'The missing-employee test id already exists.',1;
 SELECT @Ngay = DateVal FROM #TV2_Context WHERE KeyName = 'Date_D2';
 
 -- 3.1. Qua Stored Procedure
@@ -272,6 +278,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-03.1: SP không chặn nhân viên không tồn tại!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%không tồn tại%' THROW;
     INSERT INTO #TestSummary (TestCase, TestGroup, Description, Result, Detail)
     VALUES ('TC-CC-03.1', N'Foreign Key & SP Validation', N'Chặn nhân viên không tồn tại qua SP', 'PASS', ERROR_MESSAGE());
     PRINT N'-> [PASS] TC-CC-03.1: Đã chặn nhân viên không tồn tại qua SP: ' + ERROR_MESSAGE();
@@ -290,6 +297,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-03.2: Ràng buộc FK_CHAMCONG_NHANVIEN không chặn bản ghi!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>547 OR ERROR_MESSAGE() NOT LIKE N'%FK_CHAMCONG_NHANVIEN%' THROW;
     INSERT INTO #TestSummary (TestCase, TestGroup, Description, Result, Detail)
     VALUES ('TC-CC-03.2', N'Database Constraint', N'Ràng buộc khóa ngoại FK_CHAMCONG_NHANVIEN', 'PASS', ERROR_MESSAGE());
     PRINT N'-> [PASS] TC-CC-03.2: Đã kích hoạt FK_CHAMCONG_NHANVIEN chặn thành công: ' + ERROR_MESSAGE();
@@ -319,6 +327,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-04.1: SP không chặn ngày chấm công trong tương lai!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%ngày hiện tại%' THROW;
     INSERT INTO #TestSummary (TestCase, TestGroup, Description, Result, Detail)
     VALUES ('TC-CC-04.1', N'Check Constraint & SP Validation', N'Chặn ngày trong tương lai qua SP', 'PASS', ERROR_MESSAGE());
     PRINT N'-> [PASS] TC-CC-04.1: SP đã chặn thành công ngày tương lai: ' + ERROR_MESSAGE();
@@ -334,6 +343,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-04.2: CHK_CHAMCONG_Ngay không chặn ngày tương lai!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>547 OR ERROR_MESSAGE() NOT LIKE N'%CHK_CHAMCONG_Ngay%' THROW;
     INSERT INTO #TestSummary (TestCase, TestGroup, Description, Result, Detail)
     VALUES ('TC-CC-04.2', N'Database Constraint', N'Ràng buộc miền giá trị CHK_CHAMCONG_Ngay', 'PASS', ERROR_MESSAGE());
     PRINT N'-> [PASS] TC-CC-04.2: Đã kích hoạt CHK_CHAMCONG_Ngay chặn thành công: ' + ERROR_MESSAGE();
@@ -363,6 +373,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-05.1: SP không chặn trạng thái không hợp lệ!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%Trạng thái%' THROW;
     INSERT INTO #TestSummary (TestCase, TestGroup, Description, Result, Detail)
     VALUES ('TC-CC-05.1', N'Check Constraint & SP Validation', N'Chặn trạng thái sai qua SP', 'PASS', ERROR_MESSAGE());
     PRINT N'-> [PASS] TC-CC-05.1: SP đã chặn thành công trạng thái sai: ' + ERROR_MESSAGE();
@@ -378,6 +389,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-05.2: CHK_CHAMCONG_TrangThai không chặn giá trị sai!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>547 OR ERROR_MESSAGE() NOT LIKE N'%CHK_CHAMCONG_TrangThai%' THROW;
     INSERT INTO #TestSummary (TestCase, TestGroup, Description, Result, Detail)
     VALUES ('TC-CC-05.2', N'Database Constraint', N'Ràng buộc miền giá trị CHK_CHAMCONG_TrangThai', 'PASS', ERROR_MESSAGE());
     PRINT N'-> [PASS] TC-CC-05.2: Đã kích hoạt CHK_CHAMCONG_TrangThai chặn thành công: ' + ERROR_MESSAGE();
@@ -411,6 +423,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-06.1: SP không chặn nhân viên đã nghỉ việc!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%nghỉ việc%' THROW;
     INSERT INTO #TestSummary (TestCase, TestGroup, Description, Result, Detail)
     VALUES ('TC-CC-06.1', N'Trigger & Business Logic', N'Chặn nhân viên đã nghỉ việc qua SP', 'PASS', ERROR_MESSAGE());
     PRINT N'-> [PASS] TC-CC-06.1: SP đã chặn thành công nhân viên đã nghỉ việc: ' + ERROR_MESSAGE();
@@ -426,6 +439,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-06.2: Trigger trg_ChamCong_KiemTraNhanVien không chặn!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%nghỉ việc%' THROW;
     -- Xác minh thêm rằng Trigger đã ROLLBACK và không lưu bản ghi
     IF NOT EXISTS (SELECT 1 FROM dbo.CHAMCONG WHERE MaNV = @MaNV_NghiViec AND NgayChamCong = @Ngay)
     BEGIN
@@ -465,6 +479,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-07.1: SP không chặn giờ ra nhỏ hơn giờ vào!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%Giờ ra%' THROW;
     INSERT INTO #TestSummary (TestCase, TestGroup, Description, Result, Detail)
     VALUES ('TC-CC-07.1', N'Trigger & Business Logic', N'Chặn giờ ra < giờ vào qua SP', 'PASS', ERROR_MESSAGE());
     PRINT N'-> [PASS] TC-CC-07.1: SP đã chặn thành công giờ ra nhỏ hơn giờ vào: ' + ERROR_MESSAGE();
@@ -480,6 +495,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-07.2: Trigger trg_ChamCong_KiemTraGio không chặn!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%Giờ ra%' THROW;
     INSERT INTO #TestSummary (TestCase, TestGroup, Description, Result, Detail)
     VALUES ('TC-CC-07.2', N'Trigger & Business Logic', N'Trigger trg_ChamCong_KiemTraGio (GioRa < GioVao)', 'PASS', ERROR_MESSAGE());
     PRINT N'-> [PASS] TC-CC-07.2: Trigger đã chặn và ROLLBACK thành công (GioRa < GioVao): ' + ERROR_MESSAGE();
@@ -495,6 +511,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-07.3: Trigger trg_ChamCong_KiemTraGio không chặn khi giờ ra bằng giờ vào!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%Giờ ra%' THROW;
     INSERT INTO #TestSummary (TestCase, TestGroup, Description, Result, Detail)
     VALUES ('TC-CC-07.3', N'Trigger & Business Logic', N'Trigger trg_ChamCong_KiemTraGio (GioRa = GioVao)', 'PASS', ERROR_MESSAGE());
     PRINT N'-> [PASS] TC-CC-07.3: Trigger đã chặn thành công trường hợp GioRa = GioVao: ' + ERROR_MESSAGE();
@@ -612,6 +629,7 @@ BEGIN CATCH
     IF @@TRANCOUNT > 0
         ROLLBACK TRANSACTION;
 
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%nghỉ việc%' THROW;
     -- KIỂM CHỨNG TOÀN VẸN: Kiểm tra xem dòng 1 và dòng 2 của nhân viên test có bị lưu dở dang không
     -- Giới hạn chặt chẽ theo đúng MaNV của nhân viên test và ngày test
     DECLARE @ResidualCount INT;
@@ -739,8 +757,8 @@ BEGIN TRY
     IF @IndexExists = 1 AND @HasIncludeColumns = 1
     BEGIN
         INSERT INTO #TestSummary (TestCase, TestGroup, Description, Result, Detail)
-        VALUES ('TC-CC-11', N'Covering Index Performance', N'Chỉ mục IX_CHAMCONG_MaNV_Ngay bao phủ đầy đủ và Seek thành công', 'PASS',
-                N'IndexSeek Covering (INCLUDE: GioVao, GioRa, TrangThai)');
+        VALUES ('TC-CC-11', N'Covering Index Structure', N'Chỉ mục IX_CHAMCONG_MaNV_Ngay có cấu trúc INCLUDE và truy vấn được', 'PASS',
+                N'INCLUDE: GioVao, GioRa, TrangThai; execution plan/performance checked separately');
         PRINT N'-> [PASS] TC-CC-11: Covering Index IX_CHAMCONG_MaNV_Ngay hoạt động chuẩn xác.';
     END
     ELSE
@@ -783,6 +801,7 @@ BEGIN TRY
     PRINT N'-> [FAIL] TC-CC-12: Trigger không chặn UPDATE giờ ra < giờ vào!';
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%Giờ ra%' THROW;
     -- Xác minh giá trị gốc không bị thay đổi
     DECLARE @GioRaSauLoi TIME(0);
     SELECT @GioRaSauLoi = GioRa FROM dbo.CHAMCONG WHERE MaChamCong = @MaCC_Update;
@@ -819,6 +838,7 @@ BEGIN TRY
     SET @NullParamPassed = 0;
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%không%' THROW;
 END CATCH;
 
 -- 13.2. NgayChamCong NULL
@@ -827,6 +847,7 @@ BEGIN TRY
     SET @NullParamPassed = 0;
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%không%' THROW;
 END CATCH;
 
 -- 13.3. GioVao NULL
@@ -835,6 +856,7 @@ BEGIN TRY
     SET @NullParamPassed = 0;
 END TRY
 BEGIN CATCH
+    IF ERROR_NUMBER()<>50000 OR ERROR_MESSAGE() NOT LIKE N'%không%' THROW;
 END CATCH;
 
 IF @NullParamPassed = 1
@@ -936,6 +958,8 @@ PRINT '  SỐ KỊCH BẢN ĐẠT (PASS)    : ' + CAST(@PassedTests AS VARCHAR(1
 PRINT '  SỐ KỊCH BẢN LỖI (FAIL)    : ' + CAST(@FailedTests AS VARCHAR(10));
 PRINT '  TỶ LỆ THÀNH CÔNG          : ' + CAST(CAST((@PassedTests * 100.0 / @TotalTests) AS DECIMAL(5,2)) AS VARCHAR(10)) + '%';
 PRINT '============================================================================';
+
+IF @FailedTests>0 THROW 53100,N'Attendance test contains failed assertions.',1;
 
 -- Dọn dẹp các bảng tạm trong session
 DROP TABLE #TestSummary;

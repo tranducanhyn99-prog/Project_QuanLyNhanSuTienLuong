@@ -72,6 +72,7 @@ public class MainFrame extends JFrame {
     private JMenu menuQuanTri;
 
     public MainFrame() {
+        Session.getInstance().requireRoles("DB_Admin", "HR_Manager", "Payroll_Officer", "Employee");
         UITheme.setupGlobalUI();
         initLegacyMenusAndStatus();
         initComponents();
@@ -355,7 +356,7 @@ public class MainFrame extends JFrame {
         lblHello.setForeground(UITheme.TEXT_MAIN);
 
         String roleStr = session.getFullRoleDisplayName();
-        JLabel lblSub = new JLabel("Vai trò hiện hành: " + roleStr + "  •  Hệ thống vận hành phân quyền RBAC và kiểm soát Transaction ACID an toàn.");
+        JLabel lblSub = new JLabel("Vai trò hiện hành: " + roleStr + "  •  Chọn phân hệ để tra cứu và cập nhật dữ liệu.");
         lblSub.setFont(UITheme.FONT_BODY);
         lblSub.setForeground(UITheme.TEXT_MUTED);
 
@@ -367,7 +368,7 @@ public class MainFrame extends JFrame {
 
         JPanel bannerRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 10));
         bannerRight.setOpaque(false);
-        JLabel badgeStatus = UITheme.createBadge("● Hệ thống trực tuyến", UITheme.SUCCESS_TEXT, UITheme.SUCCESS_BG, UITheme.SUCCESS_BORDER);
+        JLabel badgeStatus = UITheme.createBadge("● Đã đăng nhập", UITheme.SUCCESS_TEXT, UITheme.SUCCESS_BG, UITheme.SUCCESS_BORDER);
         bannerRight.add(badgeStatus);
 
         banner.add(bannerText, BorderLayout.CENTER);
@@ -382,10 +383,10 @@ public class MainFrame extends JFrame {
         kpiGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
         kpiGrid.setPreferredSize(new Dimension(1000, 90));
 
-        kpiGrid.add(createSmallKpiCard("HỒ SƠ NHÂN SỰ", "5 Nhân viên", "Đang hoạt động", UITheme.PRIMARY));
-        kpiGrid.add(createSmallKpiCard("CƠ CẤU DOANH NGHIỆP", "4 PB • 5 Chức vụ", "Danh mục chuẩn hóa", new Color(37, 99, 235)));
-        kpiGrid.add(createSmallKpiCard("KỲ TÍNH LƯƠNG", "Tháng 09 / 2026", "Chu kỳ đang mở", new Color(217, 119, 6)));
-        kpiGrid.add(createSmallKpiCard("CƠ SỞ DỮ LIỆU", "SQL Server 2025", "RBAC & ACID OK", UITheme.SUCCESS_TEXT));
+        kpiGrid.add(createSmallKpiCard("HỒ SƠ NHÂN SỰ", "Tra cứu hồ sơ", "Danh sách và thông tin nhân viên", UITheme.PRIMARY));
+        kpiGrid.add(createSmallKpiCard("CƠ CẤU DOANH NGHIỆP", "Phòng ban & Chức vụ", "Tra cứu danh mục", new Color(37, 99, 235)));
+        kpiGrid.add(createSmallKpiCard("KỲ TÍNH LƯƠNG", "Chọn kỳ lương", "Tra cứu trạng thái từng kỳ", new Color(217, 119, 6)));
+        kpiGrid.add(createSmallKpiCard("CƠ SỞ DỮ LIỆU", "SQL Server", "Kết nối khi truy vấn dữ liệu", UITheme.SUCCESS_TEXT));
 
         container.add(kpiGrid);
         container.add(Box.createVerticalStrut(22));
@@ -853,12 +854,6 @@ public class MainFrame extends JFrame {
 
     public static void main(String[] args) {
         UITheme.setupGlobalUI();
-        if (!Session.getInstance().isLoggedIn()) {
-            Session.getInstance().login(new com.model.TaiKhoan(1, 1, "admin", "DB_Admin", "Trần Đức Anh", "HOAT_DONG"));
-        }
-        SwingUtilities.invokeLater(() -> {
-            MainFrame frame = new MainFrame();
-            frame.setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new LoginFrame().setVisible(true));
     }
 }

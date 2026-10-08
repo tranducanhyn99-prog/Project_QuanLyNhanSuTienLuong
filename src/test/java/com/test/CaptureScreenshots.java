@@ -33,9 +33,13 @@ import java.util.List;
  */
 public class CaptureScreenshots {
 
-    private static final String OUTPUT_DIR = "screenshots";
+    private static final String OUTPUT_DIR = "build/mock-screenshots";
 
     public static void main(String[] args) throws Exception {
+        if (!Boolean.getBoolean("app.mockScreenshots")) {
+            throw new IllegalStateException("Ảnh dựng chỉ là minh họa. Bật -Dapp.mockScreenshots=true nếu cần; không dùng làm bằng chứng test.");
+        }
+
         System.out.println("==============================================================");
         System.out.println("   KHỞI TẠO BỘ CHỤP ẢNH MINH CHỨNG GIAO DIỆN MODERN ERP       ");
         System.out.println("==============================================================");
@@ -242,6 +246,7 @@ public class CaptureScreenshots {
         g.dispose();
 
         File out = new File(OUTPUT_DIR, fileName);
+        watermark(img);
         ImageIO.write(img, "PNG", out);
         System.out.println("  [OK] Đã xuất ảnh: " + out.getName() + " (" + width + "x" + height + ") - Dung lượng: " + out.length() + " bytes");
     }
@@ -347,5 +352,14 @@ public class CaptureScreenshots {
         } catch (Exception ex) {
             System.err.println("Lỗi khi đồng bộ TV5 screenshots: " + ex.getMessage());
         }
+    }
+    private static void watermark(java.awt.image.BufferedImage image) {
+        java.awt.Graphics2D graphics = image.createGraphics();
+        graphics.setColor(new java.awt.Color(170, 0, 0));
+        graphics.fillRect(0, 0, image.getWidth(), 36);
+        graphics.setColor(java.awt.Color.WHITE);
+        graphics.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 17));
+        graphics.drawString("MINH HỌA — DỮ LIỆU GIẢ — KHÔNG PHẢI KẾT QUẢ SQL", 12, 25);
+        graphics.dispose();
     }
 }

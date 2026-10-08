@@ -1,4 +1,4 @@
-﻿# Script khoi chay ung dung chinh (LoginFrame) ket noi CSDL thuc te
+# Script khoi chay ung dung chinh (LoginFrame) ket noi CSDL thuc te
 $ErrorActionPreference = "Stop"
 
 Write-Host "==============================================================" -ForegroundColor Cyan
@@ -42,7 +42,7 @@ if (-not $jdbcJar -or !(Test-Path $jdbcJar)) {
     exit 1
 }
 
-$binDir = Join-Path $repoRoot "bin"
+$binDir = Join-Path $repoRoot "build\app"
 $resDir = Join-Path $repoRoot "src\resources"
 $cp = "$binDir;$resDir;$jdbcJar"
 
@@ -57,10 +57,10 @@ if (Test-Path $configFile) {
     Copy-Item $configFile $targetConfig -Force
 }
 
-$srcDir = Join-Path $repoRoot "src"
+$srcDir = Join-Path $repoRoot "src\main\java"
 Write-Host "Dang bien dich ma nguon Java..." -ForegroundColor Yellow
 $sources = Get-ChildItem -Path $srcDir -Recurse -Filter "*.java" | Select-Object -ExpandProperty FullName
-javac -encoding UTF-8 -cp $cp -d $binDir $sources
+javac --release 11 -encoding UTF-8 -cp $cp -d $binDir $sources
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Bien dich ma nguon Java that bai!"
     exit 1
@@ -69,4 +69,4 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "[OK] Bien dich thanh cong! Dang mo man hinh dang nhap (LoginFrame)..." -ForegroundColor Green
 Start-Process -FilePath "java" -ArgumentList "-cp `"$cp`" com.ui.auth.LoginFrame"
 Write-Host "[INFO] Man hinh LoginFrame da mo tren man hinh!" -ForegroundColor Green
-Write-Host "[INFO] Tai khoan test: admin / 123456 (DB_Admin)" -ForegroundColor Green
+Write-Host "[INFO] Dang nhap bang SQL login ca nhan da duoc DBA mapping (docs/SECURE_SETUP.md)." -ForegroundColor Green

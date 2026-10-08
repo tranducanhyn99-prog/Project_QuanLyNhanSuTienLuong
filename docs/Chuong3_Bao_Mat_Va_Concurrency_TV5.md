@@ -1,3 +1,5 @@
+> **Cập nhật 08/10/2026:** Các mô tả kiến trúc, định danh và quyền dưới đây theo source/SQL hiện tại. Ngày 21–29/09, ảnh SSMS và các số liệu benchmark trong phần sau là tư liệu lịch sử của lần đo đó, không phải kết quả của lần xác minh hiện tại. Xem [SECURE_SETUP](SECURE_SETUP.md) cho cài đặt/mapping và [FIX_TASKLIST](FIX_TASKLIST.md) cho log, ngày chạy, giới hạn từng kết quả.
+
 # BÁO CÁO KỸ THUẬT ĐỒ ÁN HỆ QUẢN TRỊ CƠ SỞ DỮ LIỆU (DBMS330284)
 # CHƯƠNG 3: KIẾN TRÚC BẢO MẬT PHÂN QUYỀN 2 TẦNG, KIỂM SOÁT ĐỒNG THỜI (CONCURRENCY CONTROL) VÀ TỐI ƯU HÓA HIỆU NĂNG
 
@@ -23,8 +25,8 @@ Trong mọi doanh nghiệp hiện đại, dữ liệu về nhân sự và tiền
 ### 3.1.2. Mục tiêu kỹ thuật
 Để giải quyết triệt để các yêu cầu trên, phân hệ do TV5 phụ trách được thiết kế và triển khai nhằm đạt các mục tiêu cốt lõi:
 - **Bảo mật phòng thủ chiều sâu (Defense-in-Depth):** Xây dựng mô hình bảo mật 2 tầng chặt chẽ (Tầng ứng dụng Java Swing kết hợp Tầng cơ sở dữ liệu SQL Server).
-- **Mã hóa một chiều FIPS-compliant:** Băm toàn bộ mật khẩu người dùng bằng thuật toán SHA-256 trước khi lưu trữ hoặc truyền tải.
-- **Kiểm soát đồng thời cấp độ cao (Advanced Concurrency Control):** Ngăn chặn 100% rủi ro Lost Update và Race Condition khi nhiều nhân viên kế toán cùng thực hiện chốt kỳ lương tại cùng thời điểm thông qua cơ chế khóa `UPDLOCK, HOLDLOCK`.
+- **Bảo vệ mật khẩu ứng dụng:** PBKDF2-HMAC-SHA256 với salt ngẫu nhiên, 600.000 vòng; SHA-256 chỉ hỗ trợ xác minh/migrate dữ liệu legacy sau khi xác thực SQL thành công.
+- **Kiểm soát đồng thời:** Transaction và `UPDLOCK, HOLDLOCK` tuần tự hóa thao tác chốt cùng một kỳ; kết quả xác minh áp dụng cho các race case ghi trong log, không khẳng định triệt tiêu mọi race trên toàn hệ thống.
 - **Ràng buộc toàn vẹn dữ liệu bất biến (Immutability):** Đảm bảo chi tiết bảng lương một khi đã chốt thì không một ai (kể cả quản trị viên nếu không mở khóa hợp lệ) có thể sửa đổi hay xóa bỏ.
 - **Tối ưu hóa hiệu năng truy vấn:** Thiết lập cấu trúc chỉ mục che phủ (Covering Index) giúp giảm tải I/O và tăng tốc độ tìm kiếm nhân viên, tổng hợp lương lên gấp nhiều lần.
 
@@ -37,12 +39,12 @@ Khác với các ứng dụng sinh viên truyền thống chỉ phân quyền b�
 ```
 +-------------------------------------------------------------------------+
 |                  TẦNG 1: GIAO DIỆN ỨNG DỤNG (JAVA SWING)                |
-|  - LoginFrame: Tiếp nhận xác thực, mã hóa SHA-256                       |
+|  - LoginFrame: Nhận SQL login cá nhân; AuthService xác minh profile/hash |
 |  - Session Singleton: Quản lý phiên làm việc & kiểm tra Role-Based      |
 |  - MainFrame: Ẩn/Hiện phân hệ động theo quyền hạn người dùng            |
 +-------------------------------------------------------------------------+
                                     │
-                                    │ (Mã hóa JDBC Connection)
+                                    │ (JDBC TLS theo cấu hình SQL Server)
                                     ▼
 +-------------------------------------------------------------------------+
 |                   TẦNG 2: CƠ SỞ DỮ LIỆU (SQL SERVER)                    |
@@ -57,84 +59,63 @@ Khác với các ứng dụng sinh viên truyền thống chỉ phân quyền b�
 - **Mẫu thiết kế Session Singleton (`com.session.Session`):** Lưu trữ thông tin định danh của người dùng hiện tại trong bộ nhớ RAM của tiến trình JVM. Khi người dùng đăng xuất, toàn bộ thông tin phiên làm việc bị xóa sạch (`logout()`).
 - **Cơ chế lọc giao diện động (`MainFrame.applyRolePermissions()`):** Căn cứ vào vai trò trả về từ CSDL:
   - Nếu là `DB_Admin`: Kích hoạt toàn bộ các Tab (Nhân sự, Danh mục, Chấm công, Phụ cấp & Khấu trừ, Lương, Báo cáo & Chốt lương, Quản trị tài khoản).
-  - Nếu là `HR_Manager`: Vô hiệu hóa phân hệ Tính lương và Quản trị tài khoản; kích hoạt toàn quyền với Hồ sơ nhân viên, Danh mục và Chấm công.
-  - Nếu là `Payroll_Officer`: Chỉ kích hoạt phân hệ Chấm công, Phụ cấp & Khấu trừ, Tính lương và Báo cáo chốt lương; ẩn hoàn toàn menu Quản trị tài khoản và chặn thao tác sửa đổi lý lịch nhân sự.
+  - Nếu là `HR_Manager`: Vô hiệu hóa phân hệ Tính lương và Quản trị tài khoản; hiển thị Hồ sơ nhân viên, Danh mục và Chấm công theo quyền được cấp.
+  - Nếu là `Payroll_Officer`: Kích hoạt đối soát chấm công, Phụ cấp & Khấu trừ, Tính lương và Báo cáo; SQL role chặn sửa hồ sơ nhân sự/chấm công.
   - Nếu là `Employee`: Toàn bộ các phân hệ quản lý đều bị ẩn; người dùng chỉ được xem duy nhất Báo cáo phiếu lương cá nhân của chính mình.
 
 ### 3.2.2. Tầng 2: Phân quyền tại Cơ sở Dữ liệu (Database-Level Security)
-Dù kẻ tấn công có trích xuất mã nguồn Java hay can thiệp vào bộ nhớ ứng dụng để đổi biến `role`, các câu lệnh SQL gửi xuống Database Engine vẫn bị SQL Server kiểm tra quyền hạn một cách độc lập:
-- Tạo 4 Database Roles tương ứng: `role_DBAdmin`, `role_HRManager`, `role_PayrollOfficer`, `role_Employee`.
+Dù người dùng thay đổi Session Java, connection vẫn được mở bằng SQL login cá nhân và SQL Server kiểm tra quyền trên từng thao tác. `sp_LayTaiKhoanHienTai` lấy mapping theo `ORIGINAL_LOGIN()` và yêu cầu role SQL tương ứng; `vw_PhieuLuongCaNhan` lọc theo login gốc.
+- DBA cấp SQL login/user/role và `TAIKHOAN.SqlLogin` mapping tường minh. Schema install không tạo tài khoản hay mật khẩu mặc định.
+- `role_DBAdmin` là thành viên `db_owner` trong application database; thao tác tạo/reset/disable SQL login cần quyền server DBA phù hợp, thường `ALTER ANY LOGIN`. Không đồng nghĩa role này là `sysadmin`.
 - Áp dụng nguyên tắc **Đặc quyền Tối thiểu (Principle of Least Privilege)**: Người dùng chỉ được cấp đúng những quyền tối thiểu cần thiết để hoàn thành công việc của mình.
-- Sử dụng mệnh lệnh `DENY` có độ ưu tiên cao nhất trong SQL Server để ngăn ngừa việc kế thừa quyền ngoài ý muốn.
+- HR không được tính/chốt hoặc xóa kỳ lương. Payroll có SELECT/INSERT/UPDATE/DELETE trên `PHUCAPNHANVIEN` và `KHAUTRUNHANVIEN`, đồng thời không được sửa `NHANVIEN`, `PHONGBAN`, `CHUCVU` hay `CHAMCONG`. Employee chỉ đọc phiếu lương cá nhân.
 
 ---
 
 ## 3.3. QUẢN LÝ ĐỊNH DANH VÀ MÃ HÓA MẬT KHẨU (CRYPTOGRAPHY & IDENTITY)
 
-### 3.3.1. Thuật toán băm một chiều SHA-256
-Hệ thống không lưu trữ mật khẩu ở dạng văn bản rõ (plaintext). Thay vào đó, lớp `PasswordUtil` trong gói `com.util` thực hiện băm mật khẩu theo chuẩn mã hóa liên bang Hoa Kỳ **FIPS 180-4 (Secure Hash Standard - SHA-256)**:
+### 3.3.1. PBKDF2 và chuyển đổi hash legacy
+SQL Server xác thực mật khẩu của SQL login cá nhân khi kết nối. Sau đó `AuthService` tra profile qua `sp_LayTaiKhoanHienTai`, ràng buộc `TAIKHOAN.SqlLogin = ORIGINAL_LOGIN()` và xác minh hash mật khẩu ứng dụng. Hash mới có định dạng `pbkdf2-sha256$600000$<salt>$<key>`: salt ngẫu nhiên 16 byte, khóa dẫn xuất 32 byte, dùng `PBKDF2WithHmacSHA256`. URL cấu hình chỉ chứa `db.url`; ứng dụng không có `db.user`/`db.password` dùng chung.
 
 ```java
-public class PasswordUtil {
-    public static String hashSHA256(String plainText) {
-        if (plainText == null) return null;
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(plainText.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hash) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Lỗi thuật toán mã hóa SHA-256", e);
-        }
-    }
-}
+String hash = PasswordUtil.hashPassword(password); // PBKDF2 salted, 600.000 iterations
+boolean valid = PasswordUtil.verifyPassword(password, storedHash);
 ```
 
 **Đặc tính kỹ thuật bảo mật:**
-1. **Tính một chiều (Pre-image Resistance):** Từ chuỗi băm 64 ký tự hexa không thể tính ngược lại mật khẩu gốc.
-2. **Kháng va chạm (Collision Resistance):** Không thể tìm thấy hai mật khẩu khác nhau có cùng chuỗi băm SHA-256.
-3. **Hiệu ứng thác đổ (Avalanche Effect):** Chỉ cần thay đổi 1 ký tự trong mật khẩu gốc, hơn 50% các bit trong chuỗi băm kết quả sẽ bị thay đổi hoàn toàn.
+1. Mỗi hash mới có salt riêng, làm cho cùng một mật khẩu tạo ra hash lưu trữ khác nhau.
+2. `MessageDigest.isEqual` so sánh khóa dẫn xuất; định dạng, độ dài salt/hash và số vòng được kiểm tra trước khi chấp nhận.
+3. Hash SHA-256 64 ký tự chỉ là định dạng cũ: sau khi SQL login và mật khẩu ứng dụng cùng hợp lệ, hash của chính tài khoản đó được đổi qua `sp_MigrateMatKhau`. Hash không được trả về UI/Session.
 
 ### 3.3.2. Quản lý trạng thái và Vòng đời Tài khoản (`TAIKHOAN`)
 Bảng `TAIKHOAN` được thiết kế có thuộc tính `TrangThai NVARCHAR(20)` nhận 2 giá trị hợp lệ: `'HOAT_DONG'` và `'KHOA'`.
-- Khi tài khoản ở trạng thái `'KHOA'`, dù người dùng có nhập đúng mật khẩu, `AuthService.login()` sẽ lập tức từ chối và thông báo lỗi: *"Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên!"*.
-- Quản trị viên (`DB_Admin`) có toàn quyền thao tác trên `TaiKhoanPanel`:
-  - Khóa hoặc Kích hoạt lại tài khoản chỉ với 1 click.
-  - Đặt lại mật khẩu về mặc định (`123456`) khi nhân viên quên mật khẩu.
-  - Thay đổi vai trò làm việc của tài khoản.
+- SQL login bị disable hoặc profile ở trạng thái `KHOA` đều ngăn đăng nhập. `sp_AdminSetStatus`, `sp_AdminResetPassword` và `sp_AdminSetRole` đồng bộ trạng thái/credential/role SQL với profile trong transaction.
+- Các thủ tục admin chỉ được grant cho `role_DBAdmin`; thao tác đổi login ở server còn cần quyền server tương ứng. Không có mật khẩu mặc định. Password mới phải dài 8–128 ký tự và thỏa SQL Server policy.
 
 ---
 
 ## 3.4. MA TRẬN PHÂN QUYỀN VAI TRÒ CHI TIẾT (RBAC MATRIX)
 
-### 3.4.1. Bảng ma trận phân quyền trên 9 bảng và Stored Procedure
+### 3.4.1. Bảng ma trận phân quyền trên 10 bảng và Stored Procedure
 
-| Bảng / Đối tượng CSDL | role_DBAdmin | role_HRManager | role_PayrollOfficer | role_Employee |
-|---|:---:|:---:|:---:|:---:|
-| `PHONGBAN` | TOÀN QUYỀN | SELECT, INSERT, UPDATE | SELECT | DENY |
-| `CHUCVU` | TOÀN QUYỀN | SELECT, INSERT, UPDATE | SELECT | DENY |
-| `NHANVIEN` | TOÀN QUYỀN | SELECT, INSERT, UPDATE | SELECT | DENY |
-| `TAIKHOAN` | TOÀN QUYỀN | **DENY** | **DENY** | **DENY** |
-| `CHAMCONG` | TOÀN QUYỀN | SELECT, INSERT, UPDATE | SELECT | DENY |
-| `PHUCAPNHANVIEN` | TOÀN QUYỀN | SELECT, INSERT, UPDATE | SELECT | DENY |
-| `KHAUTRUNHANVIEN` | TOÀN QUYỀN | SELECT, INSERT, UPDATE | SELECT | DENY |
-| `BANGLUONG` | TOÀN QUYỀN | SELECT | SELECT, INSERT | DENY |
-| `CHITIETBANGLUONG` | TOÀN QUYỀN | SELECT | SELECT, INSERT | DENY |
-| View `vw_BangLuongChiTiet` | SELECT | SELECT | SELECT | **SELECT** |
-| SP `sp_ChotBangLuong` | EXECUTE | **DENY** | **EXECUTE** | **DENY** |
-| Function `fn_TinhThucNhan` | EXECUTE | EXECUTE | EXECUTE | EXECUTE |
+| Bảng / đối tượng | `role_DBAdmin` | `role_HRManager` | `role_PayrollOfficer` | `role_Employee` |
+|---|---|---|---|---|
+| Database scope | `db_owner` | Grants nghiệp vụ HR | Grants payroll, đối soát và CRUD phụ cấp/khấu trừ | Chỉ phiếu lương cá nhân |
+| Nhân sự, phòng ban, chức vụ | Toàn quyền trong DB | CRUD được grant | SELECT; ghi bị DENY | DENY |
+| `LICHSULUONG` | Toàn quyền trong DB | Không cấp trực tiếp | Không cấp trực tiếp | Không cấp |
+| Chấm công | Toàn quyền trong DB | CRUD + SP ghi công | SELECT/đối soát; ghi bị DENY | DENY |
+| Phụ cấp/khấu trừ | Toàn quyền trong DB | Đọc/ghi/xóa theo grants | Đọc/ghi/xóa theo grants | DENY |
+| Bảng lương/chi tiết | Toàn quyền trong DB | SELECT; không được xóa kỳ hoặc chạy tính/chốt | Đọc/ghi kỳ theo grants; tính/chốt/mở lại/xóa kỳ nháp qua SP | DENY trực tiếp |
+| `TAIKHOAN` | Toàn quyền trong DB | DENY | DENY | DENY |
+| `vw_PhieuLuongCaNhan` | Theo `db_owner` | Không cấp | Không cấp | SELECT, lọc theo `ORIGINAL_LOGIN()` |
+| Admin reset/status/role procedures | Theo `db_owner` | DENY | DENY | DENY |
 
-### 3.4.2. Kỹ thuật trừu tượng hóa qua View bảo mật (`vw_BangLuongChiTiet`)
-Nhân viên bình thường (`role_Employee`) bị cấm truy cập trực tiếp vào toàn bộ 9 bảng dữ liệu gốc bằng lệnh `DENY`. Điều này bảo vệ an toàn cho cơ sở dữ liệu trước nguy cơ bị quét dữ liệu toàn công ty.  
-Thay vào đó, nhân viên chỉ được cấp quyền `SELECT` trên View `vw_BangLuongChiTiet`. View này kết hợp với điều kiện lọc theo `MaNV` tương ứng với tài khoản đăng nhập giúp nhân viên chỉ thấy được chính xác phiếu lương của mình mà không thể soi mói mức lương của đồng nghiệp.
+### 3.4.2. View phiếu lương cá nhân
+`role_Employee` bị DENY trên bảng lương và chỉ được SELECT `vw_PhieuLuongCaNhan`. View nối profile đang hoạt động với `vw_BangLuongChiTiet` và lọc `TAIKHOAN.SqlLogin = ORIGINAL_LOGIN()`. Vì vậy, việc lọc gắn với danh tính SQL được xác thực; `MaNV` hoặc Session do client gửi không quyết định phạm vi dữ liệu.
 
 ### 3.4.3. Minh chứng thực nghiệm phân quyền trên SQL Server Management Studio
 Toàn bộ kịch bản kiểm thử phân quyền được tự động hóa tại `database/test_security_roles_TV5.sql` và được chạy thực tế trên SQL Server:
-- **Ảnh minh chứng phân quyền 4 Roles:** `screenshots/TV5/TV5_Security_Roles_Verification.png`  
-  *(Thể hiện rõ cơ chế chuyển ngữ cảnh `EXECUTE AS USER` cho từng vai trò: xác nhận `user_DBAdmin` toàn quyền, `user_HRManager` và `user_PayrollOfficer` bị chặn khi gọi thủ tục ngoài thẩm quyền, `user_Employee` bị `DENY` tuyệt đối trên bảng nhạy cảm `TAIKHOAN` và `CHITIETBANGLUONG`).*
+- **Ảnh minh chứng phân quyền:** `screenshots/TV5/TV5_Security_Roles_Verification.png` là ảnh lịch sử. `EXECUTE AS USER` có thể minh họa grants object-level, nhưng không chứng minh bộ lọc `ORIGINAL_LOGIN()`; phần này được kiểm bằng SQL login thật trong log identity hiện tại.
 
 ---
 
@@ -220,7 +201,7 @@ END;
 3. Khi Kế toán B gọi `sp_ChotBangLuong`, Session 2 bị chặn lại tại câu lệnh `SELECT ... WITH (UPDLOCK, HOLDLOCK)` cho đến khi Kế toán A `COMMIT`. Khi Session 2 được giải phóng, biến `@TrangThaiHienTai` đọc được ngay lập tức mang giá trị `'DA_CHOT'`. Thủ tục nhảy vào khối kiểm tra và phát lệnh `RAISERROR`, tự động `ROLLBACK` an toàn mà không làm hỏng dữ liệu.
 
 - **Ảnh minh chứng Concurrency (2 Sessions song song):** `screenshots/TV5/TV5_Concurrency_2Sessions.png`  
-  *(Chụp trực quan 2 phiên SSMS song song: Session 1 giữ khóa `UPDLOCK, HOLDLOCK` trong 15 giây làm Session 2 bị chặn chờ; khi Session 1 hoàn tất, Session 2 đọc thấy trạng thái `DA_CHOT` và rollback an toàn, triệt tiêu 100% rủi ro Lost Update).*
+  *(Ảnh kịch bản lịch sử với hai phiên SSMS; kết quả có phạm vi đúng theo fixture/lần chạy, không phải bảo đảm 100% cho mọi race condition).*
 
 ### 3.5.3. Ràng buộc toàn vẹn dữ liệu qua Trigger `trg_ChiTietLuong_KhongSuaKhiDaChot`
 Sau khi kỳ lương đã chốt, một rủi ro khác là người dùng hoặc phần mềm độc hại có thể cố ý chạy lệnh `UPDATE` hoặc `DELETE` trực tiếp trên bảng `CHITIETBANGLUONG` để thay đổi số tiền thực nhận.  
@@ -279,8 +260,8 @@ INCLUDE (MaNV, HoTen, LuongCoBan, TrangThai);
 - **Cột khóa (Key Columns - `MaPB, MaCV`):** Tạo cây B-Tree nhị phân được sắp xếp theo `MaPB` rồi đến `MaCV`, giúp bộ tối ưu hóa truy vấn (Query Optimizer) thực hiện phép toán `Index Seek` với độ phức tạp $O(\log N)$ thay vì quét tuần tự $O(N)$.
 - **Cột bao phủ (Included Columns - `MaNV, HoTen, LuongCoBan, TrangThai`):** Các cột này được đính kèm trực tiếp tại tầng lá (Leaf Level) của chỉ mục. Do đó, sau khi tìm thấy con trỏ trong B-Tree, SQL Server lấy được toàn bộ dữ liệu cần thiết của mệnh đề `SELECT` ngay tại chỉ mục mà **hoàn toàn không cần tốn chi phí tra cứu ngược lại bảng chính (No Key Lookup / Bookmark Lookup)**.
 
-### 3.6.3. Thực nghiệm Benchmark với 10,000 dòng dữ liệu
-Để chứng minh tính vượt trội khoa học, TV5 đã lập trình kịch bản thử nghiệm tải lớn tại `database/test_benchmark_index_TV5.sql`:
+### 3.6.3. Benchmark lưu trong tư liệu lịch sử
+Các số đo sau là kết quả được ghi trong báo cáo/ảnh mốc 29/09/2026 từ `database/test_benchmark_index_TV5.sql`; chúng mô tả fixture và lần chạy đó, không phải cam kết hiệu năng hiện tại:
 - Sinh ngẫu nhiên **10,000 bản ghi nhân viên** phân bổ trên các phòng ban và chức vụ khác nhau.
 - Bật cơ chế đo lường phần cứng của SQL Server: `SET STATISTICS IO ON; SET STATISTICS TIME ON;`.
 - So sánh hiệu năng của cùng một câu lệnh truy vấn giữa 2 trường hợp: Chưa có Index và Đã tạo Index.
@@ -290,38 +271,32 @@ INCLUDE (MaNV, HoTen, LuongCoBan, TrangThai);
 | Chỉ số đo lường (Metrics) | Khi KHÔNG có Index (Scan) | Khi CÓ Covering Index (Seek) | Tỷ lệ cải thiện |
 |---|:---:|:---:|:---:|
 | **Toán tử thực thi (Execution Operator)** | Clustered Index Scan | **Index Seek (Non-Clustered)** | Chuyển từ quét tuần tự sang tìm kiếm nhị phân |
-| **Số trang đọc logic (Logical Reads)** | **94 trang** | **2 trang** | **Giảm 97.87% (47 lần)** |
+| **Số trang đọc logic (Logical Reads)** | **94 trang** | **2 trang** | **Giảm 97.87% (47 lần), theo log lịch sử** |
 | **Chi phí truy vấn ước tính (Subtree Cost)** | 0.0715 | **0.0032** | **Giảm 95.52% (22 lần)** |
 | **Key Lookup / Bookmark Lookup** | Không | **0 (Hoàn toàn không có Lookup)** | Bao phủ 100% cột truy vấn |
 | **Thời gian CPU (CPU Time)** | ~15 ms | **0 ms (< 1 ms)** | Giảm tải CPU máy chủ triệt để |
 | **Thời gian thực thi (Elapsed Time)** | ~28 ms | **~1 ms** | Tốc độ đáp ứng tức thì |
 
 **Phân tích kết quả:**
-Việc số trang đọc logic giảm từ **94 trang xuống còn 2 trang** chứng minh rằng SQL Server chỉ cần đọc đúng 1 trang chỉ mục tầng gốc/trung gian và 1 trang tầng lá là đã trả về đầy đủ kết quả mong muốn. Điều này đảm bảo hệ thống có thể mở rộng quy mô (Scalability) lên đến hàng trăm nghìn nhân sự mà giao diện ứng dụng vẫn phản hồi mượt mà trong vài mili-giây.
+Trong lần đo lịch sử đó, số logical reads ghi nhận giảm từ **94 xuống 2**. Kết quả chỉ áp dụng cho fixture, truy vấn, schema, thống kê và môi trường của lần chạy; không suy rộng thành cam kết độ trễ hay khả năng mở rộng quy mô.
 
 #### Minh chứng hình ảnh Benchmark thực nghiệm trên SSMS:
 - **Ảnh Actual Execution Plan:** `screenshots/TV5/TV5_Benchmark_ExecutionPlan.png`  
-  *(So sánh trực quan 2 cây thực thi: Query 1 Clustered Index Scan chiếm 96% chi phí vs Query 2 Index Seek Non-Clustered trên `IX_Bench_MaPB_MaCV` chiếm 4% chi phí, không có Key Lookup).*
+  *(Ảnh lịch sử từ lần benchmark ngày 29/09; không dùng làm execution plan của lần xác minh hiện tại).*
 - **Ảnh thống kê I/O & Time:** `screenshots/TV5/TV5_Benchmark_StatisticsIO.png`  
-  *(Tab Messages thể hiện rõ số logical reads giảm từ 94 trang xuống 2 trang, CPU Time giảm về 0 ms).*
+  *(Ảnh lịch sử của lần đo ngày 29/09; số liệu không mô tả lần chạy mới).*
 
 ---
 
 ## 3.7. BỘ KIỂM THỬ TÍCH HỢP TỰ ĐỘNG VÀ KẾT QUẢ ĐẠT ĐƯỢC
 
-### 3.7.1. Bộ kiểm thử tích hợp toàn diện (`FullSystemIntegrationTest.java`)
-Nhằm nghiệm thu toàn bộ 5 module của 5 thành viên nhóm, TV5 đã phát triển bộ kiểm thử tích hợp bao gồm **41 tiêu chí kỹ thuật** bao phủ 4 tầng kiến trúc:
-1. **Kiểm thử Thuật toán Mã hóa (SHA-256):** Kiểm tra tính không rỗng, tính nhất quán (deterministic), độ dài chuẩn 64 hex, và khả năng phát hiện mật khẩu sai.
-2. **Kiểm thử Session & RBAC:** Kiểm tra trạng thái trước/sau đăng nhập, cơ chế phân quyền vai trò `DB_Admin`, `Employee`.
-3. **Kiểm thử Tích hợp 6 Data Access Objects (DAO):** `TaiKhoanDAO`, `NhanVienDAO`, `ChamCongDAO`, `PhuCapDAO`, `KhauTruDAO`, `BangLuongDAO`.
-4. **Kiểm thử Tích hợp 6 Service Nghiệp vụ:** `AuthService`, `NhanVienService`, `DanhMucService`, `ChamCongService`, `PhuCapKhauTruService`, `PayrollService`.
-5. **Kiểm thử Tích hợp 8 Panel Giao diện Swing:** `MainFrame`, `NhanVienPanel`, `DanhMucPanel`, `ChamCongPanel`, `PhuCapKhauTruPanel`, `BangLuongPanel`, `BaoCaoPanel`, `TaiKhoanPanel`.
-6. **Kiểm thử Toàn vẹn CSDL (JDBC Connection & Schema 9 Tables):** Kết nối thực tế và xác minh truy vấn thành công trên 9 bảng cốt lõi.
+### 3.7.1. Kết quả xác minh hiện hành
+Kết quả kiểm thử được chốt theo log trong `docs/FIX_TASKLIST.md`: regression Java offline 104 assertions; T18 kiểm tra bốn chip demo với JFrame ẩn đạt 20 assertions, không mở SQL connection; SQL identity suite đạt 50 checks; PowerShell SQL verification trên QA exit 0. Mỗi kết quả chỉ áp dụng cho các case và môi trường được nêu trong log. Bộ `FullSystemIntegrationTest.java`/số 41/41 ở bảng bên dưới là mốc lịch sử ngày 29/09, không dùng làm bằng chứng cho source hiện tại.
 
-**Kết quả thực thi:** Đạt **41/41 tiêu chí (100% PASSED)**.
+Chip đăng nhập nhanh chỉ xuất hiện khi bật `-Dapp.demo=true`; chip điền username (`admin`, `hr_manager`, `payroll_officer`, `employee01`) và để trống password. Các SQL login GUI QA (`gui_admin`, `gui_hr`, `gui_payroll`, `gui_a`, `gui_b`) có tên khác và được DBA provision riêng; chip username không tự ánh xạ sang login QA. Credential và hướng dẫn GUI nằm trong [DEMO_ACCOUNTS.md](DEMO_ACCOUNTS.md) và [GUI_TEST_GUIDE.md](GUI_TEST_GUIDE.md). Các Employee fixture 1008/1009 chỉ thuộc môi trường local được ghi trong hướng dẫn. Không có mật khẩu demo được seed hoặc tự điền.
 
-### 3.7.2. Tự động hóa kết xuất hình ảnh minh chứng giao diện (`CaptureScreenshots.java`)
-Để chuẩn bị tài liệu báo cáo và slide thuyết trình chuyên nghiệp, TV5 đã lập trình công cụ tự động render toàn bộ các màn hình giao diện đồ họa ra định dạng ảnh PNG chuẩn độ phân giải cao tại thư mục `screenshots/`:
+### 3.7.2. Ảnh giao diện và giới hạn sử dụng
+Các ảnh có sẵn trong `screenshots/` là tư liệu lịch sử; dữ liệu hiển thị có thể hardcode. `CaptureScreenshots.java` hiện chỉ chạy khi có `-Dapp.mockScreenshots=true`, tạo ảnh minh họa có watermark trong `build/mock-screenshots/`. Không dùng ảnh đó làm bằng chứng giao diện kết nối dữ liệu hoặc quyền thật. Các tên ảnh lịch sử gồm:
 1. `01_LoginFrame.png`: Màn hình đăng nhập hệ thống.
 2. `02_MainFrame_Dashboard.png`: Màn hình chính Dashboard với đầy đủ thanh điều hướng.
 3. `03_NhanVien_HoSo.png`: Quản lý hồ sơ nhân viên (TV1).
@@ -338,13 +313,13 @@ Toàn bộ minh chứng kỹ thuật phục vụ nghiệm thu và chấm điểm
 
 | STT | Tên tệp minh chứng | Môi trường | Nội dung minh chứng | Trạng thái |
 |:---:|---|:---:|---|:---:|
-| 1 | `TV5_Benchmark_ExecutionPlan.png` | SSMS | Cây Actual Execution Plan so sánh Clustered Index Scan (96% cost) vs Covering Index Seek (4% cost) trên `IX_Bench_MaPB_MaCV` |  Đầy đủ |
-| 2 | `TV5_Benchmark_StatisticsIO.png` | SSMS | Tab Messages hiển thị số logical reads giảm từ 94 trang xuống 2 trang, CPU time về 0 ms |  Đầy đủ |
-| 3 | `TV5_Security_Roles_Verification.png` | SSMS | Kết quả thực thi `test_security_roles_TV5.sql` xác minh 4 Database Roles, cơ chế chặn `DENY` an toàn |  Đầy đủ |
+| 1 | `TV5_Benchmark_ExecutionPlan.png` | SSMS | Ảnh plan của benchmark ngày 29/09 |  Lịch sử |
+| 2 | `TV5_Benchmark_StatisticsIO.png` | SSMS | Ảnh STATISTICS IO/TIME của benchmark ngày 29/09 |  Lịch sử |
+| 3 | `TV5_Security_Roles_Verification.png` | SSMS | Ảnh lịch sử minh họa grants; không chứng minh lọc `ORIGINAL_LOGIN()` |  Lịch sử |
 | 4 | `TV5_Trigger_KhoaChiTietLuong.png` | SSMS | Thông báo lỗi đỏ `Msg 50000` từ trigger `trg_ChiTietLuong_KhongSuaKhiDaChot` khi cố ý sửa kỳ lương đã chốt |  Đầy đủ |
-| 5 | `TV5_Concurrency_2Sessions.png` | SSMS | Chụp 2 phiên song song chứng minh cơ chế `UPDLOCK, HOLDLOCK` chặn Lost Update thành công 100% |  Đầy đủ |
-| 6 | `TV5_BaoCao_ChotLuong.png` | Java Swing | Giao diện báo cáo chi tiết lương và thực thi chốt kỳ lương |  Đầy đủ |
-| 7 | `TV5_TaiKhoan_QuanTri.png` | Java Swing | Giao diện quản trị tài khoản, khóa/mở khóa và phân quyền |  Đầy đủ |
+| 5 | `TV5_Concurrency_2Sessions.png` | SSMS | Ảnh lịch sử minh họa hai phiên và khóa `UPDLOCK, HOLDLOCK` |  Lịch sử |
+| 6 | `TV5_BaoCao_ChotLuong.png` | Java Swing | Ảnh giao diện lịch sử |  Lịch sử |
+| 7 | `TV5_TaiKhoan_QuanTri.png` | Java Swing | Ảnh quản trị lịch sử, không chứng minh thao tác SQL admin thành công |  Lịch sử |
 
 ---
 

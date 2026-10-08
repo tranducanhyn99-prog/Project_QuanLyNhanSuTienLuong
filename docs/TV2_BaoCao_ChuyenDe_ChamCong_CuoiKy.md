@@ -7,6 +7,7 @@
 - **Nhóm thực hiện:** Nhóm 06
 - **Thành viên chịu trách nhiệm:** TV2 – Phạm Minh Quân (MSSV: 24110311)
 - **Branch làm việc:** `feature/tv2-week3-evidence`
+- **Rà soát tài liệu:** 08/10/2026. Benchmark và ảnh lưu từ lần làm trước là tư liệu lịch sử; evidence runtime hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md).
 
 ---
 
@@ -25,8 +26,8 @@
 
 ### 1.1 Vai trò trong hệ thống liên thông
 Phân hệ Quản lý Chấm công giữ vai trò thu thập và xác thực dữ liệu thực tế về sự hiện diện và số giờ lao động của nhân viên trong doanh nghiệp:
-1. **Liên kết với TV1 (Nhân sự):** Xác thực trạng thái nhân viên (`TrangThai = 'DANG_LAM_VIEC'`) trước khi ghi nhận công; cung cấp dữ liệu cho hàm `fn_TinhSoNgayCong(MaNV, Thang, Nam)`.
-2. **Liên kết với TV4 (Tính lương):** Cung cấp số ngày công thực tế (`SoNgayDiLam`) và số giờ làm việc thực tế cho thủ tục `sp_TinhBangLuongThang`, làm cơ sở tính tiền công theo công thức:
+1. Ghi nhận trạng thái nhân viên và ngày công; `fn_TinhSoNgayCong(MaNV, Thang, Nam)` được cài trong module 02 sau bảng `CHAMCONG`.
+2. **Liên kết với TV4 (Tính lương):** Cung cấp số ngày công cho `sp_TinhBangLuongThang`, hiện đếm trực tiếp bằng truy vấn range theo ngày trong transaction (không gọi `fn_TinhSoNgayCong`), làm cơ sở tính tiền công theo công thức:
    $$\text{TienCong} = \frac{\text{LuongCoBan}}{26} \times \text{SoNgayCongThucTe}$$
 3. **Liên kết với TV5 (Bảo mật & Báo cáo):** Cung cấp số liệu tổng hợp công phục vụ kết xuất phiếu lương và báo cáo chi phí nhân sự toàn doanh nghiệp.
 
@@ -82,6 +83,7 @@ Thủ tục tiếp nhận 7 tham số đầu vào/ra, thực hiện validate to�
 ### 2.4 Các Trigger kiểm soát toàn vẹn
 - **`trg_ChamCong_KiemTraGio` (AFTER INSERT, UPDATE):** Kiểm tra set-based trên bảng giả `inserted`. Nếu phát hiện `GioRa IS NOT NULL AND GioRa <= GioVao`, lập tức tung `RAISERROR` và thực thi `ROLLBACK TRANSACTION`.
 - **`trg_ChamCong_KiemTraNhanVien` (AFTER INSERT, UPDATE):** Thực hiện JOIN `inserted` với `dbo.NHANVIEN`. Nếu phát hiện bất kỳ nhân viên nào có `TrangThai <> 'DANG_LAM_VIEC'`, lập tức tung `RAISERROR` và `ROLLBACK TRANSACTION`.
+- **`trg_ChamCong_KhongSuaKhiDaChotLuong` (module 05):** AFTER INSERT/UPDATE/DELETE. Khóa kỳ payroll và chặn mutation nếu kỳ của ngày cũ hoặc mới đã `DA_CHOT`, kể cả lệnh phát ra ngoài Java.
 
 ### 2.5 View tổng hợp công tháng `vw_TongHopChamCongThang`
 View thực hiện tính toán tự động cho từng nhân viên theo từng tháng/năm:
@@ -95,7 +97,7 @@ View thực hiện tính toán tự động cho từng nhân viên theo từng t
 
 # CHƯƠNG 3. THỰC NGHIỆM ĐO LƯỜNG VÀ ĐÁNH GIÁ BENCHMARK COVERING INDEX
 
-Kịch bản thực nghiệm độc lập được lưu trữ tại `database/test_benchmark_index_TV2.sql`.
+Kịch bản benchmark cũ được lưu tại `database/test_benchmark_index_TV2.sql`. Kết quả 574→5 và ảnh đi kèm là tư liệu lịch sử, không phải số đo của lần xác minh hiện hành. Runtime evidence hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md).
 
 ### 3.1 Thiết kế môi trường và nguyên lý cách ly (Isolation)
 1. **Lý do kỹ thuật cốt lõi:**
@@ -110,7 +112,7 @@ Kịch bản thực nghiệm độc lập được lưu trữ tại `database/te
    - Tuyệt đối không can thiệp, xóa sửa bảng sản xuất `dbo.CHAMCONG`.
    - Kết thúc script, bảng tạm được tự động giải phóng sạch sẽ.
 
-### 3.2 Bảng so sánh chỉ số đo lường thực nghiệm
+### 3.2 Bảng số đo lịch sử (fixture cũ)
 
 | Chỉ Số Đánh Giá | Giai Đoạn BEFORE (UQ Seek + Key Lookup) | Giai Đoạn AFTER (Covering Index Seek) | Mức Độ Cải Thiện |
 |---|:---:|:---:|:---:|
@@ -122,8 +124,8 @@ Kịch bản thực nghiệm độc lập được lưu trữ tại `database/te
 
 *(Ghi chú kỹ thuật: Báo cáo tuân thủ nguyên tắc không sử dụng thời gian đồng hồ wall-clock time để so sánh vì biến thiên theo tài nguyên nền của máy chủ).*
 
-### 3.3 Danh mục minh chứng hình ảnh Benchmark đã lưu trữ
-Năm ảnh chụp màn hình chứng minh kết quả thực nghiệm được lưu trữ nguyên vẹn tại `screenshots/TV2/`:
+### 3.3 Ảnh benchmark lịch sử
+Năm ảnh trong `screenshots/TV2/` là artefact lịch sử; chúng không xác nhận số đo/runtime của source hiện tại:
 - `screenshots/TV2/TV2_Benchmark_ExecutionPlan_BEFORE.png`: Kế hoạch thực thi BEFORE xuất hiện toán tử Index Seek trên `UQ_Bench_MaNV_Ngay` kèm theo Key Lookup (Clustered).
 - `screenshots/TV2/TV2_Benchmark_ExecutionPlan_AFTER.png`: Kế hoạch thực thi AFTER chuyển sang Index Seek thuần túy trên `IX_Bench_CHAMCONG_MaNV_Ngay`, 0 Key Lookup.
 - `screenshots/TV2/TV2_Benchmark_StatisticsIO_BEFORE.png`: Thống kê I/O giai đoạn BEFORE ghi nhận **574 logical reads**.
@@ -136,7 +138,7 @@ Năm ảnh chụp màn hình chứng minh kết quả thực nghiệm được l
 
 Bộ kịch bản kiểm thử tự động của TV2 được thiết kế tại `database/tests_TV2/test_module_chamcong_TV2.sql` với cơ chế self-seeding token per-run và dọn dẹp cách ly:
 
-**Trạng thái thực thi hiện tại:** Chưa thực thi / chưa có log trong worktree này; chương này chỉ mô tả thiết kế kiểm thử, không tuyên bố kết quả PASS.
+Danh sách dưới đây mô tả thiết kế test. Log và kết quả runtime hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md); không suy luận kết quả từ tài liệu thiết kế này.
 
 1. **TC-CC-01:** Chấm công đơn lẻ hợp lệ qua `sp_GhiNhanChamCong`.
 2. **TC-CC-02:** Chặn trùng lặp cặp `(MaNV, NgayChamCong)` qua SP và qua ràng buộc duy nhất `UQ_CHAMCONG_MaNV_Ngay`.
@@ -178,12 +180,12 @@ Bộ kịch bản kiểm thử tự động của TV2 được thiết kế tạ
 - **DAO (`com.dao.ChamCongDAO`):**
   - Gọi thủ tục `sp_GhiNhanChamCong` bằng `CallableStatement`.
   - Đọc View `vw_TongHopChamCongThang` bằng `PreparedStatement`.
-  - Ràng buộc an toàn: Không cho phép sửa/xóa chấm công của kỳ lương đã chốt (`BANGLUONG.TrangThai = 'DA_CHOT'`).
+  - DAO ghi cả `NgayChamCong` khi sửa. Trigger SQL module 05 kiểm tra kỳ cũ/đích và chặn INSERT/UPDATE/DELETE khi kỳ đã chốt.
+  - UI chuyển JDBC task khỏi EDT bằng `DatabaseTask`/`SwingWorker`; cập nhật component trên EDT.
 
 ### 5.2 Minh chứng hình ảnh giao diện thực tế (UI Evidence)
-- **Tình trạng:** **ĐÃ THU THẬP & ĐÃ XÁC THỰC (COLLECTED & VERIFIED)**.
-- **Phương thức thu thập:** Cả 3 ảnh chụp giao diện được chụp trực tiếp từ một phiên desktop tương tác thật (interactive desktop session): ứng dụng Java Swing được mở trực tiếp trên môi trường desktop đồ họa, kết nối tới CSDL SQL Server thật (`QuanLyNhanSuTienLuong`), và chụp màn hình thực tế; nội dung ảnh đã được rà soát và xác thực trước khi lưu vào repository.
-- **Danh mục minh chứng UI đã lưu trữ tại `screenshots/TV2/`:**
+- **Tình trạng:** Ảnh dưới đây là bản chụp lịch sử; không dùng làm bằng chứng UI/runtime hiện tại.
+- **Danh mục ảnh lưu tại `screenshots/TV2/`:**
   - `screenshots/TV2/TV2_ChamCong_ChiTiet.png`: Tab 1 chấm công chi tiết — form ghi nhận chấm công, nút điểm danh hàng loạt (Transaction) và nhật ký chấm công với dữ liệu thật.
   - `screenshots/TV2/TV2_ChamCong_TongHopThang.png`: Tab 2 tổng hợp ngày công tháng — dữ liệu tổng hợp đọc từ View `vw_TongHopChamCongThang`.
   - `screenshots/TV2/TV2_DieuChinhChamCongDialog.png`: Hộp thoại điều chỉnh ngày công dạng drill-down với bản ghi công thật và các thao tác thêm/cập nhật/xóa.
@@ -192,6 +194,6 @@ Bộ kịch bản kiểm thử tự động của TV2 được thiết kế tạ
 
 # CHƯƠNG 6. TỒN TẠI KỸ THUẬT VÀ ĐỀ XUẤT NÂNG CẤP (REMAINING GAPS)
 
-1. **Minh chứng giao diện Java Swing (Đã hoàn tất):** Cả 3 ảnh chụp giao diện thật có nội dung trực quan cho TV2 đã được thu thập từ phiên desktop tương tác thật và đã được xác thực, lưu trữ tại `screenshots/TV2/` (chi tiết tại mục 5.2).
-2. **Dữ liệu bảng sản xuất `dbo.CHAMCONG`:** Hiện tại đang duy trì bộ dữ liệu baseline mẫu (1 bản ghi) để đảm bảo an toàn cho các kịch bản kiểm thử E2E liên phân hệ. Dữ liệu thực tế toàn bộ các tháng của nhân viên sẽ được nạp trong pha chuyển giao dữ liệu thực tế.
+1. **Ảnh UI:** Ảnh lưu trữ là tư liệu lịch sử, không được xem là minh chứng runtime hiện tại. Trạng thái kiểm thử UI hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md).
+2. **Dữ liệu `dbo.CHAMCONG`:** Không suy luận số lượng/baseline từ tài liệu cũ. QA fixtures được tạo riêng và dọn bởi runner; database dự án gốc không bị mutate trong xác minh nêu tại [FIX_TASKLIST](FIX_TASKLIST.md).
 3. **Mở rộng nguồn thu thập dữ liệu chấm công:** Hệ thống hiện hoạt động trên cơ chế nhập liệu từ giao diện và điểm danh hàng loạt (Batch Transaction). Hướng mở rộng tiếp theo là xây dựng Service lắng nghe sự kiện từ máy chấm công vân tay / khuôn mặt (ZKTeco/Hikvision API) để tự động đẩy dữ liệu vào CSDL.

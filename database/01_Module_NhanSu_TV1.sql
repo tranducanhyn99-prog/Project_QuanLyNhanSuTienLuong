@@ -1,3 +1,12 @@
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
+GO
+
 -- ============================================================================
 -- PROJECT: Quản Lý Nhân Sự và Tiền Lương
 -- HỌC PHẦN: Hệ Quản Trị Cơ Sở Dữ Liệu (DBMS330284)
@@ -87,7 +96,7 @@ BEGIN
         MaTK          INT IDENTITY(1,1) PRIMARY KEY,
         MaNV          INT           NULL,
         TenDangNhap   VARCHAR(50)   NOT NULL CONSTRAINT UQ_TAIKHOAN_TenDangNhap UNIQUE,
-        MatKhau       CHAR(64)      NOT NULL, -- SHA-256 (64 hex characters)
+        MatKhau       VARCHAR(255)  NOT NULL, -- versioned password hash
         VaiTro        VARCHAR(30)   NOT NULL,
         TrangThai     VARCHAR(10)   NOT NULL CONSTRAINT DF_TAIKHOAN_TrangThai DEFAULT 'HOAT_DONG',
         NgayTao       DATE          NOT NULL CONSTRAINT DF_TAIKHOAN_NgayTao DEFAULT GETDATE(),
@@ -144,69 +153,13 @@ GO
 -- ============================================================================
 -- PHẦN 4: FUNCTION THEO PHÂN CÔNG (TV1: fn_TinhSoNgayCong)
 -- ============================================================================
-CREATE OR ALTER FUNCTION fn_TinhSoNgayCong
-(
-    @MaNV INT,
-    @Thang INT,
-    @Nam INT
-)
-RETURNS DECIMAL(4,1)
-AS
-BEGIN
-    DECLARE @SoNgayCong DECIMAL(4,1) = 0;
+-- fn_TinhSoNgayCong is installed by module 02 after CHAMCONG exists.
 
-    -- Kiểm tra bảng CHAMCONG nếu bảng đã tồn tại (khớp thiết kế của TV2)
-    IF EXISTS (SELECT * FROM sys.tables WHERE name = N'CHAMCONG')
-    BEGIN
-        SELECT @SoNgayCong = COUNT(1)
-        FROM CHAMCONG
-        WHERE MaNV = @MaNV 
-          AND MONTH(NgayChamCong) = @Thang 
-          AND YEAR(NgayChamCong) = @Nam
-          AND TrangThai IN (N'CO_MAT', N'DI_TRE', N'VE_SOM');
-    END
-
-    RETURN @SoNgayCong;
-END;
-GO
 
 -- ============================================================================
 -- PHẦN 5: TRIGGER THEO PHÂN CÔNG (TV1: trg_NhanVien_KhongXoaKhiDaPhatSinhLuong)
 -- ============================================================================
-CREATE OR ALTER TRIGGER trg_NhanVien_KhongXoaKhiDaPhatSinhLuong
-ON NHANVIEN
-INSTEAD OF DELETE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- Kiểm tra xem nhân viên chuẩn bị xóa có phát sinh lương trong CHITIETBANGLUONG hoặc bảng chấm công không
-    IF EXISTS (
-        SELECT 1 
-        FROM deleted d
-        WHERE (EXISTS (SELECT 1 FROM sys.tables WHERE name = N'CHITIETBANGLUONG') 
-               AND EXISTS (SELECT 1 FROM CHITIETBANGLUONG ct WHERE ct.MaNV = d.MaNV))
-           OR (EXISTS (SELECT 1 FROM sys.tables WHERE name = N'CHAMCONG') 
-               AND EXISTS (SELECT 1 FROM CHAMCONG cc WHERE cc.MaNV = d.MaNV))
-    )
-    BEGIN
-        RAISERROR (N'Không được phép xóa nhân viên đã có dữ liệu chấm công hoặc lương. Vui lòng chuyển trạng thái sang NGHI_VIEC!', 16, 1);
-        ROLLBACK TRANSACTION;
-        RETURN;
-    END
-
-    -- Nếu chưa phát sinh bất kỳ dữ liệu nghiệp vụ nào, cho phép xóa mềm/xóa tài khoản trước rồi xóa nhân viên
-    BEGIN TRY
-        DELETE FROM TAIKHOAN WHERE MaNV IN (SELECT MaNV FROM deleted);
-        DELETE FROM NHANVIEN WHERE MaNV IN (SELECT MaNV FROM deleted);
-    END TRY
-    BEGIN CATCH
-        DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
-        RAISERROR (@ErrMsg, 16, 1);
-        ROLLBACK TRANSACTION;
-    END CATCH
-END;
-GO
+-- Installed by module 05 after attendance/payroll dependencies exist.
 
 -- ============================================================================
 -- PHẦN 6: STORED PROCEDURE THEO PHÂN CÔNG (TV1: sp_ThemNhanVien)
@@ -226,7 +179,7 @@ CREATE OR ALTER PROCEDURE sp_ThemNhanVien
     @MaCV          INT,
     @TaoTaiKhoan   BIT = 0,
     @TenDangNhap   VARCHAR(50) = NULL,
-    @MatKhauSHA256 CHAR(64) = NULL,
+    @MatKhauSHA256 VARCHAR(255) = NULL,
     @VaiTro        VARCHAR(30) = 'Employee',
     @NewMaNV       INT OUTPUT
 AS
@@ -236,6 +189,12 @@ BEGIN
 
     BEGIN TRY
         BEGIN TRANSACTION;
+
+        IF @TaoTaiKhoan = 1 AND @VaiTro <> 'Employee'
+           AND ISNULL(IS_ROLEMEMBER('role_DBAdmin'), 0) <> 1
+           AND ISNULL(IS_ROLEMEMBER('db_owner'), 0) <> 1
+           AND ISNULL(IS_SRVROLEMEMBER('sysadmin'), 0) <> 1
+            THROW 51001, N'HR chỉ được cấp tài khoản Employee.', 1;
 
         -- 1. Kiểm tra tồn tại Phòng ban và Chức vụ
         IF NOT EXISTS (SELECT 1 FROM PHONGBAN WHERE MaPB = @MaPB AND TrangThai = N'HOAT_DONG')
@@ -311,4 +270,45 @@ BEGIN
     (N'Chuyên Viên', 500000),
     (N'Nhân Viên', 0);
 END
+GO
+
+IF COL_LENGTH('dbo.NHANVIEN','NgayNghiViec') IS NULL
+    ALTER TABLE dbo.NHANVIEN ADD NgayNghiViec DATE NULL;
+GO
+IF OBJECT_ID('dbo.LICHSULUONG','U') IS NULL
+    CREATE TABLE dbo.LICHSULUONG(
+        MaNV INT NOT NULL REFERENCES dbo.NHANVIEN(MaNV),
+        TuThang DATE NOT NULL, LuongCoBan DECIMAL(18,2) NOT NULL CHECK(LuongCoBan>0),
+        CONSTRAINT PK_LICHSULUONG PRIMARY KEY(MaNV,TuThang));
+GO
+-- Migration baseline: prior historical rates cannot be reconstructed from current data.
+INSERT dbo.LICHSULUONG(MaNV,TuThang,LuongCoBan)
+SELECT nv.MaNV,DATEFROMPARTS(YEAR(nv.NgayVaoLam),MONTH(nv.NgayVaoLam),1),nv.LuongCoBan
+FROM dbo.NHANVIEN nv
+WHERE NOT EXISTS(SELECT 1 FROM dbo.LICHSULUONG h WHERE h.MaNV=nv.MaNV);
+GO
+CREATE OR ALTER TRIGGER dbo.trg_NhanVien_LichSuLuong
+ON dbo.NHANVIEN AFTER INSERT,UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF NOT EXISTS(SELECT 1 FROM inserted) RETURN;
+    -- Monthly payroll uses the rate effective from the first day of its month.
+    DECLARE @Month DATE=DATEFROMPARTS(YEAR(GETDATE()),MONTH(GETDATE()),1);
+    DECLARE @Changed TABLE(MaNV INT PRIMARY KEY,TuThang DATE,LuongCoBan DECIMAL(18,2));
+    INSERT @Changed
+    SELECT i.MaNV,CASE WHEN d.MaNV IS NULL THEN DATEFROMPARTS(YEAR(i.NgayVaoLam),MONTH(i.NgayVaoLam),1)
+                        WHEN i.NgayVaoLam>GETDATE() THEN DATEFROMPARTS(YEAR(i.NgayVaoLam),MONTH(i.NgayVaoLam),1)
+                        ELSE @Month END,i.LuongCoBan
+    FROM inserted i LEFT JOIN deleted d ON d.MaNV=i.MaNV
+    WHERE d.MaNV IS NULL OR d.LuongCoBan<>i.LuongCoBan;
+    UPDATE h SET LuongCoBan=c.LuongCoBan FROM dbo.LICHSULUONG h JOIN @Changed c
+        ON c.MaNV=h.MaNV AND c.TuThang=h.TuThang;
+    INSERT dbo.LICHSULUONG(MaNV,TuThang,LuongCoBan)
+    SELECT c.MaNV,c.TuThang,c.LuongCoBan FROM @Changed c
+    WHERE NOT EXISTS(SELECT 1 FROM dbo.LICHSULUONG h WITH(UPDLOCK,HOLDLOCK) WHERE h.MaNV=c.MaNV AND h.TuThang=c.TuThang);
+    UPDATE nv SET NgayNghiViec=CASE WHEN i.TrangThai=N'NGHI_VIEC' THEN CONVERT(DATE,GETDATE()) ELSE NULL END
+    FROM dbo.NHANVIEN nv JOIN inserted i ON i.MaNV=nv.MaNV LEFT JOIN deleted d ON d.MaNV=i.MaNV
+    WHERE (d.MaNV IS NULL AND i.TrangThai=N'NGHI_VIEC') OR i.TrangThai<>d.TrangThai;
+END;
 GO
