@@ -12,7 +12,7 @@ import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
-import javax.swing.border.MatteBorder;
+
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.math.BigDecimal;
@@ -55,6 +55,7 @@ public class NhanVienPanel extends JPanel {
 
     // Search
     private JTextField txtTimKiem;
+    private JLabel lblSoLuong;
 
     public NhanVienPanel() {
         initComponents();
@@ -63,215 +64,271 @@ public class NhanVienPanel extends JPanel {
     }
 
     private void initComponents() {
-        setLayout(new BorderLayout(0, 12));
+        setLayout(new BorderLayout(0, 16));
         setBackground(UITheme.BG_APP);
-        setBorder(new EmptyBorder(16, 20, 20, 20));
+        setBorder(new EmptyBorder(20, 24, 20, 24));
+        JTabbedPane pages = new JTabbedPane();
+        UITheme.styleTabbedPane(pages);
 
-        // 1. TOP: THANH TÌM KIẾM PHẲNG
-        JPanel pnlTop = new JPanel(new BorderLayout(14, 0));
-        pnlTop.setBackground(Color.WHITE);
-        pnlTop.setBorder(new CompoundBorder(
-            new LineBorder(UITheme.BORDER, 1, true),
-            new EmptyBorder(10, 16, 10, 16)
-        ));
+        JPanel top = new JPanel(new BorderLayout(0, 14));
+        top.setOpaque(false);
+        top.add(UITheme.createPageHeader("Hồ sơ nhân sự",
+                "Quản lý thông tin, công việc và tài khoản của đội ngũ."), BorderLayout.NORTH);
 
-        JPanel searchLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        searchLeft.setOpaque(false);
-
-        JLabel lblTimKiem = new JLabel("Tìm kiếm nhân sự:");
-        lblTimKiem.setFont(UITheme.FONT_BODY_BOLD);
-        lblTimKiem.setForeground(UITheme.TEXT_MAIN);
-
-        txtTimKiem = new JTextField(24);
+        JPanel searchCard = UITheme.createCardPanel();
+        searchCard.setLayout(new BorderLayout(12, 0));
+        txtTimKiem = new JTextField();
         UITheme.styleTextField(txtTimKiem);
+        txtTimKiem.setToolTipText("Nhập họ hoặc tên nhân viên rồi nhấn Enter để tìm kiếm");
+        JPanel searchField = new JPanel(new BorderLayout(10, 0));
+        searchField.setOpaque(false);
+        JLabel searchIcon = new JLabel("Tìm theo tên", UITheme.icon("search", 19, UITheme.TEXT_MUTED), SwingConstants.LEFT);
+        searchIcon.setFont(UITheme.FONT_CAPTION_BOLD);
+        searchIcon.setForeground(UITheme.TEXT_MUTED);
+        searchIcon.setIconTextGap(8);
+        searchIcon.setLabelFor(txtTimKiem);
+        searchField.add(searchIcon, BorderLayout.WEST);
+        searchField.add(txtTimKiem, BorderLayout.CENTER);
+        searchCard.add(searchField, BorderLayout.CENTER);
 
-        JButton btnTimKiem = new JButton("Tìm kiếm (Index)");
+        JButton btnTimKiem = new JButton("Tìm kiếm");
         UITheme.stylePrimaryButton(btnTimKiem);
-
-        JButton btnTaiLai = new JButton("Tải lại danh sách");
+        JButton btnTaiLai = new JButton("Tải lại", UITheme.icon("refresh", 16, UITheme.TEXT_MAIN));
         UITheme.styleSecondaryButton(btnTaiLai);
+        JPanel searchActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        searchActions.setOpaque(false);
+        searchActions.add(btnTimKiem);
+        searchActions.add(btnTaiLai);
+        searchCard.add(searchActions, BorderLayout.EAST);
+        add(top, BorderLayout.NORTH);
 
-        searchLeft.add(lblTimKiem);
-        searchLeft.add(txtTimKiem);
-        searchLeft.add(btnTimKiem);
-        searchLeft.add(btnTaiLai);
+        JPanel rosterCard = UITheme.createCardPanel();
+        rosterCard.setLayout(new BorderLayout(0, 8));
+        JPanel rosterHeader = new JPanel(new BorderLayout());
+        rosterHeader.setOpaque(false);
+        rosterHeader.add(UITheme.createSectionHeader("Danh sách nhân viên"), BorderLayout.WEST);
+        lblSoLuong = new JLabel("Đang tải dữ liệu");
+        lblSoLuong.setFont(UITheme.FONT_CAPTION);
+        lblSoLuong.setForeground(UITheme.TEXT_MUTED);
+        rosterHeader.add(lblSoLuong, BorderLayout.EAST);
+        rosterCard.add(rosterHeader, BorderLayout.NORTH);
 
-        pnlTop.add(searchLeft, BorderLayout.WEST);
-        add(pnlTop, BorderLayout.NORTH);
-
-        // 2. CENTER: BẢNG DỮ LIỆU CHUẨN ENTERPRISE
         modelNhanVien = new DefaultTableModel(new String[]{
-            "Mã NV", "Họ Tên", "Ngày Sinh", "Phái", "CCCD", "SĐT", "Email", "Lương CB (VNĐ)", "Phòng Ban", "Chức Vụ", "Trạng Thái", "Tài Khoản"
+            "Mã NV", "Họ và tên", "Ngày sinh", "Giới tính", "CCCD", "Điện thoại",
+            "Email", "Lương cơ bản (đ)", "Phòng ban", "Chức vụ", "Trạng thái", "Tài khoản"
         }, 0) {
-            @Override
-            public boolean isCellEditable(int row, int col) { return false; }
+            @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         tblNhanVien = new JTable(modelNhanVien);
         UITheme.styleTable(tblNhanVien);
-
+        tblNhanVien.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tblNhanVien.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        int[] widths = {70, 180, 110, 90, 130, 120, 190, 145, 160, 150, 145, 130};
+        for (int i = 0; i < widths.length; i++) {
+            tblNhanVien.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+        }
         JScrollPane scrollTable = new JScrollPane(tblNhanVien);
-        scrollTable.setBorder(new LineBorder(UITheme.BORDER, 1, true));
-        scrollTable.getViewport().setBackground(Color.WHITE);
-        add(scrollTable, BorderLayout.CENTER);
+        UITheme.styleScrollPane(scrollTable);
+        rosterCard.add(scrollTable, BorderLayout.CENTER);
+        JLabel tableHint = new JLabel("Chọn một nhân viên để xem và cập nhật hồ sơ bên dưới.");
+        tableHint.setFont(UITheme.FONT_CAPTION);
+        tableHint.setForeground(UITheme.TEXT_MUTED);
+        tableHint.setText("Nhấp đúp vào nhân viên để mở hồ sơ.");
+        JPanel rosterFooter = new JPanel(new BorderLayout(12, 0));
+        rosterFooter.setOpaque(false);
+        rosterFooter.add(tableHint, BorderLayout.CENTER);
+        JButton btnMoHoSo = new JButton("Mở hồ sơ", UITheme.icon("edit", 16, UITheme.TEXT_MAIN));
+        UITheme.styleSecondaryButton(btnMoHoSo);
+        JButton btnTaoHoSo = new JButton("Thêm nhân viên", UITheme.icon("plus", 16, Color.WHITE));
+        UITheme.stylePrimaryButton(btnTaoHoSo);
+        JPanel rosterActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        rosterActions.setOpaque(false);
+        rosterActions.add(btnMoHoSo);
+        rosterActions.add(btnTaoHoSo);
+        rosterFooter.add(rosterActions, BorderLayout.EAST);
+        rosterCard.add(rosterFooter, BorderLayout.SOUTH);
 
-        // 3. SOUTH: FORM THÔNG TIN & NÚT BẤM (CARD PHẲNG)
-        JPanel pnlSouth = new JPanel(new BorderLayout(0, 10));
-        pnlSouth.setOpaque(false);
+        JPanel rosterPage = new JPanel(new BorderLayout(0, 14));
+        rosterPage.setBackground(UITheme.BG_APP);
+        rosterPage.setBorder(new EmptyBorder(14, 0, 0, 0));
+        rosterPage.add(searchCard, BorderLayout.NORTH);
+        rosterPage.add(rosterCard, BorderLayout.CENTER);
 
-        JPanel pnlFormCard = new JPanel(new BorderLayout(0, 10));
-        pnlFormCard.setBackground(Color.WHITE);
-        pnlFormCard.setBorder(new CompoundBorder(
-            new LineBorder(UITheme.BORDER, 1, true),
-            new EmptyBorder(14, 16, 14, 16)
-        ));
+        JPanel editorCard = UITheme.createCardPanel();
+        editorCard.setLayout(new BorderLayout(0, 8));
+        JTabbedPane editorTabs = new JTabbedPane();
+        UITheme.styleTabbedPane(editorTabs);
 
-        pnlFormCard.add(UITheme.createSectionHeader("Thông tin hồ sơ nhân sự"), BorderLayout.NORTH);
+        txtMaNV = new JTextField();
+        txtMaNV.setEditable(false);
+        txtMaNV.setToolTipText("Mã nhân viên được tạo tự động");
+        txtHoTen = new JTextField();
+        txtNgaySinh = new JTextField();
+        txtCCCD = new JTextField();
+        txtDiaChi = new JTextField();
+        txtSoDienThoai = new JTextField();
+        txtEmail = new JTextField();
+        txtNgayVaoLam = new JTextField();
+        txtLuongCoBan = new JTextField();
+        for (JTextField field : new JTextField[]{txtMaNV, txtHoTen, txtNgaySinh, txtCCCD,
+                txtDiaChi, txtSoDienThoai, txtEmail, txtNgayVaoLam, txtLuongCoBan}) {
+            UITheme.styleTextField(field);
+        }
+        txtNgaySinh.setToolTipText("Định dạng năm-tháng-ngày, ví dụ 2000-01-15");
+        txtNgayVaoLam.setToolTipText("Định dạng năm-tháng-ngày; bỏ trống để dùng ngày hôm nay");
+        txtLuongCoBan.setToolTipText("Nhập số tiền bằng đồng, không dùng dấu phân cách");
+        cboGioiTinh = new JComboBox<>(new String[]{"Nam", "Nữ", "Khác"});
+        cboTrangThai = new JComboBox<>(new String[]{"DANG_LAM_VIEC", "NGHI_VIEC"});
+        cboPhongBan = new JComboBox<>();
+        cboChucVu = new JComboBox<>();
+        UITheme.styleComboBox(cboGioiTinh);
+        UITheme.styleComboBox(cboTrangThai);
+        UITheme.styleComboBox(cboPhongBan);
+        UITheme.styleComboBox(cboChucVu);
 
-        JPanel pnlForm = new JPanel(new GridBagLayout());
-        pnlForm.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 8, 5, 8);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        JPanel personal = new JPanel(new GridLayout(3, 3, 16, 10));
+        personal.setBackground(Color.WHITE);
+        personal.setBorder(new EmptyBorder(10, 0, 4, 0));
+        personal.add(field("Mã nhân viên", txtMaNV));
+        personal.add(field("Họ và tên *", txtHoTen));
+        personal.add(field("Ngày sinh · yyyy-mm-dd", txtNgaySinh));
+        personal.add(field("Giới tính", cboGioiTinh));
+        personal.add(field("CCCD · 12 số", txtCCCD));
+        personal.add(field("Điện thoại · 10 số", txtSoDienThoai));
+        personal.add(field("Email *", txtEmail));
+        personal.add(field("Địa chỉ", txtDiaChi));
+        personal.add(field("Ngày vào làm · yyyy-mm-dd", txtNgayVaoLam));
+        JPanel personalCanvas = new JPanel(new BorderLayout());
+        personalCanvas.setBackground(Color.WHITE);
+        personalCanvas.add(personal, BorderLayout.NORTH);
+        JScrollPane personalScroll = new JScrollPane(personalCanvas);
+        UITheme.styleScrollPane(personalScroll);
+        personalScroll.setBorder(null);
+        editorTabs.addTab("Thông tin cá nhân", personalScroll);
 
-        // Row 0: Mã NV, Họ Tên, Ngày Sinh
-        gbc.gridy = 0;
-        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(createFieldLabel("Mã Nhân Viên:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0; txtMaNV = new JTextField(); txtMaNV.setEditable(false); UITheme.styleTextField(txtMaNV); pnlForm.add(txtMaNV, gbc);
+        JPanel work = new JPanel(new BorderLayout(0, 12));
+        work.setBackground(Color.WHITE);
+        work.setBorder(new EmptyBorder(10, 0, 4, 0));
+        JPanel workFields = new JPanel(new GridLayout(1, 4, 14, 0));
+        workFields.setOpaque(false);
+        workFields.add(field("Lương cơ bản (đ)", txtLuongCoBan));
+        workFields.add(field("Phòng ban", cboPhongBan));
+        workFields.add(field("Chức vụ", cboChucVu));
+        workFields.add(field("Trạng thái làm việc", cboTrangThai));
+        work.add(workFields, BorderLayout.NORTH);
 
-        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(createFieldLabel("Họ và Tên (*):"), gbc);
-        gbc.gridx = 3; gbc.weightx = 1.0; txtHoTen = new JTextField(); UITheme.styleTextField(txtHoTen); pnlForm.add(txtHoTen, gbc);
-
-        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(createFieldLabel("Ngày Sinh (YYYY-MM-DD):"), gbc);
-        gbc.gridx = 5; gbc.weightx = 1.0; txtNgaySinh = new JTextField(); UITheme.styleTextField(txtNgaySinh); pnlForm.add(txtNgaySinh, gbc);
-
-        // Row 1: Giới Tính, CCCD, Số Điện Thoại
-        gbc.gridy = 1;
-        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(createFieldLabel("Giới Tính:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0; cboGioiTinh = new JComboBox<>(new String[]{"Nam", "Nữ", "Khác"}); UITheme.styleComboBox(cboGioiTinh); pnlForm.add(cboGioiTinh, gbc);
-
-        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(createFieldLabel("CCCD (12 số):"), gbc);
-        gbc.gridx = 3; gbc.weightx = 1.0; txtCCCD = new JTextField(); UITheme.styleTextField(txtCCCD); pnlForm.add(txtCCCD, gbc);
-
-        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(createFieldLabel("Số Điện Thoại (10 số):"), gbc);
-        gbc.gridx = 5; gbc.weightx = 1.0; txtSoDienThoai = new JTextField(); UITheme.styleTextField(txtSoDienThoai); pnlForm.add(txtSoDienThoai, gbc);
-
-        // Row 2: Email, Địa Chỉ, Ngày Vào Làm
-        gbc.gridy = 2;
-        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(createFieldLabel("Email (*):"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0; txtEmail = new JTextField(); UITheme.styleTextField(txtEmail); pnlForm.add(txtEmail, gbc);
-
-        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(createFieldLabel("Địa Chỉ:"), gbc);
-        gbc.gridx = 3; gbc.weightx = 1.0; txtDiaChi = new JTextField(); UITheme.styleTextField(txtDiaChi); pnlForm.add(txtDiaChi, gbc);
-
-        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(createFieldLabel("Ngày Vào Làm:"), gbc);
-        gbc.gridx = 5; gbc.weightx = 1.0; txtNgayVaoLam = new JTextField(); UITheme.styleTextField(txtNgayVaoLam); pnlForm.add(txtNgayVaoLam, gbc);
-
-        // Row 3: Lương Cơ Bản, Phòng Ban, Chức Vụ
-        gbc.gridy = 3;
-        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(createFieldLabel("Lương Cơ Bản:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0; txtLuongCoBan = new JTextField(); UITheme.styleTextField(txtLuongCoBan); pnlForm.add(txtLuongCoBan, gbc);
-
-        gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(createFieldLabel("Phòng Ban:"), gbc);
-        gbc.gridx = 3; gbc.weightx = 1.0; cboPhongBan = new JComboBox<>(); UITheme.styleComboBox(cboPhongBan); pnlForm.add(cboPhongBan, gbc);
-
-        gbc.gridx = 4; gbc.weightx = 0; pnlForm.add(createFieldLabel("Chức Vụ:"), gbc);
-        gbc.gridx = 5; gbc.weightx = 1.0; cboChucVu = new JComboBox<>(); UITheme.styleComboBox(cboChucVu); pnlForm.add(cboChucVu, gbc);
-
-        // Row 4: Trạng Thái
-        gbc.gridy = 4;
-        gbc.gridx = 0; gbc.weightx = 0; pnlForm.add(createFieldLabel("Trạng Thái:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0; cboTrangThai = new JComboBox<>(new String[]{"DANG_LAM_VIEC", "NGHI_VIEC"}); UITheme.styleComboBox(cboTrangThai); pnlForm.add(cboTrangThai, gbc);
-
-        // Subpanel: Cấp tài khoản đồng thời
-        pnlTaiKhoan = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 4));
-        pnlTaiKhoan.setBackground(new Color(248, 250, 252));
-        pnlTaiKhoan.setBorder(new CompoundBorder(
-            new LineBorder(UITheme.BORDER, 1, true),
-            new EmptyBorder(6, 12, 6, 12)
-        ));
-        chkCapTaiKhoan = new JCheckBox("Cấp tài khoản đăng nhập (Transaction Atomicity)");
+        pnlTaiKhoan = new JPanel(new BorderLayout(0, 8));
+        pnlTaiKhoan.setBackground(UITheme.BG_APP);
+        pnlTaiKhoan.setBorder(new CompoundBorder(new LineBorder(UITheme.BORDER),
+                new EmptyBorder(10, 12, 12, 12)));
+        chkCapTaiKhoan = new JCheckBox("Tạo tài khoản khi thêm nhân viên");
         chkCapTaiKhoan.setFont(UITheme.FONT_BODY_BOLD);
+        chkCapTaiKhoan.setForeground(UITheme.TEXT_MAIN);
         chkCapTaiKhoan.setOpaque(false);
-
-        txtTenDangNhap = new JTextField(10);
+        pnlTaiKhoan.add(chkCapTaiKhoan, BorderLayout.NORTH);
+        txtTenDangNhap = new JTextField();
         UITheme.styleTextField(txtTenDangNhap);
         txtTenDangNhap.setEnabled(false);
-
-        txtMatKhau = new JPasswordField(10);
+        txtMatKhau = new JPasswordField();
         UITheme.stylePasswordField(txtMatKhau);
         txtMatKhau.setEnabled(false);
-
         cboVaiTro = new JComboBox<>(com.session.Session.getInstance().hasRole("DB_Admin")
                 ? new String[]{"Employee", "HR_Manager", "Payroll_Officer", "DB_Admin"}
                 : new String[]{"Employee"});
         UITheme.styleComboBox(cboVaiTro);
         cboVaiTro.setEnabled(false);
+        JPanel accountFields = new JPanel(new GridLayout(1, 3, 14, 0));
+        accountFields.setOpaque(false);
+        accountFields.add(field("Tên đăng nhập", txtTenDangNhap));
+        accountFields.add(field("Mật khẩu", txtMatKhau));
+        accountFields.add(field("Vai trò", cboVaiTro));
+        pnlTaiKhoan.add(accountFields, BorderLayout.CENTER);
+        work.add(pnlTaiKhoan, BorderLayout.CENTER);
+        JPanel workCanvas = new JPanel(new BorderLayout());
+        workCanvas.setBackground(Color.WHITE);
+        workCanvas.add(work, BorderLayout.NORTH);
+        JScrollPane workScroll = new JScrollPane(workCanvas);
+        UITheme.styleScrollPane(workScroll);
+        workScroll.setBorder(null);
+        editorTabs.addTab("Công việc & tài khoản", workScroll);
+        editorCard.add(editorTabs, BorderLayout.CENTER);
 
-        pnlTaiKhoan.add(chkCapTaiKhoan);
-        pnlTaiKhoan.add(new JLabel("Username:"));
-        pnlTaiKhoan.add(txtTenDangNhap);
-        pnlTaiKhoan.add(new JLabel("Mật khẩu:"));
-        pnlTaiKhoan.add(txtMatKhau);
-        pnlTaiKhoan.add(new JLabel("Vai trò:"));
-        pnlTaiKhoan.add(cboVaiTro);
-
-        gbc.gridx = 2; gbc.gridy = 4; gbc.gridwidth = 4;
-        pnlForm.add(pnlTaiKhoan, gbc);
-
-        pnlFormCard.add(pnlForm, BorderLayout.CENTER);
-
-        // Buttons
-        JPanel pnlButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        pnlButtons.setOpaque(false);
-
-        JButton btnThem = new JButton("Thêm Nhân Viên");
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        actions.setOpaque(false);
+        JButton btnThem = new JButton("Thêm nhân viên", UITheme.icon("plus", 16, Color.WHITE));
+        JButton btnCapNhat = new JButton("Cập nhật", UITheme.icon("edit", 16, UITheme.TEXT_MAIN));
+        JButton btnXoa = new JButton("Xóa", UITheme.icon("trash", 16, UITheme.DANGER_TEXT));
+        JButton btnLamMoi = new JButton("Làm mới");
         UITheme.stylePrimaryButton(btnThem);
-
-        JButton btnCapNhat = new JButton("Cập Nhật");
         UITheme.styleSecondaryButton(btnCapNhat);
-
-        JButton btnXoa = new JButton("Xóa (Soft Delete)");
         UITheme.styleDangerButton(btnXoa);
-
-        JButton btnLamMoi = new JButton("Làm Mới Form");
         UITheme.styleSecondaryButton(btnLamMoi);
+        actions.add(btnLamMoi);
+        actions.add(btnXoa);
+        actions.add(btnCapNhat);
+        actions.add(btnThem);
+        editorCard.add(actions, BorderLayout.SOUTH);
+        JPanel editorPage = new JPanel(new BorderLayout());
+        editorPage.setBackground(UITheme.BG_APP);
+        editorPage.setBorder(new EmptyBorder(14, 0, 0, 0));
+        editorPage.add(editorCard, BorderLayout.CENTER);
+        pages.addTab("Danh sách nhân viên", UITheme.icon("users", 16, UITheme.TEXT_MUTED), rosterPage);
+        pages.addTab("Hồ sơ & tài khoản", UITheme.icon("briefcase", 16, UITheme.TEXT_MUTED), editorPage);
+        add(pages, BorderLayout.CENTER);
 
-        pnlButtons.add(btnThem);
-        pnlButtons.add(btnCapNhat);
-        pnlButtons.add(btnXoa);
-        pnlButtons.add(btnLamMoi);
-
-        pnlSouth.add(pnlFormCard, BorderLayout.CENTER);
-        pnlSouth.add(pnlButtons, BorderLayout.SOUTH);
-
-        add(pnlSouth, BorderLayout.SOUTH);
-
-        // Event listeners
         chkCapTaiKhoan.addActionListener(e -> {
-            boolean sel = chkCapTaiKhoan.isSelected();
-            txtTenDangNhap.setEnabled(sel);
-            txtMatKhau.setEnabled(sel);
-            cboVaiTro.setEnabled(sel);
+            boolean selected = chkCapTaiKhoan.isSelected();
+            txtTenDangNhap.setEnabled(selected);
+            txtMatKhau.setEnabled(selected);
+            cboVaiTro.setEnabled(selected);
         });
-
         tblNhanVien.getSelectionModel().addListSelectionListener(e -> {
-            int row = tblNhanVien.getSelectedRow();
-            if (row >= 0) fillFormFromTableRow(tblNhanVien.convertRowIndexToModel(row));
+            if (!e.getValueIsAdjusting()) {
+                int row = tblNhanVien.getSelectedRow();
+                if (row >= 0) fillFormFromTableRow(tblNhanVien.convertRowIndexToModel(row));
+            }
         });
-
         btnThem.addActionListener(e -> xuLyThemNhanVien());
         btnCapNhat.addActionListener(e -> xuLyCapNhatNhanVien());
         btnXoa.addActionListener(e -> xuLyXoaNhanVien());
         btnLamMoi.addActionListener(e -> lamMoiForm());
         btnTimKiem.addActionListener(e -> xuLyTimKiem());
+        txtTimKiem.addActionListener(e -> xuLyTimKiem());
         btnTaiLai.addActionListener(e -> loadTableData());
+        btnMoHoSo.addActionListener(e -> {
+            if (tblNhanVien.getSelectedRow() < 0) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên để xem hồ sơ.",
+                        "Chưa chọn nhân viên", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            pages.setSelectedIndex(1);
+        });
+        btnTaoHoSo.addActionListener(e -> {
+            lamMoiForm();
+            pages.setSelectedIndex(1);
+            editorTabs.setSelectedIndex(0);
+            txtHoTen.requestFocusInWindow();
+        });
+        tblNhanVien.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent event) {
+                if (event.getClickCount() == 2 && tblNhanVien.getSelectedRow() >= 0) {
+                    pages.setSelectedIndex(1);
+                }
+            }
+        });
     }
 
-    private JLabel createFieldLabel(String text) {
-        JLabel lbl = new JLabel(text);
-        lbl.setFont(UITheme.FONT_BODY);
-        lbl.setForeground(UITheme.TEXT_MAIN);
-        return lbl;
+    private JPanel field(String text, JComponent input) {
+        JPanel panel = new JPanel(new BorderLayout(0, 5));
+        panel.setOpaque(false);
+        JLabel label = new JLabel(text);
+        label.setFont(UITheme.FONT_CAPTION_BOLD);
+        label.setForeground(UITheme.TEXT_MUTED);
+        label.setLabelFor(input);
+        panel.add(label, BorderLayout.NORTH);
+        panel.add(input, BorderLayout.CENTER);
+        panel.setMinimumSize(new Dimension(0, 58));
+        return panel;
     }
 
     private void loadComboboxData() {
@@ -289,6 +346,7 @@ public class NhanVienPanel extends JPanel {
         modelNhanVien.setRowCount(0);
         DatabaseTask.run(tblNhanVien, () -> nhanVienService.layDanhSachNhanVien(), list -> {
             loadedEmployees = list;
+            lblSoLuong.setText(list.size() + " nhân viên");
             for (NhanVien nv : list) {
                 modelNhanVien.addRow(new Object[]{
                     nv.getMaNV(),
@@ -313,6 +371,7 @@ public class NhanVienPanel extends JPanel {
         String search = txtTimKiem.getText();
         DatabaseTask.run(tblNhanVien, () -> nhanVienService.timKiemTheoTen(search), list -> {
             loadedEmployees = list;
+            lblSoLuong.setText(list.size() + " kết quả tìm kiếm");
             for (NhanVien nv : list) {
                 modelNhanVien.addRow(new Object[]{
                     nv.getMaNV(),
@@ -379,7 +438,7 @@ public class NhanVienPanel extends JPanel {
 
             DatabaseTask.runExclusive(this, () -> nhanVienService.themNhanVien(nv, taoTK, user, pass, role), newId -> {
             JOptionPane.showMessageDialog(this, "Thêm nhân viên thành công! Mã NV: " + newId
-                    + (taoTK ? "\nĐã tạo hồ sơ tài khoản. DBA cần cấp và mapping SQL login trước khi đăng nhập." : ""));
+                    + (taoTK ? "\nĐã tạo hồ sơ tài khoản. Quản trị viên cần kích hoạt quyền đăng nhập cho tài khoản này." : ""));
             lamMoiForm();
             loadTableData();
                     });
@@ -418,7 +477,7 @@ public class NhanVienPanel extends JPanel {
                             });
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Lỗi xóa nhân viên: " + e.getMessage(), "Thông báo ràng buộc CSDL", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Lỗi xóa nhân viên: " + e.getMessage(), "Không thể xóa nhân viên", JOptionPane.WARNING_MESSAGE);
         }
     }
 

@@ -1,6 +1,6 @@
 param(
     [switch]$LiveSql,
-    [ValidateSet('SecurityRegressionTest','LoginChipRegressionTest','TestRealAuth','FullSystemIntegrationTest','NhanSuModuleTest','TestDatabaseConnection')]
+    [ValidateSet('SecurityRegressionTest','LoginChipRegressionTest','LightThemeRegressionTest','TestRealAuth','FullSystemIntegrationTest','NhanSuModuleTest','TestDatabaseConnection')]
     [string]$TestClass = 'SecurityRegressionTest'
 )
 $ErrorActionPreference = 'Stop'
@@ -38,7 +38,7 @@ if ($LASTEXITCODE -ne 0) { exit 1 }
 Write-Host "PASS Java 11 compilation: $($sourceFiles.Count) sources."
 if (!$jdbcJar) { Write-Host 'SKIPPED: the SQL Server JDBC JAR is required even by the recording-driver regression.'; exit 2 }
 $classes = if ($LiveSql) { @('SecurityRegressionTest','TestRealAuth','FullSystemIntegrationTest','NhanSuModuleTest') } else { @($TestClass) }
-$needsSql = $LiveSql -or ($TestClass -ne 'SecurityRegressionTest' -and $TestClass -ne 'LoginChipRegressionTest')
+$needsSql = $LiveSql -or ($TestClass -notin @('SecurityRegressionTest','LoginChipRegressionTest','LightThemeRegressionTest'))
 if ($needsSql -and ([string]::IsNullOrWhiteSpace($env:TEST_SQL_USER) -or [string]::IsNullOrEmpty($env:TEST_SQL_PASSWORD))) {
     Write-Host 'SKIPPED live SQL: JDBC driver and TEST_SQL_USER/TEST_SQL_PASSWORD are required. Set DB_URL to the QA database.'
     if ($LiveSql) { & java -cp $classpath com.test.SecurityRegressionTest; if ($LASTEXITCODE -ne 0) { exit 1 } }

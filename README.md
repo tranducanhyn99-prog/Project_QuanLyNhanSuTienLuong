@@ -102,6 +102,14 @@ Project_QuanLyNhanSuTienLuong/
 - `database/test_benchmark_index_TV1.sql`: Đo Scan/Seek trên bảng tạm, không chèn 5.000 nhân viên vào bảng thật.
 - `database/test_module_nhansu_TV1.sql`: Kiểm thử tự động 6 đối tượng CSDL của TV1 (SP, Transaction, Trigger, Function, View, Index).
 
+## Giao diện sáng PeopleOS
+
+Ứng dụng dùng theme sáng thống nhất cho đăng nhập, điều hướng và toàn bộ phân hệ. Bảng dữ liệu có thanh cuộn ngang, trạng thái và vai trò hiển thị bằng tiếng Việt; mã dữ liệu và phân quyền giữ nguyên. Hồ sơ nhân viên được chia thành tab danh sách và tab chỉnh sửa, hỗ trợ nhấp đúp để mở hồ sơ.
+
+- Khởi chạy: `powershell -ExecutionPolicy Bypass -File .\start_app.ps1` (dùng cấu hình SQL hiện có).
+- Kiểm tra màu chữ/nền, trạng thái nút, badge và focus bàn phím, không kết nối SQL: `powershell -ExecutionPolicy Bypass -File .\run_verification.ps1 -TestClass LightThemeRegressionTest`.
+- Xem trước: [Đăng nhập](docs/screenshots/peopleos-light/login.png) · [Dashboard](docs/screenshots/peopleos-light/dashboard.png).
+
 ## Quy trình Git/GitHub
 
 Branch `main` đã được bảo vệ bằng GitHub Ruleset.

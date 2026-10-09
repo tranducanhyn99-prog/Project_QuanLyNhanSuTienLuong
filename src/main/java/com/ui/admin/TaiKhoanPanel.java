@@ -6,12 +6,11 @@ import com.ui.theme.UITheme;
 import com.ui.theme.DatabaseTask;
 
 import javax.swing.*;
-import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -29,6 +28,7 @@ import java.util.List;
 public class TaiKhoanPanel extends JPanel {
 
     private final AuthService authService = new AuthService();
+    private final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private JTable            tblTaiKhoan;
     private DefaultTableModel modelTaiKhoan;
@@ -63,22 +63,23 @@ public class TaiKhoanPanel extends JPanel {
         tblTaiKhoan = new JTable(modelTaiKhoan);
         UITheme.styleTable(tblTaiKhoan);
         tblTaiKhoan.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tblTaiKhoan.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        int[] widths = {80, 170, 210, 80, 180, 130, 140, 140};
+        for (int i = 0; i < widths.length; i++) {
+            tblTaiKhoan.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+        }
 
-        // Renderer màu cho trạng thái
-        tblTaiKhoan.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
+        tblTaiKhoan.getColumnModel().getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
                                                            boolean isSelected, boolean hasFocus,
                                                            int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                if ("HOAT_DONG".equals(value)) {
-                    setForeground(UITheme.SUCCESS_TEXT);
-                    setText("Hoạt động");
-                } else if ("KHOA".equals(value)) {
-                    setForeground(UITheme.DANGER_TEXT);
-                    setText("Bị khóa");
-                }
-                setHorizontalAlignment(SwingConstants.CENTER);
+                setText(roleLabel(value == null ? "" : value.toString()));
+                setFont(UITheme.FONT_BODY);
+                setBorder(new EmptyBorder(0, 12, 0, 12));
+                setBackground(isSelected ? UITheme.PRIMARY_LIGHT : row % 2 == 0 ? Color.WHITE : UITheme.BG_ROW_ALT);
+                setForeground(isSelected ? UITheme.PRIMARY_ACTIVE : UITheme.TEXT_MAIN);
                 return c;
             }
         });
@@ -86,52 +87,61 @@ public class TaiKhoanPanel extends JPanel {
         btnKhoaMoKhoa    = new JButton("Khóa / Mở khóa");
         btnDatLaiMatKhau = new JButton("Đặt lại mật khẩu");
         btnDoiVaiTro     = new JButton("Đổi vai trò");
-        btnLamMoi        = new JButton("Làm mới danh sách");
+        btnLamMoi        = new JButton("Làm mới");
         lblThongKe       = new JLabel("Đang tải dữ liệu...");
 
         UITheme.styleDangerButton(btnKhoaMoKhoa);
         UITheme.styleSecondaryButton(btnDatLaiMatKhau);
         UITheme.stylePrimaryButton(btnDoiVaiTro);
         UITheme.styleSecondaryButton(btnLamMoi);
+        btnDoiVaiTro.setIcon(UITheme.icon("shield", 16, Color.WHITE));
+        btnDatLaiMatKhau.setIcon(UITheme.icon("settings", 16, UITheme.TEXT_MAIN));
+        btnKhoaMoKhoa.setIcon(UITheme.icon("shield", 16, UITheme.DANGER_TEXT));
+        btnLamMoi.setIcon(UITheme.icon("refresh", 16, UITheme.TEXT_MAIN));
 
         lblThongKe.setFont(UITheme.FONT_CAPTION);
         lblThongKe.setForeground(UITheme.TEXT_MUTED);
     }
 
     private void setupLayout() {
-        setLayout(new BorderLayout(0, 10));
+        setLayout(new BorderLayout(0, 18));
         setBackground(UITheme.BG_APP);
-        setBorder(new EmptyBorder(16, 20, 20, 20));
+        setBorder(new EmptyBorder(22, 24, 22, 24));
 
         // Top Toolbar (Flat Card)
-        JPanel pnlToolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
-        pnlToolbar.setBackground(Color.WHITE);
-        pnlToolbar.setBorder(new CompoundBorder(
-            new LineBorder(UITheme.BORDER, 1, true),
-            new EmptyBorder(8, 14, 8, 14)
-        ));
+        JPanel pnlToolbar = UITheme.createCardPanel();
+        pnlToolbar.setLayout(new BorderLayout(10, 0));
+        pnlToolbar.setBorder(new EmptyBorder(14, 16, 14, 16));
 
-        pnlToolbar.add(btnDoiVaiTro);
-        pnlToolbar.add(btnDatLaiMatKhau);
-        pnlToolbar.add(btnKhoaMoKhoa);
-        pnlToolbar.add(btnLamMoi);
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        actions.setOpaque(false);
+        actions.add(btnDoiVaiTro);
+        actions.add(btnDatLaiMatKhau);
+        actions.add(btnKhoaMoKhoa);
+        pnlToolbar.add(actions, BorderLayout.WEST);
+        pnlToolbar.add(btnLamMoi, BorderLayout.EAST);
 
-        add(pnlToolbar, BorderLayout.NORTH);
+        JPanel heading = new JPanel(new BorderLayout(0, 16));
+        heading.setOpaque(false);
+        heading.add(UITheme.createPageHeader("Tài khoản & phân quyền",
+                "Quản lý quyền truy cập và bảo vệ tài khoản trong hệ thống."), BorderLayout.NORTH);
+        heading.add(pnlToolbar, BorderLayout.CENTER);
+        add(heading, BorderLayout.NORTH);
 
         // Center Table
         JScrollPane scrollPane = new JScrollPane(tblTaiKhoan);
-        scrollPane.setBorder(new LineBorder(UITheme.BORDER, 1, true));
-        scrollPane.getViewport().setBackground(Color.WHITE);
+        UITheme.styleScrollPane(scrollPane);
         add(scrollPane, BorderLayout.CENTER);
 
         // Bottom Status (Flat Card)
-        JPanel pnlBottom = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 8));
-        pnlBottom.setBackground(Color.WHITE);
-        pnlBottom.setBorder(new CompoundBorder(
-            new LineBorder(UITheme.BORDER, 1, true),
-            new EmptyBorder(6, 12, 6, 12)
-        ));
-        pnlBottom.add(lblThongKe);
+        JPanel pnlBottom = UITheme.createCardPanel();
+        pnlBottom.setLayout(new BorderLayout(12, 0));
+        pnlBottom.setBorder(new EmptyBorder(12, 16, 12, 16));
+        pnlBottom.add(lblThongKe, BorderLayout.WEST);
+        JLabel hint = new JLabel("Chọn tài khoản để thao tác");
+        hint.setFont(UITheme.FONT_CAPTION);
+        hint.setForeground(UITheme.TEXT_MUTED);
+        pnlBottom.add(hint, BorderLayout.EAST);
         add(pnlBottom, BorderLayout.SOUTH);
     }
 
@@ -153,7 +163,7 @@ public class TaiKhoanPanel extends JPanel {
                         String tenNV = tk.getHoTenNV() != null ? tk.getHoTenNV() : "(Không có / Quản trị)";
                         String maNVStr = tk.getMaNV() > 0 ? String.valueOf(tk.getMaNV()) : "—";
                         String ngaySua = tk.getNgaySuaCuoi() != null
-                                ? tk.getNgaySuaCuoi().toLocalDate().toString() : "—";
+                                ? dateFormat.format(tk.getNgaySuaCuoi()) : "—";
 
                         modelTaiKhoan.addRow(new Object[]{
                             tk.getMaTK(),
@@ -162,7 +172,7 @@ public class TaiKhoanPanel extends JPanel {
                             maNVStr,
                             tk.getVaiTro(),
                             tk.getTrangThai(),
-                            tk.getNgayTao() != null ? tk.getNgayTao().toString() : "—",
+                            tk.getNgayTao() != null ? dateFormat.format(tk.getNgayTao()) : "—",
                             ngaySua
                         });
 
@@ -211,8 +221,22 @@ public class TaiKhoanPanel extends JPanel {
         if (tk == null) return;
 
         JPasswordField password = new JPasswordField(24);
-        if (JOptionPane.showConfirmDialog(this, password, "Mật khẩu mới (8–128 ký tự)",
-                JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) return;
+        UITheme.styleTextField(password);
+        JPanel form = new JPanel(new BorderLayout(0, 10));
+        form.setBackground(Color.WHITE);
+        form.setBorder(new EmptyBorder(8, 4, 8, 4));
+        JLabel label = new JLabel("Mật khẩu mới cho " + tk.getTenDangNhap());
+        label.setFont(UITheme.FONT_BODY_BOLD);
+        label.setForeground(UITheme.TEXT_MAIN);
+        label.setLabelFor(password);
+        JLabel hint = new JLabel("Sử dụng từ 8 đến 128 ký tự.");
+        hint.setFont(UITheme.FONT_CAPTION);
+        hint.setForeground(UITheme.TEXT_MUTED);
+        form.add(label, BorderLayout.NORTH);
+        form.add(password, BorderLayout.CENTER);
+        form.add(hint, BorderLayout.SOUTH);
+        if (JOptionPane.showConfirmDialog(this, form, "Đặt lại mật khẩu",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) return;
         char[] entered = password.getPassword();
         String matKhauMoi = new String(entered);
         java.util.Arrays.fill(entered, '\0');
@@ -231,21 +255,48 @@ public class TaiKhoanPanel extends JPanel {
         if (tk == null) return;
 
         String[] roles = {"DB_Admin", "HR_Manager", "Payroll_Officer", "Employee"};
-        String roleMoi = (String) JOptionPane.showInputDialog(this,
-                String.format("Chọn vai trò mới cho tài khoản '%s':", tk.getTenDangNhap()),
-                "Đổi vai trò",
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                roles,
-                tk.getVaiTro());
+        JComboBox<String> roleChoice = new JComboBox<>(roles);
+        UITheme.styleComboBox(roleChoice);
+        roleChoice.setSelectedItem(tk.getVaiTro());
+        roleChoice.setRenderer(new DefaultListCellRenderer() {
+            @Override public Component getListCellRendererComponent(JList<?> list, Object value,
+                    int index, boolean selected, boolean focus) {
+                JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, selected, focus);
+                label.setText(roleLabel(value == null ? "" : value.toString()));
+                label.setBorder(new EmptyBorder(7, 10, 7, 10));
+                return label;
+            }
+        });
+        JPanel form = new JPanel(new BorderLayout(0, 12));
+        form.setBackground(Color.WHITE);
+        form.setBorder(new EmptyBorder(8, 4, 8, 4));
+        JLabel label = new JLabel("Vai trò của tài khoản " + tk.getTenDangNhap());
+        label.setFont(UITheme.FONT_BODY_BOLD);
+        label.setForeground(UITheme.TEXT_MAIN);
+        label.setLabelFor(roleChoice);
+        form.add(label, BorderLayout.NORTH);
+        form.add(roleChoice, BorderLayout.CENTER);
+        if (JOptionPane.showConfirmDialog(this, form, "Đổi vai trò",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) return;
+        String roleMoi = (String) roleChoice.getSelectedItem();
 
         if (roleMoi == null || roleMoi.equals(tk.getVaiTro())) return;
 
         DatabaseTask.runExclusive(this, () -> { authService.capNhatVaiTro(tk.getMaTK(), roleMoi); return true; }, ok -> {
             JOptionPane.showMessageDialog(this,
-                    String.format("Đã đổi vai trò tài khoản '%s' thành '%s'!", tk.getTenDangNhap(), roleMoi),
+                    String.format("Đã đổi vai trò tài khoản '%s' thành '%s'!", tk.getTenDangNhap(), roleLabel(roleMoi)),
                     "Thành công", JOptionPane.INFORMATION_MESSAGE);
             loadData();
         });
+    }
+
+    private String roleLabel(String role) {
+        switch (role) {
+            case "DB_Admin": return "Quản trị hệ thống";
+            case "HR_Manager": return "Quản lý nhân sự";
+            case "Payroll_Officer": return "Chuyên viên tiền lương";
+            case "Employee": return "Nhân viên";
+            default: return role;
+        }
     }
 }
