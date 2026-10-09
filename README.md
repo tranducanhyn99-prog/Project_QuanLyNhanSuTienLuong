@@ -108,6 +108,7 @@ Project_QuanLyNhanSuTienLuong/
 
 - Khởi chạy: `powershell -ExecutionPolicy Bypass -File .\start_app.ps1` (dùng cấu hình SQL hiện có).
 - Kiểm tra màu chữ/nền, trạng thái nút, badge và focus bàn phím, không kết nối SQL: `powershell -ExecutionPolicy Bypass -File .\run_verification.ps1 -TestClass LightThemeRegressionTest`.
+- Kiểm tra lỗi QA về email đuôi miền dài, nhãn tài khoản theo vai trò và thông báo đăng nhập: `powershell -ExecutionPolicy Bypass -File .\run_verification.ps1 -TestClass GuiQaRegressionTest` (cần desktop; không kết nối SQL).
 - Xem trước: [Đăng nhập](docs/screenshots/peopleos-light/login.png) · [Dashboard](docs/screenshots/peopleos-light/dashboard.png).
 
 ## Quy trình Git/GitHub

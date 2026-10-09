@@ -89,7 +89,7 @@ public class NhanVienService {
         if (nv.getSoDienThoai() == null || !nv.getSoDienThoai().matches("0\\d{9}")) {
             throw new Exception("Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0!");
         }
-        if (nv.getEmail() == null || !nv.getEmail().matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+        if (nv.getEmail() == null || !nv.getEmail().matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,63}$")) {
             throw new Exception("Định dạng email không hợp lệ!");
         }
         if (nv.getLuongCoBan() == null || nv.getLuongCoBan().compareTo(BigDecimal.ZERO) <= 0) {
