@@ -11,10 +11,15 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.sql.SQLException;
+import java.sql.SQLTimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /** A bright, welcoming sign-in screen for the PeopleOS workspace. */
 public class LoginFrame extends JFrame {
     private static final String APP_TITLE = "PeopleOS · Quản lý Nhân sự & Tiền lương";
+    private static final Logger LOG = Logger.getLogger(LoginFrame.class.getName());
     private final AuthService authService = new AuthService();
     private JTextField txtTenDangNhap;
     private JPasswordField txtMatKhau;
@@ -288,11 +293,8 @@ public class LoginFrame extends JFrame {
                 } catch (Exception ex) {
                     finishLoginAttempt();
                     Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-                    String msg = cause.getMessage();
-                    if (msg == null || msg.trim().isEmpty()) {
-                        msg = "Đăng nhập thất bại!";
-                    }
-                    lblStatus.setText(msg);
+                    LOG.log(Level.WARNING, "Đăng nhập thất bại", cause);
+                    lblStatus.setText(loginErrorMessage(cause));
                     lblStatus.setForeground(UITheme.DANGER_TEXT);
                     txtMatKhau.setText("");
                     txtMatKhau.requestFocusInWindow();
@@ -300,6 +302,24 @@ public class LoginFrame extends JFrame {
             }
         };
         worker.execute();
+    }
+
+    private static String loginErrorMessage(Throwable cause) {
+        if (cause instanceof SQLException) {
+            SQLException sql = (SQLException) cause;
+            String state = sql.getSQLState();
+            if (sql.getErrorCode() == 18456 || (state != null && state.startsWith("28"))) {
+                return "Tên đăng nhập hoặc mật khẩu không đúng.";
+            }
+            if (sql instanceof SQLTimeoutException || (state != null && state.startsWith("08"))) {
+                return "Không kết nối được SQL Server. Vui lòng thử lại.";
+            }
+            return "Không thể truy cập dữ liệu. Liên hệ quản trị viên.";
+        }
+        if (cause instanceof SecurityException) {
+            return "Tài khoản bị khóa hoặc chưa được mapping.";
+        }
+        return "Đăng nhập thất bại. Vui lòng thử lại.";
     }
 
     private void finishLoginAttempt() {

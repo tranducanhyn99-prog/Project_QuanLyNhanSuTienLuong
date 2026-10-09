@@ -263,7 +263,7 @@ public class MainFrame extends JFrame {
                 "Theo vai trò của bạn", "building", UITheme.PRIMARY));
         metrics.add(createSmallKpiCard("Tháng hiện tại", today.format(DateTimeFormatter.ofPattern("MM / yyyy")),
                 "Lịch làm việc hiện tại", "calendar", UITheme.INFO_TEXT));
-        metrics.add(createSmallKpiCard("Tài khoản của bạn", session.getMaNV() > 0 ? "NV #" + session.getMaNV() : "Quản trị viên",
+        metrics.add(createSmallKpiCard("Tài khoản của bạn", session.getMaNV() > 0 ? "NV #" + session.getMaNV() : session.getVaiTroDisplayName(),
                 session.getTenDangNhap(), "users", UITheme.SUCCESS_TEXT));
         dashboard.add(metrics);
         dashboard.add(Box.createVerticalStrut(26));
@@ -341,7 +341,7 @@ public class MainFrame extends JFrame {
         JPanel text = column();
         text.add(label(title, 12, Font.PLAIN, UITheme.TEXT_MUTED));
         text.add(Box.createVerticalStrut(5));
-        text.add(label(value, "Quản trị viên".equals(value) ? 20 : 27, Font.BOLD, UITheme.TEXT_MAIN));
+        text.add(label(value, value.length() > 12 ? 20 : 27, Font.BOLD, UITheme.TEXT_MAIN));
         text.add(Box.createVerticalStrut(3));
         text.add(label(subtext, 11, Font.PLAIN, UITheme.TEXT_MUTED));
         card.add(text, BorderLayout.CENTER);
