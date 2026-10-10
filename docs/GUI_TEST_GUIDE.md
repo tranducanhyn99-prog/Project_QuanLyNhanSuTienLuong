@@ -1,8 +1,8 @@
-# Kiểm thử bằng giao diện Swing
+# Kiểm thử và demo bằng giao diện Swing
 
-Cập nhật 08/10/2026. Kịch bản dưới đây dùng database QA và bộ [tài khoản demo](DEMO_ACCOUNTS.md). Hai nhân viên A/B đã có sẵn; không thêm lại cùng CCCD/email. Đây là hướng dẫn thao tác cần người dùng thực hiện, không phải báo cáo rằng toàn bộ luồng đã được chạy thủ công.
+Cập nhật 10/10/2026, đối chiếu source sau PR #38 (`0223f2f`). Demo chung dùng **10/2026** theo [báo cáo GUI 09/10](GUI_TEST_REPORT_20261009.md): 20 ca đã thao tác và ba ca kiểm tra lại sau sửa. Hướng dẫn này dùng cho lượt tiếp theo; chỉ ghi PASS khi đã thực hiện và lưu kết quả.
 
-## 1. Mở ứng dụng và kiểm tra đăng nhập
+## 1. Mở QA và kiểm fixture trước demo
 
 Tại thư mục repository:
 
@@ -10,77 +10,68 @@ Tại thư mục repository:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\start_gui_qa.ps1
 ```
 
-Đăng nhập `gui_admin` bằng mật khẩu trong `database/demo_accounts.json`. Trước đó có thể thử mật khẩu sai: ứng dụng phải ở màn hình đăng nhập, báo lỗi và bật lại nút/ô nhập. Đăng nhập đúng phải mở MainFrame với tên/vai trò tương ứng.
+Launcher chọn `PRJ_Fix_QA_20261007_01`; máy khác dùng `-Database` theo [DEMO_ACCOUNTS](DEMO_ACCOUNTS.md). QA phải có schema và mapping trước khi đăng nhập. Mật khẩu tra `database/demo_accounts.json`, không chép vào slide/ảnh. Không chạy lại setup/seed trên fixture chỉ để tập demo.
 
-Trên máy khác dùng `-Database` theo [DEMO_ACCOUNTS](DEMO_ACCOUNTS.md). Database cần schema mới và mapping trước khi đăng nhập. `start_app.ps1` mặc định dùng database dự án nếu chưa cấu hình `DB_URL`; launcher QA chọn database riêng tường minh.
+Đăng nhập `gui_hr`, kiểm A/B bằng tên/email, không dựa vào mã số trên máy khác. Dữ liệu đã đối chiếu cuối đợt 09/10:
 
-## 2. Hồ sơ nhân viên
+| Chỉ tiêu kỳ 10/2026 | A — `gui-a@example.invalid` | B — `gui-b@example.invalid` |
+|---|---:|---:|
+| Lương cơ bản áp dụng | 26.000.000 | 26.000.000 |
+| Công chuẩn | 26 | 26 |
+| Công thực tế | 1, ngày 09/10/2026, 08:00–17:00, `CO_MAT` | 0 |
+| Phụ cấp | Một khoản Phụ cấp ăn trưa, 730.000 | 0 |
+| Khấu trừ | Một khoản Tạm ứng lương, 1.000.000 | 0 |
+| Tiền công | 1.000.000 | 0 |
+| Thực nhận | **730.000** | **0** |
 
-Đăng nhập `gui_hr`, vào **Hồ sơ Nhân viên**, chọn `TEST Giao dien A`.
+Kỳ cuối phiên là `CHUA_CHOT`, `NgayChot IS NULL`; hồ sơ A giữ email và địa chỉ `GUI QA`. Xem nhật ký/tổng hợp công, hai tab khoản và chi tiết lương để kiểm lại. Nếu nguồn khác bảng trên, xác minh và ghi số thực tế trước khi tính/chốt; không thêm trùng, xóa nguồn hoặc đổi lương để ép expected. Nếu kỳ đã chốt từ lượt tập, Payroll mở lại trước khi bắt đầu. Có thể dùng truy vấn SELECT dự phòng trong hướng dẫn [TV2](TV2_Huong_Dan_Thuyet_Trinh.md), [TV3](TV3_Huong_Dan_Thuyet_Trinh.md), [TV4](TV4_Huong_Dan_Thuyet_Trinh.md), trên đúng QA.
 
-1. Kiểm tra lương cơ bản 26.000.000 và ngày vào làm 2026-08-01.
-2. Đổi ngày vào làm thành `2026-08-02`, địa chỉ thành `GUI QA da cap nhat`; bấm **Cập Nhật**.
-3. Bấm **Tải lại danh sách**, chọn lại A: cả ngày, địa chỉ, phòng ban và chức vụ phải được giữ đúng.
-4. Thử ngày `2026-02-30` hoặc lương `-1`: phải báo lỗi, dữ liệu cũ không đổi.
-5. Nếu thử thêm nhân viên kèm hồ sơ tài khoản, HR chỉ được chọn Employee. Hồ sơ mới vẫn cần DBA cấp SQL login; nút cấp hồ sơ không tự tạo login.
+## 2. TV1 — hồ sơ nhân viên
 
-## 3. Chấm công
+1. `gui_hr` mở **Hồ sơ nhân viên**, chọn A và ghi lại địa chỉ hiện tại.
+2. Đổi riêng địa chỉ thành `TV1 demo 10/10/2026`, giữ email `gui-a@example.invalid`, ngày vào làm, lương và các trường khác; bấm **Cập nhật**.
+3. Tải lại/mở lại hồ sơ để xác nhận địa chỉ đã lưu. Validator đuôi miền 2–63 ký tự đã kiểm tra lại sau PR #38.
+4. Khôi phục đúng địa chỉ đã ghi lại, vẫn giữ email; cập nhật và tải lại xác nhận. Không thêm nhân viên A/B hoặc nhập lại CCCD/email.
 
-Vào **Nhật ký Chấm công**, chọn A, ngày `2026-09-01`, giờ vào `08:00`, giờ ra `17:00`, trạng thái `CO_MAT`, rồi bấm **Ghi nhận chấm công**. Lọc tháng **9**, năm **2026** để xem kết quả.
+## 3. TV2 — công đã có và bài lỗi trùng ngày
 
-- Ghi cùng nhân viên/ngày lần nữa phải bị từ chối.
-- Giờ ra trước giờ vào phải bị từ chối.
-- Mở **Tổng hợp Công tháng**: với duy nhất dòng vừa nhập, A có 1 ngày đi làm.
-- Nếu thử điều chỉnh ngày công, tải lại và kiểm tra ngày mới được lưu, không tạo bản ghi thứ hai.
+1. `gui_hr` mở **Nhật ký chấm công**, lọc **10/2026**, xem A ngày `2026-10-09`, 08:00–17:00, `CO_MAT` đã có. Không bấm ghi mới trong demo chính.
+2. Mở **Tổng hợp theo tháng**: A có 1 ngày làm/9 giờ, trễ/sớm/vắng 0; B không có công.
+3. Nếu trình diễn **lỗi trùng ngày** riêng, kỳ phải đang `CHUA_CHOT`: gửi lại đúng A–09/10/2026, kỳ vọng bị từ chối và dòng gốc không đổi. Không gọi đây là bước ghi mới thành công hoặc đổi ngày để lách lỗi.
 
-## 4. Phụ cấp và khấu trừ
+Nhập lô/rollback có log SQL và source service để giải thích; chưa kiểm tra nhập lô GUI trong đợt 09/10.
 
-Vào **Phụ cấp & Khấu trừ**, chọn **9/2026**:
+## 4. TV3 — khoản đã có
 
-1. Tab **Phụ Cấp Nhân Viên**: thêm A một khoản `GUI QA phu cap`, số tiền `500000`.
-2. Tab **Khấu Trừ Nhân Viên**: thêm A một khoản `GUI QA khau tru`, số tiền `100000`.
-3. Bấm **Lọc dữ liệu kỳ** và kiểm tra đúng A, kỳ và số tiền.
-4. Thử số tiền âm: phải bị từ chối.
+`gui_hr` mở **Phụ cấp & Khấu trừ**, chọn **10/2026**, xem Phụ cấp ăn trưa A 730.000đ và Tạm ứng lương A 1.000.000đ; tải lại/tổng hợp để đối chiếu. B không có khoản. Không bấm Thêm/Xóa trong lượt demo chính: mỗi lần Thêm hợp lệ có thể tạo thêm dòng và đổi tổng. Nếu thiếu/khác fixture, xác minh trước buổi diễn, không xóa hay ghi nguồn để ép kết quả.
 
-Nếu chạy lại kịch bản, kiểm tra dữ liệu hiện có trước khi thêm khoản; mỗi lần bấm Thêm hợp lệ có thể tạo thêm một khoản và làm thay đổi tổng.
+## 5. TV4 — tính lương
 
-## 5. Tính và chốt lương
+Đăng xuất HR, vào `gui_payroll`, mở **Bảng lương**, chọn **10/2026**, **26** công chuẩn, bấm **Tính / cập nhật lương**, xác nhận một lần và chờ hoàn tất.
 
-Đăng xuất HR, đăng nhập `gui_payroll`. Vào **Tính toán Bảng lương**, chọn **9/2026**, ngày công chuẩn **26**, bấm **Tính / Cập nhật lương**, xác nhận và xem chi tiết A.
+`26.000.000 / 26 × 1 + 730.000 − 1.000.000 = 730.000đ` cho A; B 0 công/0 khoản nên 0đ. Fixture đã kiểm có hai nhân viên và tổng 730.000đ. Nếu hiện có thêm nhân viên, tổng công ty có thể khác. Kiểm chi tiết từng người và một kỳ/một chi tiết mỗi nhân viên. Có thể tính lại kỳ nháp một lần; không gửi lặp khi đang chạy, không xóa kỳ để ép số.
 
-Với duy nhất 1 ngày công, phụ cấp 500.000 và khấu trừ 100.000:
+## 6. TV5 — chốt, quyền và mở lại
 
-| Chỉ tiêu | Kết quả mong đợi |
-|---|---:|
-| Tiền công | 26.000.000 / 26 × 1 = 1.000.000 |
-| Tổng phụ cấp | 500.000 |
-| Tổng khấu trừ | 100.000 |
-| Thực nhận | 1.400.000 |
+1. `gui_payroll` mở **Báo cáo & Phiếu lương**, chọn **10/2026**, bấm **Chốt bảng lương**, xác nhận. Kỳ thành `DA_CHOT`, có ngày chốt, số tiền giữ nguyên.
+2. Nếu minh họa khóa nguồn, `gui_hr` thử ghi A ngày **2026-10-10** (xác nhận ngày chưa có, kỳ đang chốt), 08:00–17:00. Phải bị từ chối bởi khóa kỳ và không phát sinh công mới. Hoặc dùng log/ảnh G15 đã PASS; không xóa dòng nguồn để tạo bài lỗi.
+3. Đăng nhập `gui_a`, **Phiếu lương của tôi** chỉ hiện A 730.000đ. Đăng nhập `gui_b`, chỉ hiện B 0đ. Kiểm Employee không có màn hình quản lý hoặc lương người khác.
+4. **Trước khi kết thúc**, Payroll mở lại 10/2026, tải lại xác nhận `CHUA_CHOT`, `NgayChot IS NULL`; A/B và công/khoản giữ nguyên. Lượt tập tiếp theo dùng lại fixture đó.
 
-Tính lại kỳ chưa chốt phải giữ một kỳ lương và một chi tiết mỗi nhân viên. Vào **Báo cáo & Chốt lương**, chọn kỳ **9/2026**, bấm **Chốt bảng lương** và xác nhận.
-
-Sau chốt, kiểm tra các thao tác sau bị chặn và dữ liệu giữ nguyên:
-
-- Payroll tính lại hoặc xóa kỳ.
-- HR thêm/sửa/xóa chấm công trong tháng 9.
-- HR thêm/xóa phụ cấp hoặc khấu trừ tháng 9.
-
-Payroll bấm **Mở lại bảng lương (Hủy chốt)**. HR phải sửa nguồn được trở lại; sau đó Payroll tính lại để cập nhật chi tiết lương. Xóa kỳ chỉ được thử với kỳ chưa chốt trên QA.
-
-## 6. Quyền và báo cáo
-
-| Người đăng nhập | Điều cần xác minh |
+| Login | Điều cần xác minh |
 |---|---|
-| gui_admin | Thấy Quản trị Tài khoản và các phân hệ nghiệp vụ |
-| gui_hr | Được sửa hồ sơ/công/khoản phát sinh; không tính/chốt/xóa kỳ, không cấp role quản trị |
-| gui_payroll | Được tính/chốt/mở lại lương; không sửa hồ sơ hoặc chấm công |
-| gui_a | Báo cáo chỉ có phiếu lương A, không có lương B hay bảng lương toàn công ty |
-| gui_b | Báo cáo chỉ có phiếu lương B |
+| `gui_admin` | Có quản trị tài khoản và nghiệp vụ; quyền database không tự cấp quyền server |
+| `gui_hr` | Sửa hồ sơ/công/khoản; không tính/chốt/mở lại/xóa kỳ hoặc cấp profile quản trị |
+| `gui_payroll` | Đọc hồ sơ/công, quản lý khoản, tính/chốt/mở lại; không sửa hồ sơ/công |
+| `gui_a`, `gui_b` | Chỉ đọc phiếu cá nhân theo danh tính SQL |
 
-Tạo thêm kỳ **8/2026** để kiểm tra dropdown báo cáo. Đổi nhanh giữa 8/2026 và 9/2026: bảng, tổng tiền và trạng thái phải cùng kỳ đang chọn. Trong lúc tải dữ liệu, cửa sổ vẫn phản hồi; thao tác ghi không được gửi trùng. Đăng xuất/đăng nhập người khác không được hiển thị kết quả cũ.
+Sai mật khẩu phải báo câu ngắn, xóa mật khẩu và bật lại nút nhập. Reset/khóa SQL login cần quyền server bổ sung theo [SECURE_SETUP](SECURE_SETUP.md); không đổi mật khẩu/quyền giữa demo. Thử chuyển kỳ nhanh chỉ dùng kỳ đã có, không tạo thêm kỳ để kiểm dropdown. Các bài Admin, mất kết nối, nhập lô và nhiều phiên GUI chưa có minh chứng thủ công đầy đủ trong đợt này.
 
-Reset mật khẩu và khóa SQL login cần quyền server bổ sung. `gui_admin` hiện chỉ có quyền database, nên thiếu quyền server phải báo lỗi và rollback; đó không phải lỗi mapping. DBA có thể thực hiện các bài quản trị login theo [SECURE_SETUP](SECURE_SETUP.md).
+## 7. Ghi nhận và bàn giao
 
-## 7. Ghi nhận kết quả
-
-Ghi username, kỳ, thao tác, kết quả mong đợi/thực tế và ảnh khi gặp lỗi. Các PASS tự động đã có ở [FIX_TASKLIST](FIX_TASKLIST.md); ảnh cũ không thay thế kết quả thao tác trên bản mới.
+- [ ] Ghi database, phiên bản source, username/vai trò, kỳ, thao tác, expected/actual và ảnh/log cho lượt mới; không ghi mật khẩu.
+- [ ] Kiểm A/B và nguồn trước demo; không thêm trùng hoặc reset fixture.
+- [ ] TV1 khôi phục địa chỉ và giữ email; bài trùng ngày TV2 được gọi rõ là ca lỗi.
+- [ ] Đối chiếu A 730.000đ/B 0đ; kết thúc 10/2026 `CHUA_CHOT`, `NgayChot IS NULL`, nguồn không đổi.
+- [ ] Chỉ đánh dấu PASS cho bước đã thao tác. Dùng [FIX_TASKLIST](FIX_TASKLIST.md) cho test tự động và [GUI_TEST_REPORT_20261009](GUI_TEST_REPORT_20261009.md) cho thao tác GUI đã ghi nhận.
+- [ ] Đóng gói minh chứng theo [HUONG_DAN_HOAN_THIEN_BO_NOP](HUONG_DAN_HOAN_THIEN_BO_NOP.md); log trong `build/` bị Git bỏ qua.
