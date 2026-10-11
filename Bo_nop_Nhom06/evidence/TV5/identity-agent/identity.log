@@ -1,0 +1,42 @@
+PASS login DB_Admin
+PASS SQL identity DB_Admin
+PASS login HR_Manager
+PASS SQL identity HR_Manager
+PASS login Payroll_Officer
+PASS SQL identity Payroll_Officer
+PASS login Employee
+PASS SQL identity Employee
+PASS HR updates employee including joining date
+PASS joining date persists and reloads through real DAO
+PASS HR updates attendance including date
+PASS attendance date persists and reloads through real DAO
+PASS SQL rejects DAO date move into closed period
+PASS rejected attendance date change leaves source unchanged
+PASS real HR adds and reads allowance/deduction
+PASS real Payroll calculates period without elevated SQL rights
+PASS real Payroll closes period
+PASS real Payroll reopens period
+PASS real Payroll deletes allowance/deduction in reopened period
+PASS real Payroll deletes draft payroll
+PASS A reads own payslip through DAO
+PASS A cannot read B through DAO filter
+PASS A reads own SQL view
+PASS A cannot read B SQL view
+PASS Employee global SQL payroll denied
+PASS Forged Java admin cannot read SQL accounts
+PASS Forged Java MaNV cannot read B
+PASS HR cannot execute payroll
+PASS legacy hash migrated on real login
+PASS SQL login disabled
+PASS Failed login clears Java session
+PASS SQL login re-enabled
+PASS NULL reset password rejected at SQL boundary
+PASS oversized reset password rejected without truncation
+PASS failed reset leaves original SQL password and hash usable
+PASS old SQL password rejected after reset
+PASS new password authenticates SQL and PBKDF2
+PASS role change updates SQL and profile
+PASS promoted HR reads personnel
+PASS downgraded Employee loses HR permissions
+PASS logout clears SQL credential context
+Identity integration: 41 checks PASS; no skipped checks.

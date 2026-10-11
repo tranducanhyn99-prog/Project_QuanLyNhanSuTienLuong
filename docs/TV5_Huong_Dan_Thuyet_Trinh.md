@@ -1,6 +1,8 @@
 # TV5 — Hướng dẫn trình bày và thuyết trình cá nhân
 
-**Trần Đức Anh · MSSV 24110155 · Nhóm 06 · Cập nhật 10/10/2026**
+**Trần Đức Anh · MSSV 24110155 · Nhóm 06 · Cập nhật 11/10/2026**
+
+Đầu ra đã chuẩn bị: [PowerPoint ba slide 13–15](../Bo_nop_Nhom06/slides/TV5_Slide_13-15.pptx) có ghi chú thuyết trình, [kịch bản tập demo](../Bo_nop_Nhom06/TV5_TAP_DEMO.md), [README bộ nộp TV5](../Bo_nop_Nhom06/README_BO_NOP.md) và [rà soát Word](../Bo_nop_Nhom06/report/TV5_Ra_Soat_Bao_Cao.md). Chưa ghép deck toàn nhóm hoặc thực hiện lượt rehearsal mới; theo dõi [checklist mục 4.1](HUONG_DAN_HOAN_THIEN_BO_NOP.md#41-tiến-độ-tv5--11102026).
 
 Đã đối chiếu phân công và SQL/Java trên `main` commit `0223f2f`, sau [PR #38](https://github.com/tranducanhyn99-prog/Project_QuanLyNhanSuTienLuong/pull/38). Trạng thái hiển thị **Bản nháp/Đã chốt**, mã SQL vẫn là `CHUA_CHOT/DA_CHOT`; số liệu minh chứng giữ đúng ngày chạy.
 

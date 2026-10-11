@@ -1,0 +1,7 @@
+JDBC URL authentication override regressions
+PASS JDBC URL authentication override rejected before connection
+PASS JDBC URL authentication override rejected before connection
+PASS JDBC URL authentication override rejected before connection
+PASS JDBC URL authentication override rejected before connection
+PASS JDBC URL authentication override rejected before connection
+PASS JDBC URL authentication override rejected before connection
