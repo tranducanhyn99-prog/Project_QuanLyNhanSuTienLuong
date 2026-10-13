@@ -1,4 +1,6 @@
-# Phần slide TV5
+# Slide đã bàn giao của TV4 và TV5
+
+[TV4 slide 10–12](../evidence/TV4/TV4_Slides_10-12.pptx) của Nguyễn Quang Vinh (24110385) có 3 slide và notes, giữ nguyên file từ PR #41. Cấu trúc bàn giao TV4 giữ deck cạnh `Minh_chung/` để nguồn trong notes đúng đường dẫn. Đã có các phần 10–15; còn chờ 1–9 của TV1–TV3, chưa ghép deck toàn nhóm. Hai deck có điểm nhấn màu khác nhau; khi ghép cuối, nhóm thống nhất theme và kiểm lại notes, thứ tự, số slide.
 
 [TV5_Slide_13-15.pptx](TV5_Slide_13-15.pptx) gồm đúng **3 slide**, đánh số hiển thị **13–15**, dành cho Trần Đức Anh (24110155). Đây là phần để ghép vào deck nhóm tối đa 15 slide, chưa phải deck toàn nhóm. Không thêm bìa cho phần này.
 

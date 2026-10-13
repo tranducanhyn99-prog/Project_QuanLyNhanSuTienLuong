@@ -1,12 +1,13 @@
-# Bộ nộp Nhóm 06 — bản đóng gói TV5
+# Bộ nộp Nhóm 06 — đã nhận TV4 và TV5
 
-Đóng gói ngày **11/10/2026**, từ source `main` commit **f2a41f7c9bfc0b911613ed4355ccc79f8281ddd5**. TV5: **Trần Đức Anh — 24110155**. Bộ này chứa source Java, JDBC, SQL tái tạo và file bằng chứng TV5 gốc. **Bộ nộp nhóm chưa hoàn tất**: còn chờ ERD hiện hành của TV1, benchmark/4 actual plan CHAMCONG của TV2, phần slide/bằng chứng do TV1–TV4 bàn giao và rehearsal chung. Deck TV5 hoặc hướng dẫn riêng không thay thế deck nhóm ≤15 slide.
+Source Java/SQL được đóng gói ngày **11/10/2026**, từ `main` commit **f2a41f7c9bfc0b911613ed4355ccc79f8281ddd5**. TV5: **Trần Đức Anh — 24110155**. Ngày **13/10/2026** nhận bộ TV4 **Nguyễn Quang Vinh — 24110385** từ PR #41 (đã merge); source dùng thu minh chứng TV4 ở `62223d5` có Java/SQL khớp snapshot hiện tại. Bộ này có source, JDBC, SQL tái tạo và evidence TV4/TV5. **Bộ nộp nhóm chưa hoàn tất**: còn chờ ERD TV1, benchmark/4 actual plans CHAMCONG TV2, slide/evidence TV1–TV3 và rehearsal chung. Hai deck TV4/TV5 gồm tổng cộng 6 slide riêng, chưa thay deck nhóm ≤15 slide.
 
 | Thư mục | Nội dung |
 |---|---|
 | [source](source/README.md) | Java main/test, template URL, JDBC JAR, launcher/provision/test runner |
 | [database](database/README.md) | Module 01→05, seed 06 tùy chọn, demo account manifest và script kiểm thử |
 | [evidence/TV5](evidence/TV5/README_EVIDENCE.md) | Log/plan gốc đã chọn, phạm vi đo và danh mục SHA256 |
+| [bộ TV4](evidence/TV4/README_EVIDENCE.md) | Word phần TV4 đã sửa bảng, slide 10–12 và 13 file minh chứng; giữ cấu trúc `Minh_chung/` để tham chiếu trong tài liệu mở được |
 | [evidence](evidence/README_EVIDENCE.md) | Trạng thái bàn giao từng thành viên |
 | [report/Word](report/Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx), [rà soát báo cáo](report/TV5_Ra_Soat_Bao_Cao.md) | Bản Word sao nguyên byte và kết quả đối chiếu; chưa cung cấp PDF từ bản Word cuối |
 | [slide TV5 13–15](slides/TV5_Slide_13-15.pptx), [README slide](slides/README_SLIDES.md) | Deck editable 3 slide riêng TV5; deck nhóm ≤15 slide còn chờ |

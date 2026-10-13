@@ -1,6 +1,6 @@
 # Hướng dẫn hoàn thiện bộ nộp — Nhóm 06
 
-Cập nhật 11/10/2026, đối chiếu source sau PR #38 (`0223f2f`), [phân công](Ke_hoach_phan_cong_Project_DBMS_Nhom06.md), [rubric README](../README.md), [FIX_TASKLIST](FIX_TASKLIST.md) và báo cáo Word cuối kỳ. Đây là danh sách việc cần bàn giao; tiến độ TV5 được ghi riêng ở mục 4.1, **chưa hoàn tất bộ nộp toàn nhóm**. Giữ nguyên ownership SQL/Java; vị trí cài function/trigger ở module phụ thuộc không chuyển người phụ trách.
+Cập nhật 13/10/2026, đối chiếu source sau PR #38 (`0223f2f`), [phân công](Ke_hoach_phan_cong_Project_DBMS_Nhom06.md), [rubric README](../README.md), [FIX_TASKLIST](FIX_TASKLIST.md) và báo cáo Word cuối kỳ. Đây là danh sách việc cần bàn giao; tiến độ TV5 được ghi riêng ở mục 4.1, **chưa hoàn tất bộ nộp toàn nhóm**. Giữ nguyên ownership SQL/Java; vị trí cài function/trigger ở module phụ thuộc không chuyển người phụ trách.
 
 Báo cáo [Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx](Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx) hiện có **55 trang nội dung, 61 trang tổng**, đáp ứng ngưỡng độ dài 50–100 trang nội dung. Các log đã PASS có thể dùng lại khi source và phạm vi đo tương ứng; không yêu cầu TV1/TV3/TV4 chạy lại toàn bộ suite. Phần còn thiếu bắt buộc là minh chứng benchmark TV2 hiện hành, deck ≤15 slide và hoàn thiện evidence TV1–TV4 trong package.
 
@@ -89,8 +89,23 @@ Thư mục package được lưu trên Git, có manifest SHA-256 toàn bộ file
 - [x] Rà lại phần TV5 trong Word theo source và log đã có; giữ bản Word nguyên byte trong `report/`, ghi SHA-256 và phạm vi kiểm tại [TV5_Ra_Soat_Bao_Cao.md](../Bo_nop_Nhom06/report/TV5_Ra_Soat_Bao_Cao.md).
 - [x] Tạo [PowerPoint TV5 slide 13–15](../Bo_nop_Nhom06/slides/TV5_Slide_13-15.pptx), có ghi chú thuyết trình và đúng tên/MSSV. Đây là ba slide để ghép vào deck chung ≤15 slide.
 - [x] Gom log security, identity, concurrency A/B, bốn race nguồn và actual plans TV5; ghi nguồn, ngày chạy, môi trường, kết quả/giới hạn, đối chiếu hash trong `evidence/TV5/`. Không coi ảnh lịch sử là xác nhận runtime mới.
-- [x] Chuẩn bị source Java, JDBC/thư viện, launcher, SQL và [README cài/chạy](../Bo_nop_Nhom06/README_BO_NOP.md); các phần evidence TV1–TV4 còn chờ lựa chọn/bàn giao. Không đóng gói cấu hình local có mật khẩu quản trị.
+- [x] Chuẩn bị source Java, JDBC/thư viện, launcher, SQL và [README cài/chạy](../Bo_nop_Nhom06/README_BO_NOP.md); các phần evidence TV1–TV3 còn chờ lựa chọn/bàn giao. Không đóng gói cấu hình local có mật khẩu quản trị.
 - [x] Viết [kịch bản tập demo TV5](../Bo_nop_Nhom06/TV5_TAP_DEMO.md) chốt → HR bị từ chối → Employee A/B → mở lại, kỳ 10/2026; có điều kiện bắt đầu, kết quả kỳ vọng, phương án dùng evidence và bảng ghi kết quả trống.
 - [ ] Tập demo thật và xác nhận trạng thái cuối. Kiểm tra chỉ đọc 11/10: SQL Server `MSSQLSERVER` đang dừng, cổng 1433 chưa mở. Chưa ghi PASS cho một lượt rehearsal mới.
-- [ ] Nhận ERD cuối TV1, benchmark/Results/bốn plans hiện hành TV2 và slide/minh chứng TV1–TV4; ghép deck chung, cập nhật Word bằng số đo thật nếu cần.
+- [ ] Nhận ERD cuối TV1, benchmark/Results/bốn plans hiện hành TV2 và slide/minh chứng TV1–TV3 (TV4 đã nhận); ghép deck chung, cập nhật Word bằng số đo thật nếu cần.
 - [ ] Cài/chạy trên máy khác, kiểm file/link và xuất PDF từ Word cuối nếu yêu cầu. Bản sao source và hướng dẫn chưa thay cho phép thử cài mới.
+
+
+### 4.2 Bàn giao TV4 — 13/10/2026
+
+[PR #41](https://github.com/tranducanhyn99-prog/Project_QuanLyNhanSuTienLuong/pull/41) đã merge vào main; bản bàn giao được tích hợp trong [evidence TV4](../Bo_nop_Nhom06/evidence/TV4/README_EVIDENCE.md). Các ảnh ở thư mục screenshots gốc vẫn là lịch sử theo mục 3.1; bộ TV4 mới có nguồn/ngày riêng, không sửa phân loại ảnh cũ.
+
+- [x] Nhận đủ Word phần TV4, slide 10–12 có notes, 5 ảnh, 5 log, 2 actual plans và metadata ngày/môi trường/source.
+- [x] Sửa hai bảng schema trong Word: độ rộng cột/font 11pt, header lặp; giữ nguyên nội dung, render và xem đủ 4 trang.
+- [x] Đối chiếu E2E 10/10, benchmark 547→4 reads/128 khoản/tổng 133356 và cleanup; hai plan có actual counters. Source Java/SQL của lần thu ở 62223d5 khớp source hiện tại.
+- [x] Giữ log TV4 A/B ngày 10/10 (B 21072 ms) riêng với TV5 ngày 07/10 (B 20631 ms). GUI TV4 ngày 11/10 có 31 kiểm tra tự động; không cộng vào bộ 224 assertions offline hoặc nhận là rehearsal tay.
+- [x] Chép file gốc vào bộ nhóm, ghi SHA-256 và transformation duy nhất của Word; bỏ marker chờ TV4, cập nhật guide/README/manifest. Có các phần slide 10–15, còn chờ 1–9.
+- [ ] TV4 tập nói và thao tác demo tay 10/2026 cùng nhóm; xác nhận fixture trên QA demo chung vì QA của lượt TV4 đã dọn.
+- [ ] TV1–TV3 bàn giao phần còn thiếu, đặc biệt ERD TV1 và benchmark CHAMCONG TV2; ghép deck ≤15 slide, kiểm máy khác và rehearsal chung.
+
+Không thay số đo của lượt 07–09/10 bằng số mới và không tự cộng 4 trang Word TV4 vào báo cáo nhóm 55 trang nội dung. Source ứng dụng và dữ liệu database không bị sửa trong lượt tích hợp tài liệu này.

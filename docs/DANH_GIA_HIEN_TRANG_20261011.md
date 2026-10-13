@@ -1,5 +1,7 @@
 # Đánh giá hiện trạng dự án — 11/10/2026
 
+Cập nhật bàn giao 13/10/2026: PR #41 của TV4 đã merge; Word/slide/evidence TV4 đã nhận vào package, bảng Word đã sửa và kiểm 4 trang. Các mục chờ TV4 trong đánh giá tại mốc 11/10 bên dưới là lịch sử; hiện còn chờ TV1–TV3, benchmark TV2, deck chung và rehearsal. Xem [checklist hiện tại](HUONG_DAN_HOAN_THIEN_BO_NOP.md#42-bàn-giao-tv4--13102026).
+
 Phạm vi: source `main f2a41f7` (logic SQL/Java sau PR #38 ở `0223f2f`), tasklist đã xử lý, rubric README, báo cáo GUI và bộ TV5 vừa đóng gói. Đọc lại luồng AuthService/DatabaseConnection, đối chiếu tài liệu quyền/chốt với SQL và kiểm package. Đây không phải lần audit độc lập mọi dòng source hoặc một lần chạy SQL/GUI mới.
 
 ## Kết luận

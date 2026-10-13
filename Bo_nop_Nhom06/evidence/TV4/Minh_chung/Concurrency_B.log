@@ -1,0 +1,7 @@
+SQL evidence captured at 2026-10-10T20:49:17.5576739+07:00
+[B] Bat dau luc 2026-10-10 20:49:17.600; SPID = 73. Dang goi procedure va co the bi BLOCKED...
+[B] Hoan tat sau 21072 ms. Neu lon xap xi thoi gian A con giu lock thi blocking da duoc chung minh.
+SessionBId | MaBangLuongB | BatDau | KetThuc | ElapsedMs | SoHeaderCungKy | SoChiTiet | SoNhanVienKhacNhau | NhomBiTrung | KetLuan
+73 | 6 | 2026-10-10T20:49:17.600 | 2026-10-10T20:49:38.672 | 21072 | 1 | 1 | 1 | 0 | PASS - procedure hoan tat sau khi A nha lock, khong duplicate
+[B] Khong cleanup tai Session B. Session A dang doi DONE va se cleanup an toan.
+EXECUTION COMPLETED: no SQL execution error.

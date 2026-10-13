@@ -23,7 +23,7 @@ Ngày 11/10/2026. Người phụ trách: Trần Đức Anh — 24110155. Source 
 
 - TV1 xác nhận ERD cuối có `LICHSULUONG` và từ điển dữ liệu; ảnh ERD cũ không đủ.
 - TV2 cung cấp benchmark hiện hành, Results, IO/TIME, bốn actual plans và summary. Báo cáo đang ghi 574 → 5 là lịch sử; chỉ cập nhật sau khi có số đo thật.
-- TV1–TV4 rà lại chương của mình và bàn giao slide/minh chứng đã chọn. Ba slide TV5 không thay deck toàn nhóm.
+- Cập nhật 13/10: TV4 đã bàn giao từ PR #41; [Word phần TV4](../evidence/TV4/TV4_Phan_Bao_Cao.docx) được sửa độ rộng/font riêng hai bảng schema, nội dung giữ nguyên, render và xem đủ 4 trang. TV1–TV3 vẫn cần rà chương và bàn giao slide/minh chứng. Báo cáo toàn nhóm 55 trang nội dung giữ nguyên; phần TV4 bàn giao bổ sung không được cộng tự động thành báo cáo mới.
 - Kiểm mục lục/số trang trên Word máy nộp. Nếu phải nộp PDF, xuất lại từ bản Word cuối và kiểm pagination; PDF render cũ là tài liệu QA nội bộ, không được đóng gói thành PDF nộp mới.
 - Chạy thử package trên máy khác và tập demo thật. Kiểm tra chỉ đọc ngày 11/10 cho thấy `MSSQLSERVER` đang dừng, cổng 1433 chưa mở; lượt này chưa thao tác live GUI hoặc database.
 
