@@ -1,0 +1,61 @@
+﻿============================================================================
+  BẮT ĐẦU CHƯƠNG TRÌNH BENCHMARK INDEX: IX_CHAMCONG_MaNV_Ngay (TV2)
+============================================================================
+LƯU Ý KỸ THUẬT:
+  - Bảng sản xuất dbo.CHAMCONG đã có ràng buộc UQ_CHAMCONG_MaNV_Ngay trên (MaNV, NgayChamCong).
+  - Ràng buộc UNIQUE này đã tự động tạo một Non-clustered Index tìm kiếm theo khóa.
+  - Do đó, so sánh Table Scan (bỏ index) là phi thực tế và gây hiểu nhầm.
+  - Giá trị cốt lõi của IX_CHAMCONG_MaNV_Ngay là COVERING INDEX với mệnh đề INCLUDE
+    (GioVao, GioRa, TrangThai), giúp loại bỏ hoàn toàn Key Lookup (Clustered Lookup)
+    khi tra cứu chi tiết công và tổng hợp tháng (vw_TongHopChamCongThang).
+  - Kịch bản sử dụng bảng tạm cục bộ session-local (#CHAMCONG_BENCHMARK) để cách ly 100%
+    an toàn, tuyệt đối không tạo/xóa bảng trong schema dbo và không can thiệp cache hệ thống.
+============================================================================
+Đang nạp 30.000 bản ghi chấm công thử nghiệm vào bảng tạm #CHAMCONG_BENCHMARK...
+Nạp dữ liệu hoàn tất: 30000 bản ghi.
+----------------------------------------------------------------------------
+1. TRUY VẤN KHI CHƯA CÓ COVERING INDEX (INDEX SEEK + KEY LOOKUP)
+----------------------------------------------------------------------------
+>>> [BEFORE - 1.1] Tra cứu chi tiết chấm công nhân viên 25 (Key Lookup):
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 0 ms.
+Table '#CHAMCONG_BENCHMARK_________________________________________________________________________________________________00000000000F'. Scan count 1, logical reads 574, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+
+ SQL Server Execution Times:
+   CPU time = 15 ms,  elapsed time = 31 ms.
+>>> [BEFORE - 1.2] Tổng hợp công và giờ làm nhân viên 25 (Key Lookup / Aggregate):
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 0 ms.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+Table 'Worktable'. Scan count 0, logical reads 0, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+Table '#CHAMCONG_BENCHMARK_________________________________________________________________________________________________00000000000F'. Scan count 1, logical reads 574, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+----------------------------------------------------------------------------
+2. TẠO NON-CLUSTERED COVERING INDEX: IX_Bench_CHAMCONG_MaNV_Ngay
+----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+3. TRUY VẤN KHI ĐÃ CÓ COVERING INDEX (PURE INDEX SEEK - ZERO KEY LOOKUP)
+----------------------------------------------------------------------------
+>>> [AFTER - 3.1] Tra cứu chi tiết chấm công nhân viên 25 (Covering Index Seek):
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 0 ms.
+Table '#CHAMCONG_BENCHMARK_________________________________________________________________________________________________00000000000F'. Scan count 1, logical reads 5, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 2 ms.
+>>> [AFTER - 3.2] Tổng hợp công và giờ làm nhân viên 25 (Covering Index Seek):
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 0 ms.
+Warning: Null value is eliminated by an aggregate or other SET operation.
+Table 'Worktable'. Scan count 0, logical reads 0, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+Table '#CHAMCONG_BENCHMARK_________________________________________________________________________________________________00000000000F'. Scan count 1, logical reads 5, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+----------------------------------------------------------------------------
+4. KIỂM TRA METADATA CHỈ MỤC TRÊN BẢNG CHÍNH THỨC dbo.CHAMCONG
+----------------------------------------------------------------------------
+============================================================================
+  HOÀN TẤT KỊCH BẢN BENCHMARK INDEX IX_CHAMCONG_MaNV_Ngay CỦA TV2.
+  Đã dọn bảng tạm benchmark.
+============================================================================
