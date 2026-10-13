@@ -1,0 +1,397 @@
+package com.ui.chamcong;
+
+import com.model.ChamCong;
+import com.service.ChamCongService;
+import com.session.Session;
+import com.ui.theme.UITheme;
+import com.ui.theme.DatabaseTask;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Calendar;
+import java.util.Date;
+
+
+/**
+ * Hộp thoại điều chỉnh chi tiết ngày công của một nhân viên trong tháng.
+ * Mở trực tiếp từ bảng Tổng hợp chấm công (Drill-down).
+ *
+ * Chức năng:
+ * - Xem toàn bộ nhật ký chấm công của nhân viên trong tháng được chọn
+ * - Thêm ngày công bổ sung (đi công tác, quên chấm công)
+ * - Cập nhật trạng thái / giờ vào - ra của ngày công bất kỳ
+ * - Xóa lượt chấm công bị chấm nhầm
+ */
+public class DieuChinhChamCongDialog extends JDialog {
+
+    private final int maNV;
+    private final String hoTen;
+    private final int thang;
+    private final int nam;
+
+    private final ChamCongService chamCongService = new ChamCongService();
+    private final Session session = Session.getInstance();
+    private boolean dataChanged = false;
+
+    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+    // UI
+    private JTable tblChiTiet;
+    private DefaultTableModel modelChiTiet;
+
+    private JTextField txtMaCC;
+    private JSpinner spnNgayCC;
+    private JSpinner spnGioVao;
+    private JSpinner spnGioRa;
+    private JComboBox<String> cboTrangThai;
+    private JTextField txtGhiChu;
+
+    private JButton btnThemCong;
+    private JButton btnCapNhat;
+    private JButton btnXoa;
+    private JButton btnLamMoiForm;
+    private JButton btnDong;
+
+    public DieuChinhChamCongDialog(Window owner, int maNV, String hoTen, int thang, int nam) {
+        super(owner, "Chi tiết & Điều chỉnh ngày công – " + hoTen + " (Tháng " + thang + "/" + nam + ")", ModalityType.APPLICATION_MODAL);
+        this.maNV = maNV;
+        this.hoTen = hoTen;
+        this.thang = thang;
+        this.nam = nam;
+
+        initComponents();
+        applyPermissions();
+        loadData();
+    }
+
+    private void initComponents() {
+        setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override public void windowClosing(java.awt.event.WindowEvent event) {
+                if (getRootPane().isEnabled()) dispose();
+            }
+        });
+        setSize(920, 680);
+        setMinimumSize(new Dimension(800, 620));
+        setLocationRelativeTo(getOwner());
+        JPanel content = new JPanel(new BorderLayout(0, 10));
+        content.setBackground(UITheme.BG_APP);
+        content.setBorder(new EmptyBorder(16, 20, 14, 20));
+        setContentPane(content);
+        JPanel pageHeader = UITheme.createPageHeader("Chi tiết ngày công",
+                hoTen + " · Mã NV " + maNV + " · Tháng " + thang + "/" + nam);
+        pageHeader.setBorder(null);
+        content.add(pageHeader, BorderLayout.NORTH);
+
+        JPanel center = new JPanel(new BorderLayout(0, 10));
+        center.setOpaque(false);
+        JPanel journalCard = UITheme.createCardPanel();
+        journalCard.setBorder(new EmptyBorder(12, 16, 12, 16));
+        journalCard.setLayout(new BorderLayout(0, 6));
+        journalCard.add(compactSectionHeader("Nhật ký trong tháng"), BorderLayout.NORTH);
+        modelChiTiet = new DefaultTableModel(new String[]{
+            "Mã CC", "Ngày chấm", "Giờ vào", "Giờ ra", "Trạng thái", "Ghi chú"
+        }, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
+        tblChiTiet = new JTable(modelChiTiet);
+        UITheme.styleTable(tblChiTiet);
+        tblChiTiet.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tblChiTiet.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        int[] widths = {75, 125, 95, 95, 130, 255};
+        for (int i = 0; i < widths.length; i++) {
+            tblChiTiet.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+        }
+        JScrollPane journalScroll = new JScrollPane(tblChiTiet);
+        UITheme.styleScrollPane(journalScroll);
+        journalScroll.setMinimumSize(new Dimension(0, 140));
+        journalCard.add(journalScroll, BorderLayout.CENTER);
+        center.add(journalCard, BorderLayout.CENTER);
+
+        JPanel formCard = UITheme.createCardPanel();
+        formCard.setBorder(new EmptyBorder(12, 16, 12, 16));
+        formCard.setLayout(new BorderLayout(0, 8));
+        formCard.add(compactSectionHeader("Thông tin ngày công"), BorderLayout.NORTH);
+        txtMaCC = new JTextField();
+        txtMaCC.setEditable(false);
+        UITheme.styleTextField(txtMaCC);
+        txtMaCC.setToolTipText("Mã tự động khi thêm ngày công mới");
+
+        LocalDate startMonth = LocalDate.of(nam, thang, 1);
+        LocalDate endMonth = startMonth.withDayOfMonth(startMonth.lengthOfMonth());
+        if (endMonth.isAfter(LocalDate.now())) endMonth = LocalDate.now();
+        Date minDate = Date.from(startMonth.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date maxDate = Date.from(endMonth.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        if (minDate.after(maxDate)) minDate = maxDate;
+        spnNgayCC = new JSpinner(new SpinnerDateModel(maxDate, minDate, maxDate, Calendar.DAY_OF_MONTH));
+        spnNgayCC.setEditor(new JSpinner.DateEditor(spnNgayCC, "yyyy-MM-dd"));
+        UITheme.styleSpinner(spnNgayCC);
+        spnGioVao = createTimeSpinner(8, 0);
+        spnGioRa = createTimeSpinner(17, 0);
+        cboTrangThai = new JComboBox<>(new String[]{"CO_MAT", "DI_TRE", "VE_SOM", "VANG"});
+        UITheme.styleComboBox(cboTrangThai);
+        txtGhiChu = new JTextField();
+        UITheme.styleTextField(txtGhiChu);
+        JPanel inputs = new JPanel(new GridLayout(2, 3, 16, 8));
+        inputs.setOpaque(false);
+        inputs.add(field("Mã chấm công", txtMaCC));
+        inputs.add(field("Ngày chấm · yyyy-mm-dd", spnNgayCC));
+        inputs.add(field("Trạng thái", cboTrangThai));
+        inputs.add(field("Giờ vào · HH:mm", spnGioVao));
+        inputs.add(field("Giờ ra · HH:mm", spnGioRa));
+        inputs.add(field("Ghi chú / lý do", txtGhiChu));
+        formCard.add(inputs, BorderLayout.CENTER);
+
+        btnThemCong = new JButton("Thêm ngày công", UITheme.icon("plus", 16, Color.WHITE));
+        UITheme.stylePrimaryButton(btnThemCong);
+        btnCapNhat = new JButton("Cập nhật", UITheme.icon("edit", 16, UITheme.TEXT_MAIN));
+        UITheme.styleSecondaryButton(btnCapNhat);
+        btnCapNhat.setEnabled(false);
+        btnXoa = new JButton("Xóa", UITheme.icon("trash", 16, UITheme.DANGER_TEXT));
+        UITheme.styleDangerButton(btnXoa);
+        btnXoa.setEnabled(false);
+        btnLamMoiForm = new JButton("Làm mới");
+        UITheme.styleSecondaryButton(btnLamMoiForm);
+        JPanel formActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        formActions.setOpaque(false);
+        formActions.add(btnLamMoiForm);
+        formActions.add(btnXoa);
+        formActions.add(btnCapNhat);
+        formActions.add(btnThemCong);
+        formCard.add(formActions, BorderLayout.SOUTH);
+        center.add(formCard, BorderLayout.SOUTH);
+        content.add(center, BorderLayout.CENTER);
+
+        JPanel footer = new JPanel(new BorderLayout(12, 0));
+        footer.setOpaque(false);
+        JLabel hint = new JLabel("Chọn một ngày trong nhật ký để cập nhật hoặc xóa.");
+        hint.setFont(UITheme.FONT_CAPTION);
+        hint.setForeground(UITheme.TEXT_MUTED);
+        footer.add(hint, BorderLayout.CENTER);
+        btnDong = new JButton("Đóng");
+        UITheme.styleSecondaryButton(btnDong);
+        footer.add(btnDong, BorderLayout.EAST);
+        content.add(footer, BorderLayout.SOUTH);
+
+        // ─── 4. Events ───────────────────────────────────────────────
+        tblChiTiet.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int row = tblChiTiet.getSelectedRow();
+                if (row >= 0) {
+                    fillFormFromRow(row);
+                }
+            }
+        });
+
+        btnThemCong.addActionListener(e -> xuLyThemCong());
+        btnCapNhat.addActionListener(e -> xuLyCapNhat());
+        btnXoa.addActionListener(e -> xuLyXoa());
+        btnLamMoiForm.addActionListener(e -> lamMoiForm());
+        btnDong.addActionListener(e -> dispose());
+    }
+
+    private JPanel field(String text, JComponent input) {
+        JPanel panel = new JPanel(new BorderLayout(0, 5));
+        panel.setOpaque(false);
+        JLabel label = new JLabel(text);
+        label.setFont(UITheme.FONT_CAPTION_BOLD);
+        label.setForeground(UITheme.TEXT_MUTED);
+        label.setLabelFor(input);
+        panel.add(label, BorderLayout.NORTH);
+        panel.add(input, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel compactSectionHeader(String title) {
+        JPanel header = UITheme.createSectionHeader(title);
+        header.setBorder(null);
+        return header;
+    }
+
+    private JSpinner createTimeSpinner(int hour, int minute) {
+        SpinnerDateModel model = new SpinnerDateModel();
+        JSpinner spinner = new JSpinner(model);
+        JSpinner.DateEditor editor = new JSpinner.DateEditor(spinner, "HH:mm");
+        spinner.setEditor(editor);
+
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, hour);
+        cal.set(Calendar.MINUTE, minute);
+        cal.set(Calendar.SECOND, 0);
+        spinner.setValue(cal.getTime());
+        UITheme.styleSpinner(spinner);
+        return spinner;
+    }
+
+    private void loadData() {
+        modelChiTiet.setRowCount(0);
+        DatabaseTask.run(tblChiTiet, () -> chamCongService.layChamCongTheoThang(maNV, thang, nam), list -> {
+            for (ChamCong cc : list) {
+                modelChiTiet.addRow(new Object[]{
+                    cc.getMaChamCong(),
+                    cc.getNgayChamCong() != null ? cc.getNgayChamCong().format(dateFormatter) : "",
+                    cc.getGioVao() != null ? cc.getGioVao().format(timeFormatter) : "",
+                    cc.getGioRa() != null ? cc.getGioRa().format(timeFormatter) : "",
+                    cc.getTrangThai(),
+                    cc.getGhiChu() != null ? cc.getGhiChu() : ""
+                });
+            }
+        });
+    }
+
+    private void fillFormFromRow(int row) {
+        txtMaCC.setText(modelChiTiet.getValueAt(row, 0).toString());
+        String ngayStr = modelChiTiet.getValueAt(row, 1).toString();
+        try {
+            LocalDate ld = LocalDate.parse(ngayStr, dateFormatter);
+            spnNgayCC.setValue(Date.from(ld.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        } catch (Exception ignored) {}
+
+        String vaoStr = modelChiTiet.getValueAt(row, 2).toString();
+        String raStr = modelChiTiet.getValueAt(row, 3).toString();
+        try {
+            LocalTime ltVao = LocalTime.parse(vaoStr, timeFormatter);
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.HOUR_OF_DAY, ltVao.getHour());
+            cal.set(Calendar.MINUTE, ltVao.getMinute());
+            spnGioVao.setValue(cal.getTime());
+        } catch (Exception ignored) {}
+
+        try {
+            if (!raStr.isEmpty()) {
+                LocalTime ltRa = LocalTime.parse(raStr, timeFormatter);
+                Calendar cal = Calendar.getInstance();
+                cal.set(Calendar.HOUR_OF_DAY, ltRa.getHour());
+                cal.set(Calendar.MINUTE, ltRa.getMinute());
+                spnGioRa.setValue(cal.getTime());
+            }
+        } catch (Exception ignored) {}
+
+        cboTrangThai.setSelectedItem(modelChiTiet.getValueAt(row, 4).toString());
+        txtGhiChu.setText(modelChiTiet.getValueAt(row, 5).toString());
+
+        btnCapNhat.setEnabled(session.hasRole("DB_Admin", "HR_Manager"));
+        btnXoa.setEnabled(session.hasRole("DB_Admin", "HR_Manager"));
+    }
+
+    private void lamMoiForm() {
+        txtMaCC.setText("");
+        cboTrangThai.setSelectedItem("CO_MAT");
+        txtGhiChu.setText("");
+        tblChiTiet.clearSelection();
+        btnCapNhat.setEnabled(false);
+        btnXoa.setEnabled(false);
+    }
+
+    private void xuLyThemCong() {
+        Date d = (Date) spnNgayCC.getValue();
+        LocalDate ngayCC = d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+        Date vao = (Date) spnGioVao.getValue();
+        LocalTime gioVao = vao.toInstant().atZone(ZoneId.systemDefault()).toLocalTime();
+
+        Date ra = (Date) spnGioRa.getValue();
+        LocalTime gioRa = ra.toInstant().atZone(ZoneId.systemDefault()).toLocalTime();
+
+        String trangThai = (String) cboTrangThai.getSelectedItem();
+        String ghiChu = txtGhiChu.getText().trim();
+
+        ChamCong cc = new ChamCong(maNV, ngayCC, gioVao, gioRa, trangThai, ghiChu.isEmpty() ? "Bổ sung công tác / điều chỉnh" : ghiChu);
+        try {
+            DatabaseTask.runExclusive(getRootPane(), () -> chamCongService.chamCongDonLe(cc), ok -> {
+            if (ok) {
+                dataChanged = true;
+                JOptionPane.showMessageDialog(this, "Đã thêm ngày công " + ngayCC + " thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                loadData();
+                lamMoiForm();
+            }
+                    });
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Lỗi thêm ngày công: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void xuLyCapNhat() {
+        if (txtMaCC.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn dòng ngày công cần cập nhật!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int maCC = Integer.parseInt(txtMaCC.getText());
+        Date d = (Date) spnNgayCC.getValue();
+        LocalDate ngayCC = d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+        Date vao = (Date) spnGioVao.getValue();
+        LocalTime gioVao = vao.toInstant().atZone(ZoneId.systemDefault()).toLocalTime();
+
+        Date ra = (Date) spnGioRa.getValue();
+        LocalTime gioRa = ra.toInstant().atZone(ZoneId.systemDefault()).toLocalTime();
+
+        String trangThai = (String) cboTrangThai.getSelectedItem();
+        String ghiChu = txtGhiChu.getText().trim();
+
+        ChamCong cc = new ChamCong(maNV, ngayCC, gioVao, gioRa, trangThai, ghiChu);
+        cc.setMaChamCong(maCC);
+
+        try {
+            DatabaseTask.runExclusive(getRootPane(), () -> chamCongService.capNhatChamCong(cc), ok -> {
+            if (ok) {
+                dataChanged = true;
+                JOptionPane.showMessageDialog(this, "Cập nhật ngày công mã " + maCC + " thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                loadData();
+                lamMoiForm();
+            }
+                    });
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Lỗi cập nhật ngày công: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void xuLyXoa() {
+        if (txtMaCC.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn dòng ngày công cần xóa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int maCC = Integer.parseInt(txtMaCC.getText());
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Bạn có chắc chắn muốn xóa lượt chấm công mã " + maCC + " của nhân viên " + hoTen + "?",
+            "Xác nhận xóa",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                DatabaseTask.runExclusive(getRootPane(), () -> { chamCongService.xoaChamCong(maCC); return true; }, ignored -> {
+                dataChanged = true;
+                JOptionPane.showMessageDialog(this, "Đã xóa ngày công thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                loadData();
+                lamMoiForm();
+                            });
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Lỗi xóa ngày công: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    public boolean isDataChanged() {
+        return dataChanged;
+    }
+
+    private void applyPermissions() {
+        boolean canManage = session.hasRole("DB_Admin", "HR_Manager");
+        btnThemCong.setEnabled(canManage);
+        btnLamMoiForm.setEnabled(canManage);
+        if (!canManage) {
+            btnThemCong.setToolTipText("Chỉ Quản lý nhân sự hoặc Quản trị viên mới được điều chỉnh công.");
+        }
+    }
+}

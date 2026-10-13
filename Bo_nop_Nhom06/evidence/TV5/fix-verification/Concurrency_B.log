@@ -1,0 +1,6 @@
+﻿ Bat dau luc 2026-10-07 22:33:08.776; SPID = 83. Dang goi procedure va co the bi BLOCKED...
+ Hoan tat sau 20631 ms. Neu lon xap xi thoi gian A con giu lock thi blocking da duoc chung minh.
+SessionBId MaBangLuongB BatDau                                 KetThuc                                ElapsedMs   SoHeaderCungKy SoChiTiet   SoNhanVienKhacNhau NhomBiTrung KetLuan                                                      
+---------- ------------ -------------------------------------- -------------------------------------- ----------- -------------- ----------- ------------------ ----------- -------------------------------------------------------------
+        83            8                2026-10-07 22:33:08.776                2026-10-07 22:33:29.407       20631              1           1                  1           0 PASS - procedure hoan tat sau khi A nha lock, khong duplicate
+ Khong cleanup tai Session B. Session A dang doi DONE va se cleanup an toan.

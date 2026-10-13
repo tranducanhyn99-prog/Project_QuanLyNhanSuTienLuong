@@ -1,0 +1,10 @@
+﻿ Fixture san sang. Session A bat dau tinh luong...
+ SESSION A DA GIU LOCK trong 20 giay. CHAY SESSION B NGAY BAY GIO.
+ SPID = 77, MaBangLuong tam = 8.
+ Da COMMIT; lock da nha. Dang doi Session B hoan tat...
+SessionAId  SessionBId  SessionBElapsedMs MaBangLuongA MaBangLuongB SoHeaderCungKy SoChiTiet   SoNhanVienKhacNhau NhomBiTrung NgayTaoSauSessionA      NgayTaoSauSessionB      KetLuan                                                                 
+----------- ----------- ----------------- ------------ ------------ -------------- ----------- ------------------ ----------- ----------------------- ----------------------- ------------------------------------------------------------------------
+         77          83             20631            8            8              1           1                  1           0 2026-10-07 22:33:08.383 2026-10-07 22:33:29.403 PASS - B da cho lock; hai session dung chung 1 header va khong duplicate
+BangLuongDemoConLai ChamCongFixtureConLai CleanupStatus          
+------------------- --------------------- -----------------------
+                  0                     0 PASS - cleanup hoan tat

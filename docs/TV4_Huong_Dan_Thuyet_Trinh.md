@@ -1,6 +1,8 @@
 # TV4 — Hướng dẫn trình bày và thuyết trình cá nhân
 
-**Nguyễn Quang Vinh · MSSV 24110385 · Nhóm 06 · Cập nhật 10/10/2026**
+**Nguyễn Quang Vinh · MSSV 24110385 · Nhóm 06 · Cập nhật 13/10/2026**
+
+Đã nhận bộ TV4 từ [PR #41](https://github.com/tranducanhyn99-prog/Project_QuanLyNhanSuTienLuong/pull/41): [Word phần TV4](../Bo_nop_Nhom06/evidence/TV4/TV4_Phan_Bao_Cao.docx), [slide 10–12 có notes](../Bo_nop_Nhom06/evidence/TV4/TV4_Slides_10-12.pptx) và [danh mục evidence](../Bo_nop_Nhom06/evidence/TV4/README_EVIDENCE.md). Word đã sửa bảng schema ngày 13/10, nội dung giữ nguyên. Bộ SQL ngày 10/10 có E2E 10/10, benchmark 547→4, B chờ 21072 ms; GUI 11/10 có 31 kiểm tra tự động PASS. Đây là lượt riêng trên SQL Server 2022, không đổi ngày/số đo của log QA 07–09/10 hoặc tự hoàn tất rehearsal tay.
 
 Đã đối chiếu phân công và SQL/Java trên `main` commit `0223f2f`, sau [PR #38](https://github.com/tranducanhyn99-prog/Project_QuanLyNhanSuTienLuong/pull/38). Tên nút/tab theo giao diện PeopleOS sáng; công thức, stored procedure và số liệu SQL/benchmark giữ đúng ngày chạy.
 
