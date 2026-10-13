@@ -1,0 +1,9 @@
+﻿Changed database context to 'PRJ_Fix_QA_20261008_101955_11b4e24c'.
+ Đã tạo function fn_TinhThucNhan.
+ Đã tạo view vw_BangLuongChiTiet.
+ Đã tạo trigger trg_ChiTietLuong_KhongSuaKhiDaChot.
+ Đã tạo stored procedure sp_ChotBangLuong (UPDLOCK + TRY...CATCH).
+ Đã tạo 4 Database Role.
+ Đã cấp quyền cho role_HRManager.
+ Đã cấp quyền cho role_PayrollOfficer.
+ Đã cấp quyền cho role_Employee.

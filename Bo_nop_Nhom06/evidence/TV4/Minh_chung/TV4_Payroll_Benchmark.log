@@ -1,0 +1,82 @@
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 0 ms.
+SQL Server parse and compile time: 
+   CPU time = 0 ms, elapsed time = 0 ms.
+SQL Server parse and compile time: 
+   CPU time = 10 ms, elapsed time = 10 ms.
+Table 'CHAMCONG'. Scan count 1, logical reads 8, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 4 ms.
+
+ SQL Server Execution Times:
+   CPU time = 16 ms,  elapsed time = 15 ms.
+SQL Server parse and compile time: 
+   CPU time = 0 ms, elapsed time = 0 ms.
+SQL Server parse and compile time: 
+   CPU time = 22 ms, elapsed time = 22 ms.
+Table 'CHAMCONG'. Scan count 1, logical reads 2, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 44 ms.
+
+ SQL Server Execution Times:
+   CPU time = 31 ms,  elapsed time = 146 ms.
+SQL Server parse and compile time: 
+   CPU time = 0 ms, elapsed time = 0 ms.
+SQL Server parse and compile time: 
+   CPU time = 94 ms, elapsed time = 111 ms.
+Table 'PHUCAPNHANVIEN'. Scan count 1, logical reads 7, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 74 ms.
+
+ SQL Server Execution Times:
+   CPU time = 94 ms,  elapsed time = 187 ms.
+SQL Server parse and compile time: 
+   CPU time = 0 ms, elapsed time = 0 ms.
+SQL Server parse and compile time: 
+   CPU time = 94 ms, elapsed time = 106 ms.
+Table 'KHAUTRUNHANVIEN'. Scan count 1, logical reads 547, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+
+ SQL Server Execution Times:
+   CPU time = 15 ms,  elapsed time = 33 ms.
+
+ SQL Server Execution Times:
+   CPU time = 109 ms,  elapsed time = 141 ms.
+SQL Server parse and compile time: 
+   CPU time = 0 ms, elapsed time = 0 ms.
+SQL Server parse and compile time: 
+   CPU time = 0 ms, elapsed time = 3 ms.
+Table 'KHAUTRUNHANVIEN'. Scan count 1, logical reads 4, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 33 ms.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 38 ms.
+SQL Server parse and compile time: 
+   CPU time = 0 ms, elapsed time = 0 ms.
+SQL Server parse and compile time: 
+   CPU time = 0 ms, elapsed time = 3 ms.
+Table 'KHAUTRUNHANVIEN'. Scan count 1, logical reads 4, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 26 ms.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 30 ms.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 0 ms.
+
+Completion time: 2026-10-10T20:55:46.3482449+07:00
+
+RESULT GRIDS COPIED FROM THE SAME SSMS EXECUTION (SPID 68)
+BenchmarkCase	SoDong	TongKhauTru
+FORCED_CLUSTERED_SCAN	128	133356.00
+FORCED_COVERING_SEEK	128	133356.00
+
+Cleanup grid: DeductionIdentityBefore, DeductionIdentityAfter, AllowanceIdentityBefore, AllowanceIdentityAfter, AttendanceIdentityBefore, AttendanceIdentityAfter, FixtureConLai, CleanupStatus
+6	6	10	10	11	11	0	PASS - transaction da rollback, khong con du lieu benchmark

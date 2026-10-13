@@ -14,6 +14,7 @@ build/
 .DS_Store
 Thumbs.db
 ~$*.docx
+~$*.pptx
 
 # Logs
 *.log
@@ -29,3 +30,8 @@ application.properties
 *.mdf
 *.ldf
 .antigravity-bridge/
+
+# Keep selected submission evidence; ZIP duplicates this tracked directory.
+!Bo_nop_Nhom06/evidence/TV5/**/*.log
+!Bo_nop_Nhom06/evidence/TV4/**/*.log
+/Bo_nop_Nhom06_*.zip

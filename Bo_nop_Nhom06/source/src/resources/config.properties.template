@@ -1,0 +1,5 @@
+# Copy to config.properties. Do not commit real connection settings.
+# Each LoginFrame user signs in with their own SQL login; db.user/db.password are ignored.
+# Install modules 01..05 and follow docs/SECURE_SETUP.md to provision identities.
+db.url=jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhanSuTienLuong;encrypt=true;trustServerCertificate=false
+# Local development with a self-signed certificate only: encrypt=true;trustServerCertificate=true
