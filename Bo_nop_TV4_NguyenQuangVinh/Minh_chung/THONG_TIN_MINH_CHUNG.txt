@@ -1,0 +1,33 @@
+﻿MINH CHỨNG TV4 — Nguyễn Quang Vinh, MSSV 24110385
+Cập nhật bộ gửi: 11/10/2026. Múi giờ Asia/Saigon (+07).
+Source: 62223d585296a7e5d1632b6c9d9deb625c650632.
+Máy Windows; SQL Server 2022 Developer 16.0.1000.6 tại localhost.
+
+Tất cả 5 PNG là ảnh lấy từ pixel màn hình máy tính thật, không chèn chữ hoặc dựng lại hình.
+Ảnh SSMS dùng CopyFromScreen; ảnh GUI dùng java.awt.Robot.createScreenCapture, có title bar của cửa sổ thật.
+
+E2E: thực thi trực tiếp SSMS ngày 10/10, 20:53:42–20:53:44, SPID 56.
+QA PRJ_Fix_QA_TV4_20261010_204904_dde11e2e; kỳ 09/2026; MaBangLuong 8; 10/10 PASS.
+TV4_Payroll_E2E.log là nội dung Messages sao chép từ đúng lượt đó; ảnh TV4_E2E_10Steps_Pass.png chụp 10/10 lúc 20:54:26.
+
+Benchmark: thực thi SSMS 10/10, 20:55:42–20:55:46, SPID 68, cùng QA trên.
+Fixture khấu trừ 30.000 dòng; kỳ 12/2099; scan/seek cùng 128 dòng, tổng 133356.00.
+Logical reads scan 547, seek 4. Scan có INDEX(0), FORCESCAN; seek có INDEX(IX_KHAUTRU_MaNV_ThangNam), FORCESEEK; cùng OPTION(RECOMPILE).
+TV4_Payroll_Benchmark.log gồm Messages và các dòng kết quả grid sao chép từ chính lượt SSMS này, có cleanup fixture PASS.
+Hai .sqlplan được lưu từ các link XML của FORCED_CLUSTERED_SCAN và FORCED_COVERING_SEEK trong cùng lượt; runtime counters xác nhận 547/4 reads, 128/128 dòng, 30.000/128 dòng đã đọc.
+TV4_Benchmark_StatisticsIO.png chụp Messages 10/10 lúc 20:57:03.
+TV4_Benchmark_ExecutionPlan.png chụp hai actual plans mở trong SSMS ngày 11/10 lúc 04:02:44.
+So sánh này có hint trên một fixture; không cam kết tốc độ toàn ứng dụng. Không ghép CPU/elapsed của lượt collector 20:49 vào lượt SSMS 20:55.
+
+Concurrency: SQL chạy 10/10, 20:49:17–20:49:38, hai session độc lập 72/73; kỳ 01/2020.
+A giữ khóa 20 giây, B chờ 21.072 ms; cùng MaBangLuong 6; 1 header, 1 detail, 0 nhóm trùng; cleanup PASS.
+Concurrency_A.log / Concurrency_B.log là log gốc của lượt đó.
+TV4_Concurrency_2Sessions.png chụp hai log này mở cạnh nhau trong SSMS ngày 11/10 lúc 04:03:15; không phải ảnh hai query đang chạy lúc chụp.
+
+GUI: bắt đầu 11/10 lúc 04:03:38; QA PRJ_Fix_QA_TV4_GUI_20261011_040337_7db53cbb, vai trò Payroll_Officer.
+Kỳ 10/2026, công chuẩn 26; A lương 26.000.000, 1 công, phụ cấp 730.000, khấu trừ 1.000.000: nhận 730.000đ. B nhận 0đ.
+TV4_GUI_TinhLuong_102026.png lấy từ cửa sổ production BangLuongPanel đang hiển thị trên desktop; file ảnh lưu 11/10 lúc 04:03:47.
+TV4_GUI_Live.log ghi 31 kiểm tra tự động PASS và phương thức chụp desktop: tính, tính lại, từ chối kỳ chốt, mở lại CHUA_CHOT / NgayChot NULL, nguồn không đổi.
+GUI được thao tác tự động; Vinh vẫn cần tập nói và demo tay.
+
+SQL QA, GUI QA và login tạm do lượt thu này tạo đã được dọn.
