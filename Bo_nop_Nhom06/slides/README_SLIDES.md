@@ -22,7 +22,7 @@ E414AEAC526CBB79EF4875B9A104FF05273197FD94BFF054FD6C91963C524C71
 
 ## Bản bàn giao gốc được giữ riêng
 
-- [TV2 slide 4–6](../evidence/TV2/presentation/final/TV2_Slides_4_6.pptx), đúng Quân và notes, nhận nguyên byte từ PR #44 head 7efd9dd. Theo [biên nhận](../evidence/TV2/README_TV5_RECEIPT.md) và canonical v3; biên bản handoff v2 còn cần sửa tham chiếu.
+- [TV2 slide 4–6](../evidence/TV2/presentation/final/TV2_Slides_4_6.pptx), đúng Quân và notes, nhận nguyên byte từ PR #44 head 7efd9dd. Dùng [biên nhận và hiệu đính TV5](../evidence/TV2/README_TV5_RECEIPT.md) theo canonical v3; biên bản v2 gốc được giữ nguyên để truy vết.
 - [TV4 slide 10–12](../evidence/TV4/TV4_Slides_10-12.pptx), đúng Vinh, từ PR #41. Giữ nguyên cạnh `Minh_chung/` để nguồn trong notes truy được.
 - [TV5 slide 13–15](TV5_Slide_13-15.pptx) là deck từng phần dựng 11/10. Notes/số liệu ghi phạm vi lịch sử, không dùng nó thay deck chung cập nhật 13/10. [Ba preview cũ](preview/TV5_Slide_13.png) giữ nguồn cũ.
 

@@ -1,13 +1,13 @@
 # TV5 — Rà soát và bàn giao báo cáo Word
 
-**Trần Đức Anh — 24110155 · Cập nhật 13/10/2026**
+**Trần Đức Anh — 24110155 · Cập nhật 14/10/2026**
 
-[Word nhóm](Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx) đã được đồng bộ nguyên byte từ `docs/Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx`. Bản hiện tại đối chiếu checkout `a7e1096` và các sửa local đã kiểm; chưa commit. Evidence TV2 nhận riêng từ PR #44 head `7efd9dd`, không đồng nghĩa PR đã merge.
+[Word nhóm](Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx) được đồng bộ nguyên byte với `docs/Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx`. Ba chỗ ghi trạng thái source/PR cũ ở lời mở đầu, bảng bàn giao và cuối báo cáo đã cập nhật sau khi PR #44–#46 merge; §8.5/§9.3 vốn đã có benchmark TV2 ngày 13/10 nên không sửa số liệu. Bản Word trước lượt này đối chiếu checkout `a7e1096` và các sửa local tại ngày 13/10.
 
 SHA-256 của cả hai bản Word:
 
 ```text
-7BCB91822EBFE7A409907D6E6C9CD5D11DEC0BF61574A61F8593D779FBAD06C5
+173F4181F7925FB8792AC9FAD42BE51725AF438361B883CDF9EFD709E88AFF11
 ```
 
 ## Nội dung đã cập nhật
@@ -21,14 +21,14 @@ SHA-256 của cả hai bản Word:
 
 ## Kiểm bố cục cuối
 
-Native Microsoft Word đã cập nhật số trang mục lục, xuất PDF để QA và render đủ **61 trang vật lý**. Nội dung nằm trang 5–59, tương đương **55 trang**, đáp ứng ngưỡng 50–100 của kế hoạch. Không cộng Word TV4 vào số trang nhóm.
+Bản 14/10 đã xuất lại bằng Microsoft Word, vẫn có **61 trang vật lý**; nội dung nằm trang 5–59, tương đương **55 trang**, đáp ứng ngưỡng 50–100 của kế hoạch. So với PDF 13/10, text chỉ đổi ở trang vật lý 2, 58 và 60; đã xem ba trang này, không thấy tràn lề hay vỡ bảng. PDF QA nằm riêng trong `build/tv2-final-status-render/`, không đóng gói thay Word. Không cộng Word TV4 vào số trang nhóm.
 
-So với baseline sau sửa tiền hash `414f257829fc46729232512e3aa142fbb32be12979b555e6df8b67daf553d8a2`, chín trang vật lý 2/19/26/54/55/58/59/60/61 đổi; **52 trang còn lại trùng pixel**. Đã xem đủ trang đổi và rà toàn bộ, không có text ngoài lề, bảng tràn hoặc thay pagination. Bản sửa tiền trước đó chỉ đổi trang 33 so với baseline cũ; đó là lượt QA khác.
+Ở lượt QA 13/10, so với baseline sau sửa tiền hash `414f257829fc46729232512e3aa142fbb32be12979b555e6df8b67daf553d8a2`, chín trang vật lý 2/19/26/54/55/58/59/60/61 đổi; **52 trang còn lại trùng pixel**. Đã xem đủ trang đổi và rà toàn bộ, không có text ngoài lề, bảng tràn hoặc thay pagination tại thời điểm đó. Bản sửa tiền trước đó chỉ đổi trang 33 so với baseline cũ; đó là lượt QA khác.
 
 PDF/ảnh và biên nhận QA nằm riêng trong `build/tv5-final-docs-20261013/`; không nhận PDF cũ là bản nộp mới. Hash bản Word 11/10 trước sửa tiền: `21c1b7025453804a1bfe873627b986b0cdc94310710fdb5ebaf944f2d3c26251`.
 
 ## Phần cần xác nhận thêm
 
-TV1/TV3 vẫn cần xác nhận bàn giao nội dung của mình. PR #43 còn các finding trong review; PR #44 biên bản handoff còn trỏ bảng superseded, dù raw/PPTX đủ nhận theo v3. Deck tổng hợp do TV5 dựng từ guide/source đã rà, giữ ownership, không nhận đã nghiệm thu lời nói của các thành viên.
+TV1/TV3 vẫn cần xác nhận bàn giao nội dung của mình. Biên bản v2 TV2 được giữ nguyên làm bản gốc; [biên nhận TV5](../evidence/TV2/README_TV5_RECEIPT.md) đã hiệu đính tham chiếu theo v3 mà không thay evidence của TV2. Deck tổng hợp do TV5 dựng từ guide/source đã rà, giữ ownership, không nhận đã nghiệm thu lời nói của các thành viên.
 
 Cần tập dượt chung và kiểm cài/chạy trên máy nhận. Kiểm Java scale không thay Windows DPI thật; cài QA sạch cùng máy không thay thử máy khác. Nếu yêu cầu nộp PDF, xuất từ Word cuối trên máy nộp và kiểm lại trang. Theo dõi [README bộ nộp](../README_BO_NOP.md) và checklist TV5.
