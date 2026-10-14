@@ -1,0 +1,2 @@
+BeforeRows	AfterRows	Equality
+833	833	PASS full bidirectional EXCEPT; MaNV is unique

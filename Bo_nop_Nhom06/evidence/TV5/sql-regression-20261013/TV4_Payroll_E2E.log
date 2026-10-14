@@ -1,0 +1,15 @@
+﻿ PASS 1/10 - Da tao fixture nguon rieng.
+ PASS 2/10 - Du lieu nguon -> bang luong -> chi tiet/cong thuc dung.
+ PASS 3/10 - Tinh lai ky CHUA_CHOT thanh cong.
+ PASS 4/10 - Force loi INSERT chi tiet va rollback toan bo thanh cong.
+ PASS 5/10 - Tinh lai thanh cong sau rollback.
+Đã chốt bảng lương mã 7 với 2 chi tiết.
+ PASS 6/10 - Chot bang luong thanh cong.
+ PASS 7/10 - UPDATE/DELETE BANGLUONG da chot deu bi khoa.
+ PASS 8/10 - UPDATE/DELETE CHITIETBANGLUONG da chot deu bi khoa.
+ PASS 9/10 - sp_HuyChotBangLuong mo lai dung va giu nguyen chi tiet.
+ PASS 10/10 - Cleanup sach; trigger force-error da duoc drop.
+ ALL TESTS PASSED.
+KetQua     ThangDaTest NamDaTest   MaBangLuongDaTest Cleanup                                                                                             
+---------- ----------- ----------- ----------------- ----------------------------------------------------------------------------------------------------
+PASS                 8        2026                 7 Fixture da duoc cleanup                                                                             

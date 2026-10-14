@@ -96,6 +96,7 @@ Project_QuanLyNhanSuTienLuong/
 - `run_tuan3_tv5.ps1`: Regression offline và smoke login/schema live; không tạo ảnh dựng.
 - `run_payroll_tests.ps1`: TV4 E2E/benchmark trên database riêng có prefix `PRJ_Fix_QA_`; concurrency chạy SessionA/SessionB riêng.
 - `run_sql_verification.ps1`: Tạo QA tên ngẫu nhiên, install/rerun/seed/module/security/payroll, benchmark tùy chọn và cleanup ngay cả khi lỗi.
+- `run_tv5_verification.ps1`: Tạo QA riêng, kiểm miền tiền/overflow và thu đầy đủ benchmark TV5 (Messages, Results, hai actual plans, SHA-256 source); mặc định dọn QA. Kết quả và việc còn chờ ở [tiến độ TV5 ngày 13/10](docs/TV5_THUC_HIEN_20261013.md).
 - `run_identity_tests.ps1`: Tạo login cá nhân QA, kiểm tra danh tính/quyền/thay mật khẩu/trạng thái/vai trò/ngày DAO rồi dọn fixture.
 - `setup_gui_accounts.ps1`: Cấp bộ năm tài khoản demo được lưu trong `database/demo_accounts.json`; `-VerifyOnly` kiểm tra đăng nhập đã có.
 - `start_gui_qa.ps1`: Mở giao diện bằng database QA tường minh; hỗ trợ `-Database` cho máy khác.
@@ -160,3 +161,5 @@ Nhóm chủ động lưu rõ mật khẩu của bộ tài khoản demo trong `da
 ---
 
 **Repository:** `tranducanhyn99-prog/Project_QuanLyNhanSuTienLuong`
+
+TV5 follow-up13/10: [kết quả/checklist](docs/TV5_THUC_HIEN_20261013.md), GUI87/focusedphone7, age birthday fresh QA, current offline257; Word61/55 và deck chung15 đã kiểm. Package nhậnTV2/TV4/TV5, chưa nghiệm thu ownerTV1/TV3/máy nhận/WindowsDPI thật/rehearsal.

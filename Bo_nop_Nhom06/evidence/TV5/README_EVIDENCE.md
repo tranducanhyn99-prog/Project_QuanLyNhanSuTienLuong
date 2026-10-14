@@ -2,6 +2,20 @@
 
 Phụ trách **Trần Đức Anh, 24110155**; đóng gói 11/10/2026 từ `main f2a41f7c9bfc0b911613ed4355ccc79f8281ddd5`. Log SQL/identity/plan là **lượt QA 07–08/10/2026**, được sao byte gốc; không phải lượt chạy lại SQL ngày đóng gói. Timestamp file là giờ máy QA (UTC+07:00 theo môi trường làm việc); timestamp không thay commit nguồn của lượt chạy.
 
+## Bổ sung ngày 13/10
+
+- [verification-20261013](verification-20261013/summary.txt): chín case tiền, ba overflow 8115 và payroll rollback; benchmark 10.000 dòng, 833 kết quả, **126→13 reads**, hint scan/seek, warm cache/MAXDOP 1. Có Messages, Results đầy đủ, hai actual plans, hash source đã chạy và cleanup. `database-kept.txt` ghi bước giữ QA tạm; `cleanup.log` xác nhận đã dọn sau kiểm GUI.
+- [sql-regression-20261013](sql-regression-20261013/cleanup.log): schema environment, các module, Fix Regression, money, object security, payroll E2E và bốn race nguồn PASS. Không nhận đây là identity suite 50 checks hoặc mọi chức năng GUI đã chạy lại.
+- [gui-20261013](gui-20261013/write-outage-fixed.png): mất kết nối TCP relay riêng lúc login/đổi role, kiểm lại hộp thoại sau sửa và SQL profile unchanged; đổi role thành công sau phục hồi, đăng nhập thật sau đổi và từ chối khóa khi thiếu quyền server. Có log/ảnh/đối chiếu SQL/cleanup. Query timeout probe riêng ở JDBC, không phải GUI query timeout. Chưa kiểm đầy đủ khóa/mở/reset, report outage, in-flight transaction, DPI và cửa sổ nhỏ.
+- [package-verification-20261013](package-verification-20261013/summary.txt): SQL/runner lấy từ package chạy ở thư mục sạch không có Git trên cùng máy, money/benchmark và cleanup PASS; [GuiQa](package-verification-20261013/GuiQaRegressionTest.log) 62 + [Security](package-verification-20261013/SecurityRegressionTest.log) 104 + [LightTheme](package-verification-20261013/LightThemeRegressionTest.log) 45 + [LoginChip](package-verification-20261013/LoginChipRegressionTest.log) 20 = **231 assertions**, compile 54 nguồn Java 11. Không thay kiểm cài/chạy GUI trên máy khác.
+- [layout-20261013](layout-20261013/README.md): ba lượt render Swing ở cửa sổ tối thiểu/Java scale 1, 1.25, 1.5; 21 assertions bounds và chín ảnh. Chỉ kiểm layout với session fixture, report chưa có dữ liệu; không gán là Windows DPI thật hoặc live GUI SQL.
+
+[EVIDENCE_20261013.csv](EVIDENCE_20261013.csv) ghi file gốc, byte/SHA-256 và phạm vi của phần mới. Các mục bên dưới giữ dữ liệu lịch sử 07–11/10, gồm benchmark 142→15; không trộn số đo hoặc đổi ngày chạy.
+
+## Follow-up GUI và birthday 13/10
+
+[GUI follow-up](gui-followup-20261013/README.md):87 core assertions tự động, focusedphone7 riêng/native modal đầy đủ, các module/role/lifecycle/outage/session; cleanup và quyền tạm được verify. [Age boundaries](age-boundaries-20261013/README.md):9 cases/18 SQL operations +7 TV1 callers trên fresh QA; create-only. Current offline257 (Gui88/Security104 rerun, Light45/Login20 unchanged), không sửa số231 lịch sử.
+
 ## Quyền và danh tính thật
 
 | Bằng chứng | Ngày/môi trường | Case/kết quả và giới hạn |
@@ -37,7 +51,7 @@ Các giá trị trên đọc trực tiếp từ plan, không dựng lại từ �
 
 [EVIDENCE_INVENTORY.csv](EVIDENCE_INVENTORY.csv) liệt kê **31 file gốc**: đường dẫn trong package, đường dẫn repository nguồn, timestamp gốc (nanoseconds + giờ local), SHA256 trước/sau, phạm vi. Bản sao local giữ nguyên encoding/BOM và LastWriteTime. Git không bảo toàn LastWriteTime sau clone/checkout; sử dụng timestamp trong inventory và log để xác định ngày chạy. File `.sql` được lưu để biết schema QA đã cài; không sửa tên database trong evidence.
 
-[SOURCE_SCOPE.csv](SOURCE_SCOPE.csv) đối chiếu module cài ở ba thư mục QA với SQL package hiện tại: module 01→05 của integrated run 08/10 khớp sau chuẩn hóa BOM/newline/tên database; các bản 07/10 của module02/05 chỉ khác khoảng trắng cuối dòng. **Tất cả khớp sau bỏ khoảng trắng cuối dòng**. Việc này xác nhận SQL cùng logic; không tái tạo commit ID của lượt test hoặc chứng minh toàn bộ Java/GUI hiện tại đã chạy SQL suite. Hash của snapshot source đóng gói ở [SOURCE_PROVENANCE.csv](../../source/SOURCE_PROVENANCE.csv); các log cũ không nhúng mã commit nguồn, nên không gán PASS vô điều kiện cho commit f2a41f7.
+[SOURCE_SCOPE.csv](SOURCE_SCOPE.csv) được đối chiếu lại ngày 13/10: module02–04 giữ logic tương ứng; module01/05 trong evidence cũ **không còn khớp** CHECK tuổi/precision tiền source package mới. Giữ nguyên bản SQL/log lịch sử, không suy ra chúng đã kiểm miền tiền mới; proof mới ở verification/package-verification-20261013. Các khác biệt BOM/newline/tên QA/whitespace được ghi riêng trong CSV. Hash source hiện tại ở [SOURCE_PROVENANCE.csv](../../source/SOURCE_PROVENANCE.csv); log cũ không nhúng commit nguồn, không gán PASS vô điều kiện cho phiên bản mới.
 
 [SHA256_INVENTORY.csv](../../source/SHA256_INVENTORY.csv) bao phủ các file đóng gói của lượt TV5, kể cả README và log kiểm package mới. Ảnh lịch sử `screenshots/TV5` không được chép vào tập chứng cứ này.
 
@@ -45,4 +59,4 @@ Các giá trị trên đọc trực tiếp từ plan, không dựng lại từ �
 
 Chạy Java từ **source trong package** với JDK21, `--release 11`: compile **54 Java files**; [Security](package-verification/SecurityRegressionTest.log) **104**, [LightTheme](package-verification/LightThemeRegressionTest.log) **45**, [LoginChip](package-verification/LoginChipRegressionTest.log) **20**, [GuiQa](package-verification/GuiQaRegressionTest.log) **55 assertions PASS**, tổng **224**, không dùng SQL live. Parser PowerShell của 7 launcher hợp lệ; đường dẫn SQL/JAR/template tồn tại; XML plan, hash/timestamp gốc và link nội bộ được đối chiếu. Class/build sinh từ kiểm package được chuyển ra thư mục build của repository, không nằm trong bản giao.
 
-**Chưa kiểm cài mới trên máy khác; chưa chạy lại SQL/provision/GUI/rehearsal/backup-restore trong lượt đóng gói.** Các phần chờ TV1–TV4 được ghi ở [trạng thái evidence nhóm](../README_EVIDENCE.md).
+**Lượt 11/10 chưa kiểm cài mới trên máy khác hoặc chạy lại SQL/provision/GUI/rehearsal/backup-restore.** Phần kiểm mới ngày 13/10 ghi riêng ở đầu tài liệu; bộ nhóm vẫn chưa hoàn tất. Các phần chờ được ghi ở [trạng thái evidence nhóm](../README_EVIDENCE.md).

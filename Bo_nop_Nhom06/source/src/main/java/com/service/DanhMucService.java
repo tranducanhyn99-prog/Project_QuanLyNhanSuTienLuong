@@ -31,7 +31,7 @@ public class DanhMucService {
         if (tenPB == null || tenPB.trim().isEmpty()) {
             throw new Exception("Tên phòng ban không được để trống!");
         }
-        PhongBan pb = new PhongBan(0, tenPB.trim(), soDienThoai != null ? soDienThoai.trim() : null, "HOAT_DONG");
+        PhongBan pb = new PhongBan(0, tenPB.trim(), normalizePhone(soDienThoai), "HOAT_DONG");
         phongBanDAO.insert(pb);
     }
 
@@ -40,13 +40,22 @@ public class DanhMucService {
         if (tenPB == null || tenPB.trim().isEmpty()) {
             throw new Exception("Tên phòng ban không được để trống!");
         }
-        PhongBan pb = new PhongBan(maPB, tenPB.trim(), soDienThoai != null ? soDienThoai.trim() : null, trangThai);
+        PhongBan pb = new PhongBan(maPB, tenPB.trim(), normalizePhone(soDienThoai), trangThai);
         phongBanDAO.update(pb);
     }
 
     public void xoaPhongBan(int maPB) throws SQLException {
         Session.getInstance().requireRoles("DB_Admin", "HR_Manager");
         phongBanDAO.delete(maPB);
+    }
+
+    private static String normalizePhone(String phone) throws Exception {
+        if (phone == null || phone.trim().isEmpty()) return null;
+        String value = phone.trim();
+        if (!value.matches("[0-9]{10,15}")) {
+            throw new Exception("SĐT phòng ban: 10–15 chữ số hoặc để trống.");
+        }
+        return value;
     }
 
     // --- CHỨC VỤ ---

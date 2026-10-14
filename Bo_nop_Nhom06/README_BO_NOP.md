@@ -1,6 +1,10 @@
-# Bộ nộp Nhóm 06 — đã nhận TV4 và TV5
+# Bộ nộp Nhóm 06 — đã nhận TV2, TV4, TV5; có deck chung15
 
-Source Java/SQL được đóng gói ngày **11/10/2026**, từ `main` commit **f2a41f7c9bfc0b911613ed4355ccc79f8281ddd5**. TV5: **Trần Đức Anh — 24110155**. Ngày **13/10/2026** nhận bộ TV4 **Nguyễn Quang Vinh — 24110385** từ PR #41 (đã merge); source dùng thu minh chứng TV4 ở `62223d5` có Java/SQL khớp snapshot hiện tại. Bộ này có source, JDBC, SQL tái tạo và evidence TV4/TV5. **Bộ nộp nhóm chưa hoàn tất**: còn chờ ERD TV1, benchmark/4 actual plans CHAMCONG TV2, slide/evidence TV1–TV3 và rehearsal chung. Hai deck TV4/TV5 gồm tổng cộng 6 slide riêng, chưa thay deck nhóm ≤15 slide.
+Source Java/SQL được đóng gói ngày **11/10/2026**, từ `main` commit **f2a41f7c9bfc0b911613ed4355ccc79f8281ddd5**. TV5: **Trần Đức Anh — 24110155**. Ngày **13/10/2026** nhận bộ TV4 **Nguyễn Quang Vinh — 24110385** từ PR #41 (đã merge); source dùng thu minh chứng TV4 ở `62223d5` có Java/SQL khớp snapshot hiện tại. Bộ này có source, JDBC, SQL tái tạo và evidence TV4/TV5. **Bộ nộp nhóm chưa hoàn tất**: còn chờ ERD/logs TV1, TV3 sửa/chốt bàn giao, handoffTV2 sửa tham chiếu superseded, máy nhận và rehearsal. [Deck chung15](slides/Nhom06_ThuyetTrinh_15_Slides.pptx) do TV5 tổng hợp đã kiểm native/font/notes; không thay ownerTV1/TV3 nghiệm thu cuối.
+
+**Cập nhật TV5 13/10:** source module 05/function tiền, benchmark, runner và thông báo lỗi GUI đã sửa từ working tree dựa trên `a7e1096`; Word đồng bộ mô tả tiền. SHA-256 trong provenance xác định file cụ thể, chưa gán thay đổi này cho một commit mới. Có [money/benchmark mới](evidence/TV5/verification-20261013/summary.txt), [kiểm package standalone](evidence/TV5/package-verification-20261013/summary.txt) và [GUI QA](evidence/TV5/gui-20261013/write-outage-fixed.png). Source TV4 giữ nguyên; evidence TV4 thu trước thay đổi tiền TV5, không tự nhận đã kiểm miền tiền mới. PR43 của TV3 đã review nhưng chưa nghiệm thu/merge vì notes, Word và provenance cần sửa.
+
+**Follow-up TV5:** [GUI87 + focusedphone7](evidence/TV5/gui-followup-20261013/README.md), [age fresh QA](evidence/TV5/age-boundaries-20261013/README.md), current offline257=88+104+45+20. Admin full/denied, report+in-flight outage, session/period/repeat, CRUD TV1, batch/adjustTV2, PC/KT TV3 và payrolllifecycle đã kiểm tự động. Word61/55 và deck15 có native QA; Windows DPI thật/máy nhận chưa kiểm. [TV2 receipt52file](evidence/TV2/README_TV5_RECEIPT.md) từ PR44OPEN canonicalv3, không merge. CHECK tuổi module01 create-only, không tự migrate constraint database cũ.
 
 | Thư mục | Nội dung |
 |---|---|
@@ -10,7 +14,7 @@ Source Java/SQL được đóng gói ngày **11/10/2026**, từ `main` commit **
 | [bộ TV4](evidence/TV4/README_EVIDENCE.md) | Word phần TV4 đã sửa bảng, slide 10–12 và 13 file minh chứng; giữ cấu trúc `Minh_chung/` để tham chiếu trong tài liệu mở được |
 | [evidence](evidence/README_EVIDENCE.md) | Trạng thái bàn giao từng thành viên |
 | [report/Word](report/Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx), [rà soát báo cáo](report/TV5_Ra_Soat_Bao_Cao.md) | Bản Word sao nguyên byte và kết quả đối chiếu; chưa cung cấp PDF từ bản Word cuối |
-| [slide TV5 13–15](slides/TV5_Slide_13-15.pptx), [README slide](slides/README_SLIDES.md) | Deck editable 3 slide riêng TV5; deck nhóm ≤15 slide còn chờ |
+| [slide TV5 13–15](slides/TV5_Slide_13-15.pptx), [README slide](slides/README_SLIDES.md) | Deck editable 3 slide riêng TV5; deck chung15 đã có, ownerTV1/TV3 final còn chờ |
 | [TV5_TAP_DEMO](TV5_TAP_DEMO.md) | Kịch bản tập và bảng kết quả trống; chưa nhận là rehearsal đã PASS |
 
 ## Cài và chạy trên máy khác
@@ -49,10 +53,14 @@ Tool yêu cầu SQL login/password DBA, login mới, role, MaNV và password cá
 
 ## Kiểm tra và đọc bằng chứng
 
+Từ thư mục `source/`, chạy `powershell -NoProfile -ExecutionPolicy Bypass -File ..\run_tv5_verification.ps1` để thu kiểm biên và benchmark TV5 trên QA mới. Runner đặt ở root package vì dùng `database/` cạnh nó; không cần Git để chạy standalone. Mặc định runner dọn đúng QA nó tạo; chỉ dùng `-KeepDatabase` khi cần giữ tạm và tự quản lý cleanup. Benchmark yêu cầu QA có tên `PRJ_Fix_QA_*`.
+
+Ngày 13/10 đã kiểm bản SQL/runner lấy từ package trong thư mục sạch cùng máy, không có `.git`: money/benchmark PASS, 833 dòng, 126→13 reads, cleanup PASS. Biên dịch 54 nguồn từ package và bốn regression Java đạt **231 assertions** (62+104+45+20). Đây chưa phải cài/chạy đầy đủ trên máy khác. Số 142→15 trong các đoạn lịch sử bên dưới thuộc lượt cũ, không bị thay bằng số đo mới.
+
 [README bằng chứng TV5](evidence/TV5/README_EVIDENCE.md) tách rõ quyền object bằng `WITHOUT LOGIN`, đăng nhập thật theo `ORIGINAL_LOGIN`, concurrency A/B và bốn race nguồn. Plan TV5 4/5 đo **142→15 logical reads**, cùng **833 dòng** trên bảng tạm **10.000 dòng**, có index hint; không thay benchmark CHAMCONG TV2. Không dùng ảnh lịch sử trong `screenshots/TV5` làm chứng minh source/runtime mới.
 
 Để kiểm tra byte file sau sao chép hoặc checkout Git, đối chiếu [SHA256_MANIFEST.csv](SHA256_MANIFEST.csv) cho toàn package, trừ chính manifest. [SHA256_INVENTORY.csv](source/SHA256_INVENTORY.csv) chỉ bao phủ README/source/database/evidence. [SOURCE_PROVENANCE.csv](source/SOURCE_PROVENANCE.csv) ghi nguồn và SHA256 trước/sau của launcher có đổi đường dẫn; [EVIDENCE_INVENTORY.csv](evidence/TV5/EVIDENCE_INVENTORY.csv) ghi source path, timestamp gốc, hash và phạm vi từng log/plan. Bản sao local giữ nguyên bytes, encoding và LastWriteTime gốc; Git giữ byte nhưng không bảo toàn thời gian sửa file khi clone/checkout, nên ngày chạy phải đọc từ log và inventory. Log PowerShell có thể dùng UTF-16, mở bằng SSMS/PowerShell hoặc trình soạn thảo hỗ trợ BOM.
 
 Launcher có sửa **chỉ đường dẫn database** trong bản package của `setup_gui_accounts.ps1`, `run_sql_verification.ps1`, `run_identity_tests.ps1`, `run_payroll_tests.ps1`; source Java, SQL, JAR và evidence được sao byte gốc. Không mang `.git`, `bin`, class đã biên dịch, config local hay mật khẩu `sa` local vào bộ nộp.
 
-**Kiểm chứng lượt đóng gói:** đã đối chiếu hash/timestamp gốc, mở XML actual plan và kiểm runtime counters, kiểm liên kết nội bộ và chạy regression Java offline từ source trong package. **Chưa cài thành công trên máy mới**, chưa chạy lại SQL/provision/GUI/identity/rehearsal hoặc backup/restore trong lượt này; PASS SQL ở đây là kết quả các log QA 07–08/10/2026, không phải lượt chạy 11/10. Runner mặc định tự dọn QA nó tạo; với `-KeepDatabase`, người cài quản lý đúng database vừa giữ lại. Cleanup cũ không chứng minh mọi QA/SQL login trên instance đã được xóa.
+**Kiểm chứng lượt đóng gói:** đã đối chiếu hash/timestamp gốc, mở XML actual plan và kiểm runtime counters, kiểm liên kết nội bộ và chạy regression Java offline từ source trong package. **Chưa cài thành công trên máy mới**, lượt 11/10 chưa chạy lại SQL/provision/GUI/identity/rehearsal hoặc backup/restore; follow-up13/10 ở trên có QA riêng; PASS SQL ở đây là kết quả các log QA 07–08/10/2026, không phải lượt chạy 11/10. Runner mặc định tự dọn QA nó tạo; với `-KeepDatabase`, người cài quản lý đúng database vừa giữ lại. Cleanup cũ không chứng minh mọi QA/SQL login trên instance đã được xóa.

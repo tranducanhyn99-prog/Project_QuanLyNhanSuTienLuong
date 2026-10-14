@@ -1,0 +1,8 @@
+RESULT 1 rows=9 file=TV5_Money_Results_1.tsv
+RESULT 2 rows=1 file=TV5_Money_Results_2.tsv
+RESULT 3 rows=1 file=TV5_Money_Results_3.tsv
+RESULT 4 rows=1 file=TV5_Money_Results_4.tsv
+PASS net pay cases, input/output overflow 8115, and wage rounding boundaries
+RESULT 5 rows=1 file=TV5_Money_Results_5.tsv
+RESULT 6 rows=1 file=TV5_Money_Results_6.tsv
+PASS payroll large value, overflow atomic rollback, unchanged full header/detail and fixture cleanup

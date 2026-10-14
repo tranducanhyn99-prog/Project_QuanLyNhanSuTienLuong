@@ -1,0 +1,9 @@
+PASS QA SQL blocker holds target profile
+DIALOG Xác nhận khóa | Bạn có chắc chắn muốn khóa tài khoản 'tv5f_d54a94da_b'?
+PASS EDT responds while write is blocked; repeated click ignored while button disabled
+DIALOG Lỗi | Không kết nối được SQL Server. Vui lòng thử lại khi kết nối được khôi phục.
+PASS in-flight disconnect displays connection failure
+PASS write button restores after disconnect
+PASS external DBA verifies rollback before reload/retry
+PASS interrupted lock remains active; no automatic retry
+PASS live GUI inflight-write: 6 assertions. Production handlers; dialogs automated; no manual-test claim.

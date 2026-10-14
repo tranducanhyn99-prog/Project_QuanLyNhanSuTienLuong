@@ -1,0 +1,2 @@
+DatabaseName	SqlIdentity	SqlVersion	FixtureRows	FilterMaPB	FilterMaCV	MeasurementMode
+PRJ_Fix_QA_20261013_145645_6808c29e	MicrosoftAccount\\tranducanhyn99@gmail.com	Microsoft SQL Server 2025 (RTM) - 17.0.1000.7 (X64) \n\tOct 21 2025 12:05:57 \n\tCopyright (C) 2025 Microsoft Corporation\n\tStandard Developer Edition (64-bit) on Windows 10 Home Single Language 10.0 <X64> (Build 26200: ) (Hypervisor)\n	10000	2	1	warm cache; forced hints; MAXDOP 1; no cache reset

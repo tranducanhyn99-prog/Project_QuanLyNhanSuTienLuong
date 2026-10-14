@@ -1,0 +1,4 @@
+PASS Java 11 compilation: 54 sources.
+Running GuiQaRegressionTest
+PASS GUI QA regressions: 88 assertions; no SQL connections.
+Log: C:\Users\DUCANHZZ\Downloads\HQTCSDL\PRJ\build\tv5-followup-20261013\package-source\build\test-results\Java_Verification_20261013_214947_087.log

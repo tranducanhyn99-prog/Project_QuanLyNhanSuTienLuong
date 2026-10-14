@@ -1,0 +1,37 @@
+PASS rapid period switch leaves selected period row count
+PASS rapid period switch leaves selected period SQL total 1,230,000
+Oct 13, 2026 9:10:21 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+com.microsoft.sqlserver.jdbc.SQLServerException: The TCP/IP connection to the host localhost, port 14514 has failed. Error: "Connection refused: getsockopt. Verify the connection properties. Make sure that an instance of SQL Server is running on the host and accepting TCP/IP connections at the port. Make sure that TCP connections to the port are not blocked by a firewall.".
+	at com.microsoft.sqlserver.jdbc.SQLServerException.makeFromDriverError(SQLServerException.java:233)
+	at com.microsoft.sqlserver.jdbc.SQLServerException.convertConnectExceptionToSQLServerException(SQLServerException.java:284)
+	at com.microsoft.sqlserver.jdbc.SocketFinder.findSocket(IOBuffer.java:2589)
+	at com.microsoft.sqlserver.jdbc.TDSChannel.open(IOBuffer.java:721)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.connectHelper(SQLServerConnection.java:3763)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.login(SQLServerConnection.java:3348)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.connectInternal(SQLServerConnection.java:3179)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.connect(SQLServerConnection.java:1953)
+	at com.microsoft.sqlserver.jdbc.SQLServerDriver.connect(SQLServerDriver.java:1263)
+	at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:683)
+	at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:191)
+	at com.config.DatabaseConnection.openForLogin(DatabaseConnection.java:38)
+	at com.config.DatabaseConnection.getConnection(DatabaseConnection.java:58)
+	at com.dao.BangLuongDAO.getAll(BangLuongDAO.java:58)
+	at com.service.PayrollService.layDanhSachBangLuong(PayrollService.java:51)
+	at com.service.PayrollService.getDanhSachBangLuong(PayrollService.java:59)
+	at com.ui.baocao.BaoCaoPanel.lambda$loadKyLuong$5(BaoCaoPanel.java:241)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DIALOG L?i | Kh�ng k?t n?i ???c SQL Server. Vui l�ng th? l?i khi k?t n?i ???c kh�i ph?c.
+PASS report outage has short connection message
+PASS report reload button restored after failure
+PASS old report rows cleared on failed reload
+PASS report periods load again after relay recovery
+PASS live GUI report-outage: 6 assertions. Production handlers; dialogs automated; no manual-test claim.

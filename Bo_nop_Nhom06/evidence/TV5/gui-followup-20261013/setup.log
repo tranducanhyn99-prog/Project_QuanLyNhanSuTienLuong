@@ -1,0 +1,13 @@
+PASS schema/optional seed: 01_Module_NhanSu_TV1.sql
+PASS schema/optional seed: 02_Module_ChamCong_TV2.sql
+PASS schema/optional seed: 03_phucap_khautru_TV3.sql
+PASS schema/optional seed: 04_Module_TinhLuong_TV4.sql
+PASS schema/optional seed: 05_Security_Payroll_TV5.sql
+PASS schema/optional seed: 06_Demo_Data.sql
+PASS provisioned 5 SQL logins/users/application profiles, 4 roles, 2 employee records.
+PASS real application login and wrong-password rejection: tv5f_d54a94da_admin (DB_Admin)
+PASS real application login and wrong-password rejection: tv5f_d54a94da_hr (HR_Manager)
+PASS real application login and wrong-password rejection: tv5f_d54a94da_payroll (Payroll_Officer)
+PASS real application login and wrong-password rejection: tv5f_d54a94da_a (Employee)
+PASS real application login and wrong-password rejection: tv5f_d54a94da_b (Employee)
+Owned database=PRJ_Fix_QA_20261013_followup_8e2bedb8

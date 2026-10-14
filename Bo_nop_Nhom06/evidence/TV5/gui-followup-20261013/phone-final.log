@@ -1,0 +1,44 @@
+Oct 13, 2026 9:42:18 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+java.lang.Exception: SĐT phòng ban: 10–15 chữ số hoặc để trống.
+	at com.service.DanhMucService.normalizePhone(DanhMucService.java:56)
+	at com.service.DanhMucService.themPhongBan(DanhMucService.java:34)
+	at com.ui.nhanvien.DanhMucPanel.lambda$xuLyThemPB$14(DanhMucPanel.java:269)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DIALOG Lỗi | SĐT phòng ban: 10–15 chữ số hoặc để trống.
+PASS invalid add phone shows final compact text
+PASS invalid add creates no SQL row
+DIALOG Message | Thêm phòng ban thành công!
+PASS blank add remains SQL NULL
+Oct 13, 2026 9:42:19 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+java.lang.Exception: SĐT phòng ban: 10–15 chữ số hoặc để trống.
+	at com.service.DanhMucService.normalizePhone(DanhMucService.java:56)
+	at com.service.DanhMucService.capNhatPhongBan(DanhMucService.java:43)
+	at com.ui.nhanvien.DanhMucPanel.lambda$xuLySuaPB$16(DanhMucPanel.java:284)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DIALOG Lỗi | SĐT phòng ban: 10–15 chữ số hoặc để trống.
+PASS invalid update phone shows final compact text
+PASS invalid update preserves SQL NULL row
+DIALOG Message | Cập nhật phòng ban thành công!
+PASS whitespace update remains SQL NULL
+DIALOG Xác nhận | Bạn có chắc chắn muốn xóa phòng ban này?
+DIALOG Message | Đã xóa phòng ban thành công!
+PASS phone final fixture cleaned
+PASS live GUI phone-final: 7 assertions. Production handlers; dialogs automated; no manual-test claim.
