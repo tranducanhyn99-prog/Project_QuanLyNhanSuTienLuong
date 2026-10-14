@@ -1,22 +1,24 @@
 # Hướng dẫn hoàn thiện bộ nộp — Nhóm 06
 
-Cập nhật 13/10/2026, đối chiếu source sau PR #38 (`0223f2f`), [phân công](Ke_hoach_phan_cong_Project_DBMS_Nhom06.md), [rubric README](../README.md), [FIX_TASKLIST](FIX_TASKLIST.md) và báo cáo Word cuối kỳ. Đây là danh sách việc cần bàn giao; tiến độ TV5 được ghi riêng ở mục 4.1, **chưa hoàn tất bộ nộp toàn nhóm**. Giữ nguyên ownership SQL/Java; vị trí cài function/trigger ở module phụ thuộc không chuyển người phụ trách.
+Cập nhật 14/10/2026 theo các PR #44–#46, [phân công](Ke_hoach_phan_cong_Project_DBMS_Nhom06.md), [rubric README](../README.md), [FIX_TASKLIST](FIX_TASKLIST.md) và báo cáo Word cuối kỳ. Đây là danh sách việc cần bàn giao; các mục 4.1–4.2 lưu mốc lịch sử, **chưa hoàn tất nghiệm thu toàn nhóm**. Giữ nguyên ownership SQL/Java; vị trí cài function/trigger ở module phụ thuộc không chuyển người phụ trách.
 
-Báo cáo [Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx](Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx) hiện có **55 trang nội dung, 61 trang tổng**, đáp ứng ngưỡng độ dài 50–100 trang nội dung. Các log đã PASS có thể dùng lại khi source và phạm vi đo tương ứng; không yêu cầu TV1/TV3/TV4 chạy lại toàn bộ suite. Phần còn thiếu bắt buộc là minh chứng benchmark TV2 hiện hành, deck ≤15 slide và hoàn thiện evidence TV1–TV4 trong package.
+Báo cáo [Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx](Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx) đã có benchmark TV2 ngày 13/10 trong §8.5/§9.3; [deck chung](../Bo_nop_Nhom06/slides/Nhom06_ThuyetTrinh_15_Slides.pptx) có đúng 15 slide, TV2 ở slide 4–6. Bản Word sau sửa trạng thái đã xuất kiểm bằng Microsoft Word, vẫn **55 trang nội dung, 61 trang tổng**. Các log đã PASS có thể dùng lại khi source và phạm vi đo tương ứng. Việc còn lại là xác nhận phần TV1/TV3, tập dượt chung, kiểm cài/chạy trên máy nhận và xuất PDF nộp nếu yêu cầu.
 
 ## 1. Đầu ra và trách nhiệm từng thành viên
 
 | Thành viên | Việc phải hoàn thiện | Đầu ra bàn giao / tiêu chí nhận |
 |---|---|---|
 | **TV1 — Nguyễn Minh Trí, 24110359** | Kiểm ERD, 10 bảng, PK/FK, từ điển dữ liệu và 3NF khớp SQL 01–05; có LICHSULUONG, NHANVIEN.NgayNghiViec, TAIKHOAN.SqlLogin. Chọn log/plan nhân sự đã PASS; chuẩn bị slide 1–3. | Checklist tên bảng/cột/kiểu/NULL/default/khóa khớp source; log nhân sự + benchmark + plan phù hợp. Ảnh `TV1_Database_Diagram.png` thiếu LICHSULUONG nên phải chụp ERD mới nếu đưa vào báo cáo/deck. Giải thích `fn_TinhSoNgayCong` thuộc TV1 nhưng cài module 02, trigger xóa nhân viên cài module 05. Demo địa chỉ cập nhật rồi khôi phục, giữ email `.invalid`. |
-| **TV2 — Phạm Minh Quân, 24110311** | **Đo benchmark index CHAMCONG hiện hành** theo mục 2; chọn log test module/batch rollback/trigger đã PASS. Kiểm từ điển CHAMCONG và view tổng hợp; chuẩn bị slide 4–6. | Log IO/TIME, actual plans trước/sau cho cả hai cặp truy vấn, kết quả dòng giống nhau, metadata index và cleanup; bảng số đo mới có ngày/môi trường/giới hạn. Năm ảnh benchmark TV2 hiện có là tư liệu cũ (dùng tên index/fixture cũ); ba ảnh UI có dữ liệu kỳ 9/2026 và ảnh chi tiết lệch kỳ nhập 10/2026. Không ảnh nào thay minh chứng benchmark mới ở mục 2. `fn_TongPhuCap` thuộc TV2, phối hợp TV3, cài module 03. Demo đọc công hiện có; trùng ngày là bài lỗi riêng. |
+| **TV2 — Phạm Minh Quân, 24110311** | Benchmark index CHAMCONG và slide 4–6 đã bàn giao qua PR #44; dùng [biên nhận TV5](../Bo_nop_Nhom06/evidence/TV2/README_TV5_RECEIPT.md) và bản hiệu đính v3. Kiểm từ điển CHAMCONG, view tổng hợp và phần trình bày của mình. | 52 file minh chứng, bốn actual plans, log IO/TIME, metadata và cleanup đã nhận; giữ Messages 574→5 riêng với XML 522→5 trên fixture 30.000 dòng. Năm ảnh benchmark cũ và ba ảnh UI lệch kỳ chỉ dùng làm tư liệu lịch sử. `fn_TongPhuCap` thuộc TV2, phối hợp TV3, cài module 03. Demo đọc công hiện có; trùng ngày là bài lỗi riêng. |
 | **TV3 — Trần Tiến Đạt, 24110198** | Kiểm từ điển PHUCAPNHANVIEN/KHAUTRUNHANVIEN, tổng hợp/function và ownership; chọn log SQL/benchmark/plan đã PASS; chuẩn bị slide 7–9. | Log TV3 + benchmark đúng truy vấn; xác minh constraint số tiền/tháng/năm và transaction `sp_XoaKyLuongChuaChot`. Ảnh SQL/GUI trong `screenshots/TV3/` minh họa lần chạy cũ, không đại diện cho fixture hiện tại; nếu dùng thì ghi rõ ngày/phạm vi, còn xác nhận source hiện hành dựa trên log mới. Demo chỉ đọc khoản A đã có, không thử xóa kỳ chính. |
 | **TV4 — Nguyễn Quang Vinh, 24110385** | Kiểm từ điển BANGLUONG/CHITIETBANGLUONG, công thức, snapshot lương, tên `MaChiTiet`; chọn E2E/benchmark đã PASS, phối hợp concurrency TV5; chuẩn bị slide 10–12. | E2E 10/10, benchmark khấu trừ 547→4 trên fixture 30.000 dòng, 128 dòng/tổng 133.356 và ghi rõ hint scan/seek. Ảnh `E2E_10Steps_Pass.png`, `Concurrency_2Sessions.png`, `Benchmark_*` và `Trigger_KhoaKyDaChot.png` là lần chạy 30/09 hoặc chưa ghép được log cùng lượt; dùng log QA mới ở mục 3 thay cho ảnh nếu cần minh chứng hiện hành. Số 8→2 của truy vấn nguồn công là phép đo khác, không thay benchmark index TV2. |
 | **TV5 — Trần Đức Anh, 24110155** | Tổng hợp Word, deck ≤15 slide, package/README cài đặt; chọn minh chứng quyền và concurrency đã PASS; chuẩn bị slide 13–15, điều phối rehearsal. | Word 55 trang nội dung, PDF nếu yêu cầu, deck thực có; script/source/README và thư mục evidence mở được trên máy khác. Ảnh quyền `TV5_Security_Roles_Verification.png` là kiểm bằng `EXECUTE AS USER`, chỉ chứng minh quyền object trong bài thử, chưa chứng minh lọc dữ liệu theo `ORIGINAL_LOGIN`; dùng log identity hiện hành cùng test đăng nhập thật. Ảnh concurrency cũng là kỳ 1/2020 cũ. Có minh chứng GRANT/REVOKE/DENY, danh tính Employee, hai phiên tính lương và bốn race khóa nguồn. Không gọi mô phỏng timeout là đã ngắt SQL trên GUI. |
 
 Mỗi người ghi rõ tên file, ngày chạy, môi trường, testcase/truy vấn, kết quả và giới hạn; gửi TV5 các file gốc cần dùng. Đọc và đối chiếu lại phần mình trong Word, không sửa số đo bằng suy đoán. Nếu số mới khác, giữ log thật và giải thích thay đổi; chưa chạy thì giữ trạng thái chờ.
 
-## 2. TV2 — cách đo và lưu minh chứng bắt buộc
+## 2. TV2 — phép đo đã nhận và cách kiểm lại
+
+[Bộ evidence TV2](../Bo_nop_Nhom06/evidence/TV2/README_TV5_RECEIPT.md) từ PR #44 đã có đủ 52 file, bốn actual plans và ba slide 4–6. TV5 dùng [bảng hiệu đính v3](../Bo_nop_Nhom06/evidence/TV2/presentation/reviewed_v2/TV5_Proposed_Corrections_v3.md) cùng phụ lục v3 do TV2 bàn giao; PR #46 hiệu đính biên nhận TV5. Không lấy thời gian sai hoặc lời dẫn cũ từ bản v2. Các bước dưới đây là quy trình tái kiểm, không phải phần TV2 còn chờ bàn giao.
 
 Script đúng là [database/test_benchmark_index_TV2.sql](../database/test_benchmark_index_TV2.sql). Script tạo **#CHAMCONG_BENCHMARK tạm theo session**, 30.000 dòng; giữ UNIQUE `(MaNV, NgayChamCong)` làm baseline rồi thêm covering index INCLUDE `(GioVao, GioRa, TrangThai)`. Không xóa index/constraint của dbo.CHAMCONG và không xóa cache hệ thống.
 
@@ -25,15 +27,15 @@ Script đúng là [database/test_benchmark_index_TV2.sql](../database/test_bench
 3. Lưu toàn bộ **Messages** thành `TV2_benchmark_messages.log`; lưu Results thể hiện số dòng/giá trị cả trước và sau. Lưu actual plan của BEFORE 1.1, BEFORE 1.2, AFTER 3.1, AFTER 3.2 thành bốn `.sqlplan` đặt tên rõ truy vấn. Không dùng estimated plan thay actual plan.
 4. Đối chiếu **1.1 ↔ 3.1** (tra chi tiết) và **1.2 ↔ 3.2** (tổng hợp): cùng kết quả, logical reads, CPU/elapsed và operator. Baseline đã có unique index, nên mô tả seek + lookup so với covering seek theo plan thực; không gọi baseline là bảng chưa có index. Script dùng hint chọn index nên đây là phép đo fixture/hint, không chứng minh optimizer luôn chọn index đó ở mọi workload.
 5. Lưu kết quả metadata cuối script: index thật `IX_CHAMCONG_MaNV_Ngay` có key và INCLUDE đúng; Messages phải xác nhận 30.000 dòng và đã dọn bảng tạm, không có lỗi cleanup. Kiểm bốn plan mở được, plan chứa runtime counters và đúng truy vấn. CPU/elapsed có thể 0 hoặc dao động; không ép số đẹp.
-6. Tạo `TV2_benchmark_summary.md` ghi ngày chạy, source commit, SQL Server/database, fixture, truy vấn, số dòng và bảng before/after cho **từng cặp**, kèm tên log/plan. Số 574→5 hiện chỉ là lịch sử; thay trong báo cáo/slide bằng số mới **sau khi có bằng chứng**, không tự nhận số đó là kết quả hiện hành.
+6. Đối chiếu `TV2_benchmark_summary.md` với log/plan ngày 13/10: 273 dòng chi tiết, 9 dòng tổng hợp; Messages 574→5 và XML 522→5 là hai nguồn đo khác nhau. Giữ điều kiện hint/warm cache và giới hạn thời gian dưới 1 ms trong báo cáo/slide; không coi các ảnh benchmark cũ là lượt đo mới.
 
-Lưu mới tại `build/evidence/TV2/<ngay-chay>/` rồi bàn giao bản sao vào `Bo_nop_Nhom06/evidence/TV2/` khi đóng gói. Hai đường dẫn này là **đầu ra đề xuất, chưa được tạo trong lượt sửa hướng dẫn**. `run_sql_verification.ps1 -Benchmarks` hiện chỉ chạy benchmark TV1, TV3, TV4; lệnh đó **không thu benchmark TV2**, cũng không xuất actual plan TV2. TV2 phải chạy script SSMS riêng như trên. Nếu đã tạo QA mới với `-KeepDatabase`, ghi tên database và bàn giao việc dọn đúng database do lượt đó tạo cho người quản lý QA sau khi lưu đủ minh chứng; không dọn QA GUI đang dùng chung.
+File gốc đã nằm trong `Bo_nop_Nhom06/evidence/TV2/`. Nếu đo lại, lưu run mới riêng tại `build/evidence/TV2/<ngay-chay>/`, ghi rõ nguồn rồi mới cập nhật package. `run_sql_verification.ps1 -Benchmarks` chỉ chạy benchmark TV1, TV3, TV4; không thu benchmark/actual plan TV2. Dùng script SSMS riêng như trên và không dọn QA GUI đang dùng chung.
 
-- [ ] Log đầy đủ, môi trường/source và cleanup rõ.
-- [ ] Results của hai cặp truy vấn giống nhau trước/sau.
-- [ ] Bốn actual plans đúng truy vấn, có số liệu runtime.
-- [ ] Metadata index thật có key/INCLUDE đúng.
-- [ ] Summary và số đo trong Word/slide khớp file gốc; TV5 đã nhận bản sao.
+- [x] Log đầy đủ, môi trường/source và cleanup rõ.
+- [x] Results của hai cặp truy vấn giống nhau trước/sau.
+- [x] Bốn actual plans đúng truy vấn, có số liệu runtime.
+- [x] Metadata index thật có key/INCLUDE đúng.
+- [x] Summary và số đo trong Word/slide khớp file gốc; TV5 đã nhận bản sao.
 
 ## 3. Chọn bằng chứng đã PASS để bàn giao
 
@@ -42,7 +44,7 @@ Các đường dẫn sau đã có trên máy QA, nhưng `build/` bị Git bỏ q
 | Người | File có thể dùng / phần cần đối chiếu |
 |---|---|
 | TV1 | `build/sql-verification/20261008_101955_11b4e24c/test_module_nhansu_TV1.log`, `benchmark_test_benchmark_index_TV1.log`; `build/fix-verification/TV1_ActualPlan_*.sqlplan`. Fixture 5.000 dòng, logical reads 75→10. |
-| TV2 | `build/sql-verification/20261008_101955_11b4e24c/test_module_chamcong_TV2.log` (21 PASS/0 FAIL) và source `ChamCongService.nhapChamCongTheoLo`; bổ sung benchmark/plan mới ở mục 2. |
+| TV2 | `build/sql-verification/20261008_101955_11b4e24c/test_module_chamcong_TV2.log` (21 PASS/0 FAIL) và source `ChamCongService.nhapChamCongTheoLo`; benchmark/plan mới xem [bộ evidence đã nhận](../Bo_nop_Nhom06/evidence/TV2/README_TV5_RECEIPT.md). |
 | TV3 | `build/sql-verification/20261008_101955_11b4e24c/test_module_phucap_khautru_TV3.log`, `benchmark_test_benchmark_index_TV3.log`; `build/fix-verification/TV3_ActualPlan_*.sqlplan`. Fixture 30.000 dòng, logical reads 642→2. |
 | TV4 | `build/sql-verification/20261008_101955_11b4e24c/TV4_Payroll_E2E.log`, `benchmark_TV4_Payroll_Benchmark.log`; đối chiếu IO/TIME và script benchmark, chọn plan cùng phép đo nếu có; thiếu file nào thì ghi chờ, không gán plan TV khác. |
 | TV5 | `build/sql-verification/20261008_101955_11b4e24c/test_security_roles_TV5.log`, `Closed_Source_Concurrency.log`; `build/fix-verification/Concurrency_A.log`, `Concurrency_B.log`, `TV5_ActualPlan_*.sqlplan`; `build/identity-agent/identity.log`, `provision.log`, `config.log`, `cleanup.log`. |
@@ -56,7 +58,7 @@ Thư mục gốc có 44 file ảnh (41 nội dung duy nhất; ba cặp trùng by
 | Thành viên | Ảnh sẵn có và kết luận để cập nhật checklist |
 |---|---|
 | TV1 | `TV1_Database_Diagram.png` chỉ vẽ 9 bảng, thiếu `LICHSULUONG`; không dùng làm ERD cuối. `TV1_Trigger_ChanXoaNhanVien.png` là lỗi chặn xóa đúng theo thông báo, còn ảnh transaction rollback thể hiện lỗi tạo tài khoản trùng và không có dòng nhân viên sau đó; cả hai là ảnh lịch sử, không thay log PASS đã lưu. Benchmark nhân sự hiển thị 4/7 dòng và 2 logical reads, nhưng không có thông tin commit/schema để xác nhận cùng source hiện tại. |
-| TV2 | Năm ảnh benchmark được mô tả trong [báo cáo chuyên đề TV2](TV2_BaoCao_ChuyenDe_ChamCong_CuoiKy.md) là lịch sử; benchmark dùng fixture/index cũ. Trong ba ảnh UI, ảnh tổng hợp/điều chỉnh xem kỳ 9/2026, còn form chi tiết chọn 06/10/2026 nhưng bảng vẫn hiển thị bản ghi tháng 9. Không dùng chúng để khẳng định UI hoặc số đo hiện tại; lấy benchmark mới theo mục 2. |
+| TV2 | Năm ảnh benchmark được mô tả trong [báo cáo chuyên đề TV2](TV2_BaoCao_ChuyenDe_ChamCong_CuoiKy.md) là lịch sử; benchmark dùng fixture/index cũ. Trong ba ảnh UI, ảnh tổng hợp/điều chỉnh xem kỳ 9/2026, còn form chi tiết chọn 06/10/2026 nhưng bảng vẫn hiển thị bản ghi tháng 9. Không dùng chúng để khẳng định UI hoặc số đo hiện tại; lấy [lượt đo 13/10](../Bo_nop_Nhom06/evidence/TV2/README_TV5_RECEIPT.md). |
 | TV3 | Ảnh test SQL cho thấy lần chạy cũ có kết quả PASS với constraint, trigger và transaction; ảnh thêm phụ cấp có cả lỗi âm tiền và thêm/xóa thành công. Chúng hỗ trợ minh họa hành vi, nhưng không kèm mã commit và có dữ liệu tháng 9/2026; dùng log hiện hành làm bằng chứng chính. |
 | TV4 | Ảnh form tính lương và báo cáo chốt lương có bảng rỗng; form phụ cấp có sẵn 730.000 nhưng không cho thấy lưu thành công, nhân viên được chọn hay đúng kỳ 10/2026. Ảnh E2E/trigger/concurrency là SQL history; kết quả hiện hành lấy từ log QA 08/10, ghép plan cùng lượt nếu cần. |
 | TV5 | Ảnh benchmark/trigger cho thấy lượt kiểm thử SQL riêng; ảnh role chứng minh các quyền object được từ chối trong `EXECUTE AS USER`, chưa chứng minh kiểm soát row theo login thật. Ảnh tài khoản/báo cáo là giao diện cũ và bảng rỗng. Dùng log identity, security, concurrency hiện hành ở `build/` rồi chép đúng file gốc vào package. |
@@ -67,10 +69,10 @@ Java: `build/test-results/Java_Verification_20261009_225255_650.log` có GuiQa 5
 
 ## 4. TV5 — đóng gói và rehearsal
 
-Thư mục [Bo_nop_Nhom06](../Bo_nop_Nhom06/README_BO_NOP.md) đã được tạo cho phần TV5, gồm `report/`, `slides/`, `source/`, `database/`, `evidence/TV1..TV5/`, `README_BO_NOP.md`. Đây là bản bàn giao từng phần, chưa phải package toàn nhóm đã hoàn thành; trạng thái chi tiết ở mục 4.1.
+Thư mục [Bo_nop_Nhom06](../Bo_nop_Nhom06/README_BO_NOP.md) đã có `report/`, `slides/`, `source/`, `database/`, `evidence/TV1..TV5/`, `README_BO_NOP.md`. Benchmark TV2 và deck 15 slide đã tích hợp; việc xác nhận TV1/TV3, rehearsal và thử máy nhận còn mở. Mục 4.1–4.2 ghi lại trạng thái tại ngày nêu trong tiêu đề.
 
-- [ ] Có Word cuối **55 trang nội dung**, kiểm mục lục/số trang; xuất PDF nếu yêu cầu, kiểm mở được và đúng pagination. Không tính bìa/mục lục/phụ lục vào 55.
-- [ ] Có file `.pptx` hoặc định dạng deck được yêu cầu, **≤15 slide**; tên/MSSV/ownership đúng bảng mục 1, mỗi người biết phần mình. Các guide Markdown không thay cho deck.
+- [x] Có Word cuối với benchmark TV2 trong §8.5/§9.3; bản sau sửa trạng thái đã xuất kiểm **55 trang nội dung/61 trang tổng**. Nếu nộp PDF, xuất từ bản Word này.
+- [x] Có [deck chung 15 slide](../Bo_nop_Nhom06/slides/Nhom06_ThuyetTrinh_15_Slides.pptx), đúng tên/MSSV/ownership; TV2 ở slide 4–6. Phần tập nói của từng người vẫn cần xác nhận.
 - [ ] Có source Java, thư viện/cách lấy JDBC driver, launcher và README cài/chạy; không đóng gói mật khẩu thật. Tài khoản QA được provision theo hướng dẫn, không giả định profile tự tạo SQL login.
 - [ ] Có SQL schema **01→05**; `06_Demo_Data.sql` là seed riêng, không tự chạy để đổi fixture GUI. Nộp bộ script tái tạo cùng hướng dẫn provisioning hoặc `.bak` nếu nhóm chọn backup; không ghi đã backup/restore khi chưa làm.
 - [ ] Chép **file gốc** log/plan/ảnh cần dùng từ `build/` vào package; kiểm link/mục tham chiếu trong Word và README. Commit các guide/Word không tự mang theo `build/`.
@@ -78,7 +80,7 @@ Thư mục [Bo_nop_Nhom06](../Bo_nop_Nhom06/README_BO_NOP.md) đã được tạ
 - [ ] Minh chứng quyền có login/user/role thật, GRANT/REVOKE/DENY, Employee chỉ xem phiếu riêng; không dùng phiên DBA lọc MaNV để chứng minh quyền Employee. Concurrency có cả log A/B, race nguồn và cleanup.
 - [ ] Có phân công và thông tin phiên bản/lịch sử đóng góp; mở package trên máy khác để kiểm file/link, không phụ thuộc đường dẫn `build/` trên máy QA.
 - [ ] Rehearsal dùng **10/2026** theo [GUI_TEST_GUIDE](GUI_TEST_GUIDE.md): TV1 cập nhật/khôi phục địa chỉ giữ email; TV2 đọc công, bài trùng ngày riêng; TV3 đọc khoản; TV4 tính; TV5 chốt/xem phiếu/mở lại. Không thêm trùng hoặc xóa nguồn để ép 730.000đ. Kết thúc `CHUA_CHOT`, `NgayChot IS NULL`, A 730.000đ/B 0đ, nguồn không đổi.
-- [ ] Ghi kết quả lượt tập thật và phần chưa thực hiện; chỉ đánh dấu hoàn tất sau khi có đầu ra và kiểm được. Hướng dẫn này không tuyên bố benchmark TV2, deck toàn nhóm, cài package trên máy khác hoặc rehearsal mới đã PASS.
+- [ ] Ghi kết quả lượt tập thật và phần chưa thực hiện; chỉ đánh dấu hoàn tất sau khi có đầu ra và kiểm được. Chưa xác nhận cài package trên máy khác hoặc rehearsal chung đã PASS.
 
 ### 4.1 Tiến độ TV5 — 11/10/2026
 

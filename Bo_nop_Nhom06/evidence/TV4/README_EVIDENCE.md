@@ -1,11 +1,13 @@
 # TV4 — Bộ bàn giao đã nhận
 
+Trạng thái nhóm 14/10: benchmark TV2 và deck chung 15 slide đã tích hợp qua PR #44–#46. Các câu “còn chờ” bên dưới ghi đúng mốc bàn giao TV4 ngày 13/10; hiện còn xác nhận TV1/TV3, rehearsal và thử máy nhận.
+
 Nguyễn Quang Vinh — 24110385. Nhận từ [PR #41](https://github.com/tranducanhyn99-prog/Project_QuanLyNhanSuTienLuong/pull/41), đã merge vào main ngày 13/10/2026 (`5dc4ba4`). Source của các lượt chạy là `62223d5`; Java/SQL khớp snapshot source trong bộ nộp nhóm. Các kết quả dưới đây là lượt 10–11/10, không phải chạy lại ngày nhận bàn giao.
 
 ## Tài liệu và slide
 
 - [Word phần TV4](TV4_Phan_Bao_Cao.docx): 4 trang; ngày 13/10 sửa độ rộng và font 11pt riêng hai bảng schema, bật lặp header bảng. Tên trường, kiểu dữ liệu, NULL và mặc định không bị ngắt giữa chữ; nội dung đoạn/bảng giữ nguyên và đã render, kiểm cả 4 trang. Đây là phần bàn giao để đối chiếu/ghép, không thay báo cáo toàn nhóm 55 trang nội dung.
-- [Slide 10–12](TV4_Slides_10-12.pptx): 3 slide và notes, giữ nguyên byte PR #41; đã xem bản render PowerPoint. Còn chờ slide 1–9 để ghép deck nhóm ≤15 slide. Giữ deck cạnh `Minh_chung/` để tham chiếu trong notes đúng vị trí.
+- [Slide 10–12](TV4_Slides_10-12.pptx): 3 slide và notes, giữ nguyên byte PR #41; đã xem bản render PowerPoint. Đã ghép vào [deck chung 15 slide](../../slides/Nhom06_ThuyetTrinh_15_Slides.pptx). Giữ deck gốc cạnh `Minh_chung/` để tham chiếu trong notes đúng vị trí.
 
 ## Minh chứng
 
@@ -24,4 +26,4 @@ TV4 21072 ms ngày 10/10 và TV5 20631 ms ngày 07/10 là hai lượt riêng. Gi
 
 [SHA256_TV4.csv](SHA256_TV4.csv) đối chiếu 15 file với blob PR #41: 14 file giữ nguyên byte, Word là bản sửa định dạng có ghi transformation. Log/plan/ảnh không chỉnh sửa. Git không giữ timestamp khi checkout; đọc ngày chạy/chụp từ log và metadata. Manifest toàn package bao phủ cả README và inventory.
 
-Chưa chạy lại SQL/GUI, chưa tập demo tay hay cài trên máy khác trong lượt tích hợp. Không đánh dấu nhóm đã nộp đủ vì TV1–TV3 và benchmark TV2 còn chờ.
+Chưa chạy lại SQL/GUI, chưa tập demo tay hay cài trên máy khác trong lượt tích hợp TV4. Tại mốc 13/10, TV1–TV3 và benchmark TV2 còn chờ; từ PR #44–#46, benchmark TV2 đã nhận. Nhóm vẫn cần xác nhận TV1/TV3, rehearsal và thử máy nhận.
