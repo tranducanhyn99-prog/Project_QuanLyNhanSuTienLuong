@@ -1,0 +1,3 @@
+PASS old Admin actual SQL read is blocked before logout.
+PASS new Employee Swing request submitted while owned SQL blocker remains; old SQL request was verified before logout.
+PASS actual identity switch with delayed SQL, GUI process exit 0.

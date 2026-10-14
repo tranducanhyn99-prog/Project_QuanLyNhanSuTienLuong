@@ -1,0 +1,2 @@
+CaseName	ErrorNumber	ErrorMessage
+payroll_overflow	50000	Arithmetic overflow error converting numeric to data type numeric.

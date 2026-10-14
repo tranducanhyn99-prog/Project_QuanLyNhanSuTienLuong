@@ -1,0 +1,64 @@
+PASS GUI loads five owned profiles
+DIALOG X�c nh?n kh�a | B?n c� ch?c ch?n mu?n kh�a t�i kho?n 'tv5f_d54a94da_b'?
+Oct 13, 2026 9:04:58 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+java.lang.Exception: L?i c?p nh?t tr?ng th�i t�i kho?n: Cannot alter the login 'tv5f_d54a94da_b', because it does not exist or you do not have permission.
+	at com.service.AuthService.doiTrangThaiTaiKhoan(AuthService.java:95)
+	at com.ui.admin.TaiKhoanPanel.lambda$handleKhoaMoKhoa$6(TaiKhoanPanel.java:212)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: com.microsoft.sqlserver.jdbc.SQLServerException: Cannot alter the login 'tv5f_d54a94da_b', because it does not exist or you do not have permission.
+	at com.microsoft.sqlserver.jdbc.SQLServerException.makeFromDatabaseError(SQLServerException.java:261)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.getNextResult(SQLServerStatement.java:1752)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.doExecutePreparedStatement(SQLServerPreparedStatement.java:675)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement$PrepStmtExecCmd.doExecute(SQLServerPreparedStatement.java:594)
+	at com.microsoft.sqlserver.jdbc.TDSCommand.execute(IOBuffer.java:7739)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.executeCommand(SQLServerConnection.java:4384)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeCommand(SQLServerStatement.java:293)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeStatement(SQLServerStatement.java:263)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.execute(SQLServerPreparedStatement.java:571)
+	at com.dao.TaiKhoanDAO.updateTrangThai(TaiKhoanDAO.java:138)
+	at com.service.AuthService.doiTrangThaiTaiKhoan(AuthService.java:93)
+	... 9 more
+
+DIALOG L?i | T�i kho?n kh�ng c� quy?n th?c hi?n thao t�c n�y. Li�n h? qu?n tr? vi�n.
+PASS lock profile HOAT_DONG
+PASS lock message matches server rights
+DIALOG ??t l?i m?t kh?u | M?t kh?u m?i cho tv5f_d54a94da_b  S? d?ng t? 8 ??n 128 k� t?.
+Oct 13, 2026 9:04:58 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+java.lang.Exception: L?i ??t l?i m?t kh?u: Cannot alter the login 'tv5f_d54a94da_b', because it does not exist or you do not have permission.
+	at com.service.AuthService.datLaiMatKhau(AuthService.java:112)
+	at com.ui.admin.TaiKhoanPanel.lambda$handleDatLaiMatKhau$8(TaiKhoanPanel.java:246)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: com.microsoft.sqlserver.jdbc.SQLServerException: Cannot alter the login 'tv5f_d54a94da_b', because it does not exist or you do not have permission.
+	at com.microsoft.sqlserver.jdbc.SQLServerException.makeFromDatabaseError(SQLServerException.java:261)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.getNextResult(SQLServerStatement.java:1752)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.doExecutePreparedStatement(SQLServerPreparedStatement.java:675)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement$PrepStmtExecCmd.doExecute(SQLServerPreparedStatement.java:594)
+	at com.microsoft.sqlserver.jdbc.TDSCommand.execute(IOBuffer.java:7739)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.executeCommand(SQLServerConnection.java:4384)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeCommand(SQLServerStatement.java:293)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeStatement(SQLServerStatement.java:263)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.execute(SQLServerPreparedStatement.java:571)
+	at com.dao.TaiKhoanDAO.resetPassword(TaiKhoanDAO.java:149)
+	at com.service.AuthService.datLaiMatKhau(AuthService.java:110)
+	... 9 more
+
+DIALOG L?i | T�i kho?n kh�ng c� quy?n th?c hi?n thao t�c n�y. Li�n h? qu?n tr? vi�n.
+PASS reset message matches server rights
+PASS denied reset preserves original login password and role
+PASS live GUI admin-denied: 5 assertions. Production handlers; dialogs automated; no manual-test claim.

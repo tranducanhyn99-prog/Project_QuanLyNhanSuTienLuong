@@ -1,0 +1,104 @@
+﻿================================================================================
+TV2 LIVE SCHEMA & IDENTITY INSPECTION (GUARDED READ-ONLY)
+Timestamp: 2026-10-13T14:24:35.469+07:00
+================================================================================
+
+--- 1. SERVER & DATABASE IDENTITY ---
+ServerName: laptop-cua-mq
+DatabaseName: PRJ_Fix_QA_20261013_001534_ae185d81 (DB_ID: 33)
+OriginalLogin: LAPTOP-CUA-MQ\My Laptop
+SessionId (SPID): 56
+SqlVersion: Microsoft SQL Server 2025 (RTM) - 17.0.1000.7 (X64) 
+	Oct 21 2025 12:05:57 
+	Copyright (C) 2025 Microsoft Corporation
+	Enterprise Developer Edition (64-bit) on Windows 10 Pro 10.0 <X64> (Build 26200: )
+
+OBJECT_ID(dbo.CHAMCONG): 1893581784
+OBJECT_ID(dbo.vw_TongHopChamCongThang): 2053582354
+
+--- 2. dbo.CHAMCONG COLUMNS & DEFAULTS ---
+ColID | ColumnName | DataType | MaxLen | IsNullable | IsIdentity | Default
+------|------------|----------|--------|------------|------------|--------
+1 | MaChamCong | int | 4 | False | True | 
+2 | MaNV | int | 4 | False | False | 
+3 | NgayChamCong | date | 3 | False | False | 
+4 | GioVao | time | 3 | False | False | 
+5 | GioRa | time | 3 | True | False | 
+6 | TrangThai | nvarchar | 40 | False | False | (N'CO_MAT')
+7 | GhiChu | nvarchar | 510 | True | False | 
+
+--- 3. dbo.CHAMCONG KEY CONSTRAINTS (PK, UQ) ---
+Name: PK_CHAMCONG | Type: PRIMARY_KEY_CONSTRAINT | IndexType: CLUSTERED
+Name: UQ_CHAMCONG_MaNV_Ngay | Type: UNIQUE_CONSTRAINT | IndexType: NONCLUSTERED
+
+--- 4. dbo.CHAMCONG FOREIGN KEYS ---
+Name: FK_CHAMCONG_NHANVIEN | Col: MaNV -> NHANVIEN(MaNV)
+
+--- 5. dbo.CHAMCONG CHECK CONSTRAINTS ---
+Name: CHK_CHAMCONG_Ngay | Definition: ([NgayChamCong]<=CONVERT([date],getdate()))
+Name: CHK_CHAMCONG_TrangThai | Definition: ([TrangThai]=N'VANG' OR [TrangThai]=N'VE_SOM' OR [TrangThai]=N'DI_TRE' OR [TrangThai]=N'CO_MAT')
+
+--- 6. dbo.CHAMCONG INDEXES & INCLUDED COLUMNS ---
+IndexName | IndexType | IsUnique | ColumnName | KeyOrdinal | IsIncluded
+----------|-----------|----------|------------|------------|-----------
+IX_CHAMCONG_MaNV_Ngay | NONCLUSTERED | False | MaNV | 1 | False
+IX_CHAMCONG_MaNV_Ngay | NONCLUSTERED | False | NgayChamCong | 2 | False
+IX_CHAMCONG_MaNV_Ngay | NONCLUSTERED | False | GioVao | 0 | True
+IX_CHAMCONG_MaNV_Ngay | NONCLUSTERED | False | GioRa | 0 | True
+IX_CHAMCONG_MaNV_Ngay | NONCLUSTERED | False | TrangThai | 0 | True
+PK_CHAMCONG | CLUSTERED | True | MaChamCong | 1 | False
+UQ_CHAMCONG_MaNV_Ngay | NONCLUSTERED | True | MaNV | 1 | False
+UQ_CHAMCONG_MaNV_Ngay | NONCLUSTERED | True | NgayChamCong | 2 | False
+
+--- 7. dbo.CHAMCONG TRIGGERS ---
+Trigger: trg_ChamCong_KhongSuaKhiDaChotLuong | Disabled: False
+Trigger: trg_ChamCong_KiemTraGio | Disabled: False
+Trigger: trg_ChamCong_KiemTraNhanVien | Disabled: False
+
+--- 8. dbo.vw_TongHopChamCongThang OUTPUT COLUMNS ---
+ColID | ColumnName | DataType | IsNullable
+------|------------|----------|-----------
+1 | MaNV | int | False
+2 | HoTen | nvarchar | False
+3 | Thang | int | True
+4 | Nam | int | True
+5 | SoNgayDiLam | int | True
+6 | SoLanDiTre | int | True
+7 | SoLanVeSom | int | True
+8 | SoNgayVang | int | True
+9 | TongSoGioLam | numeric | True
+
+--- 9. dbo.vw_TongHopChamCongThang DEFINITION ---
+
+-- ============================================================================
+-- 6. VIEW TỔNG HỢP CHẤM CÔNG THEO THÁNG (TASK 2.6: dbo.vw_TongHopChamCongThang)
+-- ============================================================================
+CREATE   VIEW dbo.vw_TongHopChamCongThang
+AS
+SELECT
+    cc.MaNV,
+    nv.HoTen,
+    MONTH(cc.NgayChamCong) AS Thang,
+    YEAR(cc.NgayChamCong)  AS Nam,
+    COUNT(CASE WHEN cc.TrangThai IN (N'CO_MAT', N'DI_TRE', N'VE_SOM') THEN 1 END) AS SoNgayDiLam,
+    COUNT(CASE WHEN cc.TrangThai = N'DI_TRE' THEN 1 END) AS SoLanDiTre,
+    COUNT(CASE WHEN cc.TrangThai = N'VE_SOM' THEN 1 END) AS SoLanVeSom,
+    COUNT(CASE WHEN cc.TrangThai = N'VANG' THEN 1 END) AS SoNgayVang,
+    SUM(CASE
+        WHEN cc.GioRa IS NOT NULL AND cc.GioRa > cc.GioVao
+        THEN DATEDIFF(MINUTE, cc.GioVao, cc.GioRa)
+        ELSE 0
+    END) / 60.0 AS TongSoGioLam
+FROM dbo.CHAMCONG cc
+JOIN dbo.NHANVIEN nv ON cc.MaNV = nv.MaNV
+GROUP BY cc.MaNV, nv.HoTen, YEAR(cc.NgayChamCong), MONTH(cc.NgayChamCong);
+
+
+--- 10. XACT_STATE() AUTOCOMMIT CONTEXT INVESTIGATION ---
+Standalone SELECT XACT_STATE(): 0 (Evaluates 0 when no user transaction is open)
+Compound SELECT OBJECT_ID(...), XACT_STATE(): 1 (Evaluates 1 because OBJECT_ID invokes tempdb catalog resolution under statement-level read context)
+Conclusion: The raw TV2_cleanup_safety.log observation of XACT_STATE()=1 was caused by the compound SELECT expression semantics, while @@TRANCOUNT was 0.
+
+--- 11. BOUNDED DATA SAFETY VERIFICATION ---
+dbo.CHAMCONG Row Count: 0
+dbo.CHAMCONG Checksum: 

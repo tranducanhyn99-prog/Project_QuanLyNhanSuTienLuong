@@ -1,0 +1,37 @@
+PASS actual SQL in-flight owned Admin request blocked by SPID=55; count=1.
+7
+session_id=56
+status=suspended
+command=SELECT
+wait_type=LCK_M_U
+blocking_session_id=55
+login_name=tv5f_d54a94da_admin
+text=
+CREATE   PROCEDURE dbo.sp_AdminSetStatus @MaTK INT, @TrangThai VARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF ISNULL(IS_ROLEMEMBER('role_DBAdmin'),0)<>1 THROW 51022,N'Admin role required.',1;
+    IF @TrangThai NOT IN ('KHOA','HOAT_DONG') OR @TrangThai IS NULL THROW 51028,N'Invalid status.',1;
+    DECLARE @Login SYSNAME,@Sql NVARCHAR(MAX);
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        SELECT @Login=SqlLogin FROM dbo.TAIKHOAN WITH(UPDLOCK,HOLDLOCK) WHERE MaTK=@MaTK;
+        IF @Login IS NULL THROW 51024,N'DBA must provision/map the SQL login first.',1;
+        IF @Login=ORIGINAL_LOGIN() THROW 51026,N'Cannot disable your own current login.',1;
+        SET @Sql=N'ALTER LOGIN '+QUOTENAME(@Login)+CASE WHEN @TrangThai='KHOA' THEN N' DISABLE;' ELSE N' ENABLE;' END;
+        EXEC sys.sp_executesql @Sql;
+        UPDATE dbo.TAIKHOAN SET TrangThai=@TrangThai,NgaySuaCuoi=GETDATE() WHERE MaTK=@MaTK;
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE()<>0 ROLLBACK;
+        THROW;
+    END CATCH;
+END;
+
+PASS SQL audit=0; owned B profile active=1; SQL login enabled=1. Interrupted write did not commit.
+PASS in-flight GUI integration process exit 0.
+PASS temporary server permission revoked.
+PASS zero ALTER ANY LOGIN/CONTROL SERVER permissions remain for owned Admin.

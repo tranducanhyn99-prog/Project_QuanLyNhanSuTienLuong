@@ -1,0 +1,15 @@
+﻿PackagePath,Bytes,SHA256,Scope
+evidence/TV5/layout-20261013/layout-scale-1_25.log,1301,317E1B4C22C681301585EEE716F270815BE4CF5687CD5CFC5660FEE3B8E0DF5C,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL
+evidence/TV5/layout-20261013/layout-scale-1_5.log,1294,06D78981DA67D4A1289F72A61BC71B6D705E249682B9BD5147B625E0F05E091B,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL
+evidence/TV5/layout-20261013/layout-scale-1.log,1292,103F863AFB9A43480BE4F94A7E51432D5BD024FDF650F52BA060A82300C7EE14,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL
+evidence/TV5/layout-20261013/LayoutQa.java,2621,BE8A8BDB328CE1CEC87140AA041A208360094447A104DEF32075EF3494D6D14D,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL
+evidence/TV5/layout-20261013/README.md,2065,FCD504E0402D4C5907EC2CD5BB5C1DBF3E7887C9167E1FF85FEA82CA78A93BD8,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL
+evidence/TV5/layout-20261013/scale-1/login-min.png,43270,FABC8C3A6591A81621CD72D4A584DB88001831E045E6ACB267CB9D313461E05E,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL
+evidence/TV5/layout-20261013/scale-1/main-min.png,54045,F76F1A0D077A0711BC7BB8EDA27258F8E3C322F09BBA0EAAD409EF948A42B074,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL
+evidence/TV5/layout-20261013/scale-1/report-min.png,18858,6BFE5B17BC01CA32C89A4CDFB1110C8A48BED65C83BC387A7299D5114536F83B,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL
+evidence/TV5/layout-20261013/scale-1_25/login-min.png,41527,3F5E41A7F2B9DDA5CC7BA88C3AC1C13B68DA5EFE6539A46739A01DA4E1A642B2,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL
+evidence/TV5/layout-20261013/scale-1_25/main-min.png,52748,5996B59F29C59174C41204C5A56FE5F8685E67DA2E1FF7BFE728B663705DC184,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL
+evidence/TV5/layout-20261013/scale-1_25/report-min.png,17283,DA90C1F5FF8F0A0C4A17D9FD2717EBDAB56D9FBB9F03B40BFD9D70C833B377FA,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL
+evidence/TV5/layout-20261013/scale-1_5/login-min.png,40441,681F1175E7BE5882BDA44BA545476289D3B8DD76183785CA8611DDB0B99F32D0,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL
+evidence/TV5/layout-20261013/scale-1_5/main-min.png,51152,4B7C35934157C2F59355F1DEA7FA0DF446C994C48BED1B92D8989CA93880878F,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL
+evidence/TV5/layout-20261013/scale-1_5/report-min.png,16383,421B24F06BB1BBC6C5434B5213844BD0639129DFBD8611527D3E6A724CF893CE,13/10/2026; Swing minimum-window render; JVM scale override; fixture session; no live SQL

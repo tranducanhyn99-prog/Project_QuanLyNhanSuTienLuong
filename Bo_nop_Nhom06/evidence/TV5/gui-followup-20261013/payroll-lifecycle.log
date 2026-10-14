@@ -1,0 +1,29 @@
+DIALOG Xác nhận tính lương | Tính / Cập nhật bảng lương tháng 10/2026 với 26 ngày công chuẩn?
+
+Ghi chú: Nếu kỳ lương đã tồn tại ở trạng thái CHƯA CHỐT, hệ thống sẽ tính lại toàn bộ theo ngày công mới nhất.
+DIALOG Thành công | Tính / Cập nhật bảng lương tháng 10/2026 thành công!
+Mã bảng lương: 2
+PASS GUI calculation matches source SQL October total 1230000
+DIALOG Xác nhận chốt bảng lương | Bạn có chắc chắn muốn chốt bảng lương: Tháng 10/2026 – Chưa chốt?
+
+Sau khi chốt:
+• Không thể sửa hoặc xóa chi tiết lương
+• Không thể chốt lại lần nữa
+DIALOG Message | Đã chốt bảng lương.
+PASS GUI close commits DA_CHOT in SQL
+PASS Employee A GUI shows two own periods
+PASS Employee slip only mapped MaNV
+PASS Employee slip only mapped MaNV
+PASS Employee navigation contains HOME and BAO_CAO only
+PASS real SQL HR_Manager login
+PASS real HR_Manager navigation matches role
+PASS real SQL Payroll_Officer login
+PASS real Payroll_Officer navigation matches role
+DIALOG Xác nhận mở lại bảng lương | Bạn có chắc chắn muốn MỞ LẠI (HỦY CHỐT) bảng lương Tháng 10/2026 – Đã chốt?
+
+Sau khi mở lại:
+• Kỳ lương sẽ trở về trạng thái CHƯA CHỐT (Bản nháp)
+• Bạn có thể vào phân hệ Chấm công sửa/xóa ngày công, tính lại lương hoặc xóa kỳ lương này
+DIALOG Message | Đã mở lại bảng lương.
+PASS GUI reopen commits CHUA_CHOT in SQL
+PASS live GUI payroll-lifecycle: 11 assertions. Production handlers; dialogs automated; no manual-test claim.

@@ -1,108 +1,72 @@
--- ============================================================================
--- PROJECT: HỆ THỐNG QUẢN LÝ NHÂN SỰ VÀ TIỀN LƯƠNG (DBMS330284)
--- BỘ MÔ PHỎNG & ĐO LƯỜNG HIỆU NĂNG CHỈ MỤC (INDEX BENCHMARK) - TV5
--- TÁC GIẢ: TRẦN ĐỨC ANH (TV5 - MSSV: 24110155) - TUẦN 3
--- ĐỐI TƯỢNG SỞ HỮU: IX_NHANVIEN_MaPB_MaCV (COVERING INDEX)
--- ============================================================================
-
--- Keep the database selected by the caller.
-
-PRINT '============================================================================';
-PRINT '   BẮT ĐẦU ĐO LƯỜNG HIỆU NĂNG CHỈ MỤC IX_NHANVIEN_MaPB_MaCV (TV5)';
-PRINT '============================================================================';
-GO
-
--- 1. TẠO DỮ LIỆU THỬ NGHIỆM QUY MÔ LỚN (NẾU CẦN ĐO TRÊN TẬP DỮ LIỆU LỚN)
--- Tạo 5,000 dòng nhân viên giả lập vào bảng tạm để kiểm tra hiệu năng
+-- TV5-02: controlled temp fixture reproducing the TV5 covering index columns.
+-- This is a forced-access-path benchmark, not a production workload claim.
+-- No server cache reset, persistent data writes, or product index changes.
+SET NOCOUNT ON;
+IF DB_NAME() NOT LIKE 'PRJ[_]Fix[_]QA[_]%'
+    THROW 53520,N'Benchmark requires an isolated PRJ_Fix_QA database.',1;
 IF OBJECT_ID('tempdb..#BenchmarkNhanVien') IS NOT NULL
-    DROP TABLE #BenchmarkNhanVien;
+    THROW 53521,N'Benchmark temp fixture already exists in this session.',1;
 GO
-
-SELECT TOP 10000
-    ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS MaNV,
-    N'Nhân viên test ' + CAST(ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS NVARCHAR(10)) AS HoTen,
-    (ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) % 4) + 1 AS MaPB,
-    (ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) % 3) + 1 AS MaCV,
-    CAST(10000000 + (ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) % 20) * 500000 AS DECIMAL(18,2)) AS LuongCoBan,
-    N'DANG_LAM_VIEC' AS TrangThai
+SELECT CONVERT(INT,ROW_NUMBER() OVER (ORDER BY a.object_id,b.object_id)) AS MaNV,
+    CONVERT(NVARCHAR(100),N'Nhan vien test '+CONVERT(NVARCHAR(10),ROW_NUMBER() OVER (ORDER BY a.object_id,b.object_id))) AS HoTen,
+    CONVERT(INT,(ROW_NUMBER() OVER (ORDER BY a.object_id,b.object_id)%4)+1) AS MaPB,
+    CONVERT(INT,(ROW_NUMBER() OVER (ORDER BY a.object_id,b.object_id)%3)+1) AS MaCV,
+    CAST(10000000+(ROW_NUMBER() OVER (ORDER BY a.object_id,b.object_id)%20)*500000 AS DECIMAL(18,2)) AS LuongCoBan,
+    CONVERT(NVARCHAR(20),N'DANG_LAM_VIEC') AS TrangThai
 INTO #BenchmarkNhanVien
-FROM sys.all_objects a
-CROSS JOIN sys.all_objects b;
-GO
-
-PRINT '-> Đã sinh 10,000 bản ghi thử nghiệm trong bảng tạm #BenchmarkNhanVien.';
-GO
-
--- 2. TẠO INDEX TRÊN BẢNG TẠM ĐỂ MINH CHỨNG SO SÁNH TRỰC DIỆN
-CREATE CLUSTERED INDEX PK_Bench_MaNV ON #BenchmarkNhanVien(MaNV);
-GO
-
--- Tạo Covering Index giống cấu trúc IX_NHANVIEN_MaPB_MaCV
-CREATE NONCLUSTERED INDEX IX_Bench_MaPB_MaCV 
-ON #BenchmarkNhanVien(MaPB, MaCV)
-INCLUDE (HoTen, LuongCoBan, TrangThai);
-GO
-
-PRINT '----------------------------------------------------------------------------';
-PRINT 'THỬ NGHIỆM 1: TRUY VẤN KHI KHÔNG SỬ DỤNG CHỈ MỤC (TABLE SCAN / CLUSTERED SCAN)';
-PRINT '----------------------------------------------------------------------------';
+FROM sys.all_objects a CROSS JOIN sys.all_objects b
+ORDER BY a.object_id,b.object_id OFFSET 0 ROWS FETCH NEXT 10000 ROWS ONLY;
+CREATE UNIQUE CLUSTERED INDEX PK_Bench_MaNV ON #BenchmarkNhanVien(MaNV);
+CREATE NONCLUSTERED INDEX IX_Bench_MaPB_MaCV ON #BenchmarkNhanVien(MaPB,MaCV)
+    INCLUDE(HoTen,LuongCoBan,TrangThai);
+UPDATE STATISTICS #BenchmarkNhanVien WITH FULLSCAN;
+IF (SELECT COUNT(*) FROM #BenchmarkNhanVien)<>10000
+    THROW 53522,N'Fixture must contain 10000 rows.',1;
+SELECT DB_NAME() AS DatabaseName,ORIGINAL_LOGIN() AS SqlIdentity,@@VERSION AS SqlVersion,
+    10000 AS FixtureRows,2 AS FilterMaPB,1 AS FilterMaCV,
+    'warm cache; forced hints; MAXDOP 1; no cache reset' AS MeasurementMode;
+-- Capture complete reference results outside the measured statements.
+SELECT MaNV,HoTen,LuongCoBan,TrangThai INTO #TV5_Before
+FROM #BenchmarkNhanVien WITH(INDEX(PK_Bench_MaNV)) WHERE MaPB=2 AND MaCV=1;
+PRINT 'MEASURE BEFORE: forced clustered scan';
 SET STATISTICS IO ON;
 SET STATISTICS TIME ON;
+SET STATISTICS XML ON;
 GO
-
--- Ép SQL Server dùng Clustered Index Scan (quét toàn bộ bảng)
-SELECT MaNV, HoTen, LuongCoBan, TrangThai
-FROM #BenchmarkNhanVien WITH (INDEX(PK_Bench_MaNV))
-WHERE MaPB = 2 AND MaCV = 1;
+SELECT MaNV,HoTen,LuongCoBan,TrangThai
+FROM #BenchmarkNhanVien WITH(INDEX(PK_Bench_MaNV))
+WHERE MaPB=2 AND MaCV=1 OPTION(MAXDOP 1);
 GO
-
+SET STATISTICS XML OFF;
 SET STATISTICS IO OFF;
 SET STATISTICS TIME OFF;
-GO
-
-PRINT '----------------------------------------------------------------------------';
-PRINT 'THỬ NGHIỆM 2: TRUY VẤN KHI SỬ DỤNG COVERING INDEX (IX_Bench_MaPB_MaCV)';
-PRINT '----------------------------------------------------------------------------';
+SELECT MaNV,HoTen,LuongCoBan,TrangThai INTO #TV5_After
+FROM #BenchmarkNhanVien WITH(INDEX(IX_Bench_MaPB_MaCV)) WHERE MaPB=2 AND MaCV=1;
+PRINT 'MEASURE AFTER: forced covering seek';
 SET STATISTICS IO ON;
 SET STATISTICS TIME ON;
+SET STATISTICS XML ON;
 GO
-
--- Dùng Covering Non-Clustered Index: Index Seek 100%, triệt tiêu Bookmark Lookup
-SELECT MaNV, HoTen, LuongCoBan, TrangThai
-FROM #BenchmarkNhanVien WITH (INDEX(IX_Bench_MaPB_MaCV))
-WHERE MaPB = 2 AND MaCV = 1;
+SELECT MaNV,HoTen,LuongCoBan,TrangThai
+FROM #BenchmarkNhanVien WITH(INDEX(IX_Bench_MaPB_MaCV))
+WHERE MaPB=2 AND MaCV=1 OPTION(MAXDOP 1);
 GO
-
+SET STATISTICS XML OFF;
 SET STATISTICS IO OFF;
 SET STATISTICS TIME OFF;
-GO
-
--- 3. ĐO KIỂM THỰC TẾ TRÊN BẢNG CHÍNH NHANVIEN (DATABASE PRODUCTION)
-PRINT '----------------------------------------------------------------------------';
-PRINT 'THỬ NGHIỆM 3: TRUY VẤN THỰC TẾ TRÊN BẢNG NHANVIEN VỚI IX_NHANVIEN_MaPB_MaCV';
-PRINT '----------------------------------------------------------------------------';
-SET STATISTICS IO ON;
-SET STATISTICS TIME ON;
-GO
-
-SELECT MaNV, HoTen, LuongCoBan, TrangThai
-FROM dbo.NHANVIEN
-WHERE MaPB = 1 AND MaCV = 1;
-GO
-
-SET STATISTICS IO OFF;
-SET STATISTICS TIME OFF;
-GO
-
--- DỌN DẸP BẢNG TẠM
+IF (SELECT COUNT(*) FROM #TV5_Before)=0
+    OR (SELECT COUNT(*) FROM #TV5_Before)<>(SELECT COUNT(*) FROM #TV5_After)
+    OR EXISTS(SELECT * FROM #TV5_Before EXCEPT SELECT * FROM #TV5_After)
+    OR EXISTS(SELECT * FROM #TV5_After EXCEPT SELECT * FROM #TV5_Before)
+    THROW 53523,N'Complete before/after results differ or contain zero rows.',1;
+SELECT (SELECT COUNT(*) FROM #TV5_Before) AS BeforeRows,
+    (SELECT COUNT(*) FROM #TV5_After) AS AfterRows,'PASS full bidirectional EXCEPT; MaNV is unique' AS Equality;
+DROP TABLE #TV5_Before;
+DROP TABLE #TV5_After;
+DROP TABLE #BenchmarkNhanVien;
 IF OBJECT_ID('tempdb..#BenchmarkNhanVien') IS NOT NULL
-    DROP TABLE #BenchmarkNhanVien;
-GO
-
-PRINT '============================================================================';
-PRINT '   KẾT LUẬN BENCHMARK INDEX TV5:';
-PRINT '   - So sánh logical reads từ STATISTICS IO của chính lần chạy này.';
-PRINT '   - Kiểm tra operator và Key Lookup trong actual execution plan; không dùng tỷ lệ hardcode.';
-PRINT '   - Kết quả temp dataset không phải cam kết hiệu năng dữ liệu thực.';
-PRINT '============================================================================';
+   OR OBJECT_ID('tempdb..#TV5_Before') IS NOT NULL
+   OR OBJECT_ID('tempdb..#TV5_After') IS NOT NULL
+    THROW 53524,N'Benchmark fixture cleanup failed.',1;
+PRINT 'PASS benchmark complete results equality, two actual XML plans and temp fixture cleanup';
 GO

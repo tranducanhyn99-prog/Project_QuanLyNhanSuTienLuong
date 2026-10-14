@@ -1,0 +1,23 @@
+TEMPORARY owned Admin has ALTER ANY LOGIN for allowed GUI tests; touches only owned B.
+PASS GUI loads five owned profiles
+DIALOG X�c nh?n kh�a | B?n c� ch?c ch?n mu?n kh�a t�i kho?n 'tv5f_d54a94da_b'?
+DIALOG Th�nh c�ng | ?� kh�a t�i kho?n 'tv5f_d54a94da_b' th�nh c�ng!
+PASS lock profile KHOA
+PASS lock message matches server rights
+PASS SQL owned login disabled after GUI lock
+PASS locked SQL login rejects authentication (18470)
+DIALOG X�c nh?n m? kh�a | B?n c� ch?c ch?n mu?n m? kh�a t�i kho?n 'tv5f_d54a94da_b'?
+DIALOG Th�nh c�ng | ?� m? kh�a t�i kho?n 'tv5f_d54a94da_b' th�nh c�ng!
+PASS unlock profile active
+PASS SQL owned login enabled after GUI unlock
+PASS unlocked SQL login authenticates original password
+DIALOG ??t l?i m?t kh?u | M?t kh?u m?i cho tv5f_d54a94da_b  S? d?ng t? 8 ??n 128 k� t?.
+DIALOG Th�nh c�ng | ?� ??t l?i m?t kh?u cho t�i kho?n 'tv5f_d54a94da_b' th�nh c�ng!
+PASS reset message matches server rights
+DIALOG ??i vai tr� | Vai tr� c?a t�i kho?n tv5f_d54a94da_b  
+DIALOG Th�nh c�ng | ?� ??i vai tr� t�i kho?n 'tv5f_d54a94da_b' th�nh 'Qu?n l� nh�n s?'!
+PASS role profile HR_Manager
+PASS old SQL password rejected
+PASS new password authenticates profile and changed SQL role
+PASS live GUI admin-allowed: 12 assertions. Production handlers; dialogs automated; no manual-test claim.
+PASS temporary ALTER ANY LOGIN and ALTER on owned B revoked.

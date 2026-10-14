@@ -1,0 +1,8 @@
+DIALOG Message | Thêm phòng ban thành công!
+PASS GUI blank phone creates SQL NULL
+DIALOG Message | Cập nhật phòng ban thành công!
+PASS GUI whitespace phone update persists SQL NULL
+DIALOG Xác nhận | Bạn có chắc chắn muốn xóa phòng ban này?
+DIALOG Message | Đã xóa phòng ban thành công!
+PASS optional-phone owned fixture removed
+PASS live GUI phone-optional: 3 assertions. Production handlers; dialogs automated; no manual-test claim.

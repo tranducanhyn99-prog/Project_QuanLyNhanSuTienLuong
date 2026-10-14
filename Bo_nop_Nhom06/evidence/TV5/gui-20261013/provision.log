@@ -1,0 +1,6 @@
+PASS provisioned 5 SQL logins/users/application profiles, 4 roles, 2 employee records.
+PASS real application login and wrong-password rejection: tv5_1013_145645_admin (DB_Admin)
+PASS real application login and wrong-password rejection: tv5_1013_145645_hr (HR_Manager)
+PASS real application login and wrong-password rejection: tv5_1013_145645_payroll (Payroll_Officer)
+PASS real application login and wrong-password rejection: tv5_1013_145645_a (Employee)
+PASS real application login and wrong-password rejection: tv5_1013_145645_b (Employee)

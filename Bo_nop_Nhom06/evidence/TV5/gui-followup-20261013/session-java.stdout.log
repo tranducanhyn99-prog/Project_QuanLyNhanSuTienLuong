@@ -1,0 +1,10 @@
+PASS external QA marker read-lock-held.txt
+PASS external QA marker old-read-verified.txt
+PASS new Employee identity active while old Admin request pending
+PASS external QA marker read-lock-released.txt
+PASS old Admin callback discarded after real logout/login identity change
+PASS new Employee report columns preserve own-slip schema
+PASS post-switch SQL slip belongs to new Employee identity
+PASS post-switch SQL slip belongs to new Employee identity
+PASS post-switch Employee menu has only home/report
+PASS live GUI session-switch: 9 assertions. Production handlers; dialogs automated; no manual-test claim.

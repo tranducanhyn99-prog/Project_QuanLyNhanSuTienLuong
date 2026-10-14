@@ -1,0 +1,10 @@
+PASS age case 1 birth=2008-10-14 hire=2026-10-13 allowed=0 direct INSERT + employee/profile SP
+PASS age case 2 birth=2008-10-13 hire=2026-10-13 allowed=1 direct INSERT + employee/profile SP
+PASS age case 3 birth=2008-10-12 hire=2026-10-13 allowed=1 direct INSERT + employee/profile SP
+PASS age case 4 birth=2008-12-31 hire=2026-01-01 allowed=0 direct INSERT + employee/profile SP
+PASS age case 5 birth=2008-02-29 hire=2026-02-28 allowed=0 direct INSERT + employee/profile SP
+PASS age case 6 birth=2008-02-29 hire=2026-03-01 allowed=1 direct INSERT + employee/profile SP
+PASS age case 7 birth=2006-02-28 hire=2024-02-29 allowed=1 direct INSERT + employee/profile SP
+PASS age case 8 birth=2010-01-01 hire=2026-10-13 allowed=0 direct INSERT + employee/profile SP
+PASS age case 9 birth=1990-01-01 hire=2026-10-13 allowed=1 direct INSERT + employee/profile SP
+PASS 9 age cases / 18 SQL operations; birthdays/leap days match Java Period rule; rejected profile atomic; cleanup unchanged.

@@ -1,0 +1,48 @@
+DIALOG Xác nhận | Điểm danh toàn bộ nhân viên hôm nay?
+Oct 13, 2026 9:35:20 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+java.lang.Exception: Lỗi khi nhập lô chấm công: Nhân viên đã có bản ghi chấm công trong ngày này!
+	at com.service.ChamCongService.nhapChamCongTheoLo(ChamCongService.java:95)
+	at com.ui.chamcong.ChamCongPanel.lambda$xuLyDiemDanhHangLoat$19(ChamCongPanel.java:397)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: com.microsoft.sqlserver.jdbc.SQLServerException: Nhân viên đã có bản ghi chấm công trong ngày này!
+	at com.microsoft.sqlserver.jdbc.SQLServerException.makeFromDatabaseError(SQLServerException.java:261)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.getNextResult(SQLServerStatement.java:1752)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.doExecutePreparedStatement(SQLServerPreparedStatement.java:675)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement$PrepStmtExecCmd.doExecute(SQLServerPreparedStatement.java:594)
+	at com.microsoft.sqlserver.jdbc.TDSCommand.execute(IOBuffer.java:7739)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.executeCommand(SQLServerConnection.java:4384)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeCommand(SQLServerStatement.java:293)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeStatement(SQLServerStatement.java:263)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.execute(SQLServerPreparedStatement.java:571)
+	at com.dao.ChamCongDAO.insertInTransaction(ChamCongDAO.java:74)
+	at com.service.ChamCongService.nhapChamCongTheoLo(ChamCongService.java:86)
+	... 9 more
+
+DIALOG Lỗi | Lỗi khi nhập lô chấm công: Nhân viên đã có bản ghi chấm công trong ngày này!
+PASS GUI batch failure preserves only preexisting final-row duplicate
+PASS two real inserts reached SQL before duplicate, then rolled back
+PASS A/B batch rows absent after Java transaction rollback
+DIALOG Xác nhận xóa chấm công | Bạn có chắc chắn muốn xóa lượt chấm công:
+• Nhân viên: Nhân viên demo
+• Ngày: 2026-10-13
+• Mã CC: 4
+
+Lưu ý: Sau khi xóa ngày công, bạn có thể vào tab 'Tính bảng lương' để tính lại nhằm cập nhật số liệu mới!
+DIALOG Thành công | Đã xóa lượt chấm công thành công!
+PASS GUI removes owned duplicate fixture before valid batch
+DIALOG Xác nhận | Điểm danh toàn bộ nhân viên hôm nay?
+DIALOG Message | Đã ghi nhận 3 nhân viên.
+PASS GUI valid attendance batch commits all three rows
+DIALOG Thành công | Cập nhật ngày công mã 8 thành công!
+PASS GUI monthly adjustment updates actual attendance status/time
+PASS adjustment signals parent reload
+PASS SQL monthly summary matches adjusted late day
+PASS live GUI tv2-attendance: 8 assertions. Production handlers; dialogs automated; no manual-test claim.

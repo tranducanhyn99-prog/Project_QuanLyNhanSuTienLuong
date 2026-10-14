@@ -1,0 +1,18 @@
+PASS 01_Module_NhanSu_TV1 (0 complete result sets, 0 actual plans)
+PASS 02_Module_ChamCong_TV2 (0 complete result sets, 0 actual plans)
+PASS 03_phucap_khautru_TV3 (0 complete result sets, 0 actual plans)
+PASS 04_Module_TinhLuong_TV4 (0 complete result sets, 0 actual plans)
+PASS 05_Security_Payroll_TV5 (0 complete result sets, 0 actual plans)
+PASS TV5_Module_Rerun (0 complete result sets, 0 actual plans)
+PASS TV5_Money (6 complete result sets, 0 actual plans)
+PASS TV5_Benchmark (4 complete result sets, 2 actual plans)
+PASS TV5-01 money boundaries and payroll overflow atomic rollback.
+PASS TV5-02 full bidirectional SQL EXCEPT and byte-equal sorted TSV exports.
+Fixture: 10000 temporary rows; predicate MaPB=2 AND MaCV=1; 833 rows per measured query.
+Logical reads: forced clustered scan=126; forced covering seek=13.
+Actual plans: Clustered Index Scan / Index Seek, same nonzero row count, no Key Lookup.
+Warm cache, MAXDOP 1, hints explicit. IO/TIME and actual XML from this same execution.
+Temp model of TV5 index, not proof of production workload speed; historical 142->15 remains historical.
+See full source/fixture SQL, complete TSV exports, messages, actual plans, source SHA-256 and cleanup log.
+PASS owned database cleanup: PRJ_Fix_QA_20261013_153426_f82004c6
+Evidence: C:\Users\DUCANHZZ\Downloads\HQTCSDL\PRJ\build\tv5-package-verification-20261013\build\tv5-verification\20261013_153426_f82004c6

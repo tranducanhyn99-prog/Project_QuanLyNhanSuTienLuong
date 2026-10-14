@@ -1,0 +1,10 @@
+PASS removed only owned QA database, five owned SQL logins, Java QA and TCP relay processes
+name is_disabled
+---- -----------
+gui_admin 0
+gui_hr 0
+gui_payroll 0
+gui_a 0
+gui_b 0
+
+(5 rows affected)

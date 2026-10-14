@@ -1,0 +1,8 @@
+PASS no temporary ALTER ANY LOGIN/CONTROL SERVER grant remains.
+PASS removed owned login tv5f_d54a94da_admin
+PASS removed owned login tv5f_d54a94da_hr
+PASS removed owned login tv5f_d54a94da_payroll
+PASS removed owned login tv5f_d54a94da_a
+PASS removed owned login tv5f_d54a94da_b
+PASS owned database and five login counts=0: PRJ_Fix_QA_20261013_followup_8e2bedb8
+PASS no owned LiveGuiQa process remains. SQL Server left running; shared database/login operations were never issued.
