@@ -24,11 +24,12 @@ DANH MỤC CÁC TẬP TIN MINH CHỨNG VÀ KẾT QUẢ XÁC MINH:
   + PASS owned fixture cleanup (Dọn dẹp fixture tự động, không để lại dữ liệu rác)
 
 3. Đo hiệu năng chỉ mục Index (Benchmark Index IX_NHANVIEN_HoTen):
-- File log thực tế: benchmark_test_benchmark_index_TV1.log
-- File Actual Execution Plan: TV1_Benchmark_ActualPlan.sqlplan (ShowPlanXML trực tiếp từ SQL Server 2025 cho cả 2 truy vấn benchmark)
+- Bằng chứng kỹ thuật chính thức ghi nhận đồng thời từ cùng một lượt chạy duy nhất trên SQL Server 2025:
+  + File log thực tế: benchmark_test_benchmark_index_TV1.log (ghi nhận STATISTICS IO: 75 -> 10 logical reads, cùng 500 dòng).
+  + File Actual Execution Plan: TV1_Benchmark_ActualPlan.sqlplan (ShowPlanXML trực tiếp ghi nhận ActualLogicalReads: 75 -> 10, ActualRows: 500, chuỗi N'Nguyễn Minh%' mã hóa UTF-8 chuẩn xác, chi phí 87.8% vs 12.2%).
+  + Cả hai tệp hoàn toàn đồng nhất về số đo counter (75 -> 10 logical reads), số dòng (500 dòng) và mã hóa UTF-8.
 - Ảnh minh chứng lịch sử: TV1_Benchmark_StatisticsIO.png, TV1_Benchmark_ExecutionPlan.png
   * Lưu ý phạm vi: Hai ảnh chụp màn hình TV1_Benchmark_StatisticsIO.png và TV1_Benchmark_ExecutionPlan.png là ảnh lịch sử ghi nhận giao diện SSMS ngày 30/09/2026 trên tập dữ liệu bảng NHANVIEN mẫu ban đầu (4 dòng, 2 reads) để minh họa cơ chế hoạt động của SSMS. Ảnh lịch sử này không dùng làm bằng chứng số liệu cho lượt benchmark 5.000 dòng.
-  * Bằng chứng kỹ thuật chính thức cho số liệu 75 -> 10 reads là file log thực thi benchmark_test_benchmark_index_TV1.log và file Actual Plan TV1_Benchmark_ActualPlan.sqlplan.
 - Script nguồn: database/test_benchmark_index_TV1.sql
 - Quy mô kiểm thử: Bảng tạm #NhanVienBenchmark với 5.000 dòng dữ liệu nhân sự độc lập.
 - Truy vấn kiểm thử:
