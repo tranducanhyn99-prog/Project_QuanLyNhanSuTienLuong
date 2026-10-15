@@ -11,10 +11,12 @@ DANH MỤC CÁC TẬP TIN MINH CHỨNG VÀ KẾT QUẢ XÁC MINH:
 
 2. Kiểm thử Module Nhân sự (SQL Integration Test):
 - File: test_module_nhansu_TV1.log
-- Script nguồn: database/test_module_nhansu_TV1.sql
+- Script nguồn: database/test_module_nhansu_TV1.sql, database/tests/TV1_Age_Boundaries.sql
 - Kết quả: Đạt 7/7 kiểm tra PASS tuyệt đối:
   + PASS employee/profile creation (pending DBA mapping)
-  + PASS exact age-constraint rejection (DATEDIFF(YEAR, NgaySinh, NgayVaoLam) >= 18)
+  + PASS birthday-aware age-constraint rejection: NgaySinh <= DATEADD(YEAR, -18, NgayVaoLam)
+    * Ghi chú: Ràng buộc độ tuổi lao động hiện hành dùng biểu thức NgaySinh <= DATEADD(YEAR, -18, NgayVaoLam) để kiểm tra chính xác ngày sinh nhật thực tế (birthday-aware), khắc phục triệt để khiếm khuyết của DATEDIFF (chỉ tính số lần đổi năm, cho phép nhân viên chưa tới ngày sinh nhật trong năm vẫn lọt qua nếu cùng năm).
+    * Bộ test TV1_Age_Boundaries.sql đã kiểm tra toàn diện 9 ca kiểm thử biên (18 thao tác gồm INSERT trực tiếp và Stored Procedure sp_ThemNhanVien): trước sinh nhật 1 ngày, đúng ngày sinh nhật, sau sinh nhật 1 ngày, và các mốc năm nhuận 29/02.
   + PASS account duplicate rolls back employee and history (Transaction rollback khi trùng username)
   + PASS hire date persistence (Cập nhật và lưu trữ ngày vào làm)
   + PASS protected employee delete (Trigger chặn xóa nhân viên đã có dữ liệu chấm công / lương)
@@ -22,8 +24,11 @@ DANH MỤC CÁC TẬP TIN MINH CHỨNG VÀ KẾT QUẢ XÁC MINH:
   + PASS owned fixture cleanup (Dọn dẹp fixture tự động, không để lại dữ liệu rác)
 
 3. Đo hiệu năng chỉ mục Index (Benchmark Index IX_NHANVIEN_HoTen):
-- File log: benchmark_test_benchmark_index_TV1.log
-- Ảnh minh chứng: TV1_Benchmark_StatisticsIO.png, TV1_Benchmark_ExecutionPlan.png
+- File log thực tế: benchmark_test_benchmark_index_TV1.log
+- File Actual Execution Plan: TV1_Benchmark_ActualPlan.sqlplan (ShowPlanXML trực tiếp từ SQL Server 2025 cho cả 2 truy vấn benchmark)
+- Ảnh minh chứng lịch sử: TV1_Benchmark_StatisticsIO.png, TV1_Benchmark_ExecutionPlan.png
+  * Lưu ý phạm vi: Hai ảnh chụp màn hình TV1_Benchmark_StatisticsIO.png và TV1_Benchmark_ExecutionPlan.png là ảnh lịch sử ghi nhận giao diện SSMS ngày 30/09/2026 trên tập dữ liệu bảng NHANVIEN mẫu ban đầu (4 dòng, 2 reads) để minh họa cơ chế hoạt động của SSMS. Ảnh lịch sử này không dùng làm bằng chứng số liệu cho lượt benchmark 5.000 dòng.
+  * Bằng chứng kỹ thuật chính thức cho số liệu 75 -> 10 reads là file log thực thi benchmark_test_benchmark_index_TV1.log và file Actual Plan TV1_Benchmark_ActualPlan.sqlplan.
 - Script nguồn: database/test_benchmark_index_TV1.sql
 - Quy mô kiểm thử: Bảng tạm #NhanVienBenchmark với 5.000 dòng dữ liệu nhân sự độc lập.
 - Truy vấn kiểm thử:
@@ -33,7 +38,7 @@ DANH MỤC CÁC TẬP TIN MINH CHỨNG VÀ KẾT QUẢ XÁC MINH:
 - Kết quả đo lường thực tế:
   + Quét toàn bảng (Clustered Scan): 75 logical reads, quét tuần tự 5.000 dòng.
   + Tìm kiếm theo chỉ mục (Index Seek covering): 10 logical reads, duyệt B-Tree trực tiếp.
-  + Mức độ cải thiện I/O: Giảm 86.67% logical reads (từ 75 xuống 10), triệt tiêu hoàn toàn Key Lookup nhờ mệnh đề INCLUDE đầy đủ 6 cột.
+  + Mức độ cải thiện I/O: Giảm 86.67% logical reads (từ 75 xuống 10), triệt tiêu hoàn toàn Key Lookup nhờ mệnh đề INCLUDE đầy đủ 5 cột.
   + Số dòng trả về: Đồng nhất 500 dòng thỏa điều kiện cho cả hai phương thức.
 
 4. Minh chứng Giao diện & Nghiệp vụ ứng dụng:
