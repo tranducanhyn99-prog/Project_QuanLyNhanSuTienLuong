@@ -102,89 +102,94 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- 1. Kiểm tra tham số bắt buộc không được NULL hoặc không hợp lệ
-    IF @MaNV IS NULL OR @MaNV <= 0
-    BEGIN
-        RAISERROR (N'Mã nhân viên không hợp lệ!', 16, 1);
-        RETURN;
-    END;
+    BEGIN TRY
+        -- 1. Kiểm tra tham số bắt buộc không được NULL hoặc không hợp lệ
+        IF @MaNV IS NULL OR @MaNV <= 0
+        BEGIN
+            RAISERROR (N'Mã nhân viên không hợp lệ!', 16, 1);
+            RETURN;
+        END;
 
-    IF @NgayChamCong IS NULL
-    BEGIN
-        RAISERROR (N'Ngày chấm công không được để trống!', 16, 1);
-        RETURN;
-    END;
+        IF @NgayChamCong IS NULL
+        BEGIN
+            RAISERROR (N'Ngày chấm công không được để trống!', 16, 1);
+            RETURN;
+        END;
 
-    IF @GioVao IS NULL
-    BEGIN
-        RAISERROR (N'Giờ vào làm không được để trống!', 16, 1);
-        RETURN;
-    END;
+        IF @GioVao IS NULL
+        BEGIN
+            RAISERROR (N'Giờ vào làm không được để trống!', 16, 1);
+            RETURN;
+        END;
 
-    -- 2. Kiểm tra ngày chấm công không vượt quá ngày hiện tại
-    IF @NgayChamCong > CAST(GETDATE() AS DATE)
-    BEGIN
-        RAISERROR (N'Ngày chấm công không được vượt quá ngày hiện tại!', 16, 1);
-        RETURN;
-    END;
+        -- 2. Kiểm tra ngày chấm công không vượt quá ngày hiện tại
+        IF @NgayChamCong > CAST(GETDATE() AS DATE)
+        BEGIN
+            RAISERROR (N'Ngày chấm công không được vượt quá ngày hiện tại!', 16, 1);
+            RETURN;
+        END;
 
-    -- 3. Kiểm tra miền giá trị hợp lệ của cột TrangThai
-    IF @TrangThai IS NULL OR @TrangThai NOT IN (N'CO_MAT', N'DI_TRE', N'VE_SOM', N'VANG')
-    BEGIN
-        RAISERROR (N'Trạng thái chấm công không hợp lệ!', 16, 1);
-        RETURN;
-    END;
+        -- 3. Kiểm tra miền giá trị hợp lệ của cột TrangThai
+        IF @TrangThai IS NULL OR @TrangThai NOT IN (N'CO_MAT', N'DI_TRE', N'VE_SOM', N'VANG')
+        BEGIN
+            RAISERROR (N'Trạng thái chấm công không hợp lệ!', 16, 1);
+            RETURN;
+        END;
 
-    -- 4. Kiểm tra độ dài ghi chú không vượt quá 255 ký tự
-    IF @GhiChu IS NOT NULL AND LEN(@GhiChu) > 255
-    BEGIN
-        RAISERROR (N'Ghi chú không được vượt quá 255 ký tự!', 16, 1);
-        RETURN;
-    END;
+        -- 4. Kiểm tra độ dài ghi chú không vượt quá 255 ký tự
+        IF @GhiChu IS NOT NULL AND LEN(@GhiChu) > 255
+        BEGIN
+            RAISERROR (N'Ghi chú không được vượt quá 255 ký tự!', 16, 1);
+            RETURN;
+        END;
 
-    -- 5. Kiểm tra logic giờ ra về phải lớn hơn giờ vào làm
-    IF @GioRa IS NOT NULL AND @GioRa <= @GioVao
-    BEGIN
-        RAISERROR (N'Giờ ra về phải lớn hơn giờ vào làm!', 16, 1);
-        RETURN;
-    END;
+        -- 5. Kiểm tra logic giờ ra về phải lớn hơn giờ vào làm
+        IF @GioRa IS NOT NULL AND @GioRa <= @GioVao
+        BEGIN
+            RAISERROR (N'Giờ ra về phải lớn hơn giờ vào làm!', 16, 1);
+            RETURN;
+        END;
 
-    -- 6. Kiểm tra tồn tại nhân viên và trạng thái hoạt động (giá trị thực tế TV1: DANG_LAM_VIEC / NGHI_VIEC)
-    DECLARE @TrangThaiNV NVARCHAR(20);
-    SELECT @TrangThaiNV = TrangThai
-    FROM dbo.NHANVIEN
-    WHERE MaNV = @MaNV;
+        -- 6. Kiểm tra tồn tại nhân viên và trạng thái hoạt động (giá trị thực tế TV1: DANG_LAM_VIEC / NGHI_VIEC)
+        DECLARE @TrangThaiNV NVARCHAR(20);
+        SELECT @TrangThaiNV = TrangThai
+        FROM dbo.NHANVIEN
+        WHERE MaNV = @MaNV;
 
-    IF @TrangThaiNV IS NULL
-    BEGIN
-        RAISERROR (N'Nhân viên không tồn tại trong hệ thống!', 16, 1);
-        RETURN;
-    END;
+        IF @TrangThaiNV IS NULL
+        BEGIN
+            RAISERROR (N'Nhân viên không tồn tại trong hệ thống!', 16, 1);
+            RETURN;
+        END;
 
-    IF @TrangThaiNV <> N'DANG_LAM_VIEC'
-    BEGIN
-        RAISERROR (N'Không thể ghi nhận chấm công cho nhân viên đã nghỉ việc hoặc không hoạt động!', 16, 1);
-        RETURN;
-    END;
+        IF @TrangThaiNV <> N'DANG_LAM_VIEC'
+        BEGIN
+            RAISERROR (N'Không thể ghi nhận chấm công cho nhân viên đã nghỉ việc hoặc không hoạt động!', 16, 1);
+            RETURN;
+        END;
 
-    -- 7. Kiểm tra trùng lặp bản ghi chấm công trong ngày (bảo vệ trước khi insert)
-    IF EXISTS (
-        SELECT 1
-        FROM dbo.CHAMCONG
-        WHERE MaNV = @MaNV
-          AND NgayChamCong = @NgayChamCong
-    )
-    BEGIN
-        RAISERROR (N'Nhân viên đã có bản ghi chấm công trong ngày này!', 16, 1);
-        RETURN;
-    END;
+        -- 7. Kiểm tra trùng lặp bản ghi chấm công trong ngày (bảo vệ trước khi insert)
+        IF EXISTS (
+            SELECT 1
+            FROM dbo.CHAMCONG
+            WHERE MaNV = @MaNV
+              AND NgayChamCong = @NgayChamCong
+        )
+        BEGIN
+            RAISERROR (N'Nhân viên đã có bản ghi chấm công trong ngày này!', 16, 1);
+            RETURN;
+        END;
 
-    -- 8. Ghi nhận chấm công (không sở hữu transaction để caller điều phối)
-    INSERT INTO dbo.CHAMCONG (MaNV, NgayChamCong, GioVao, GioRa, TrangThai, GhiChu)
-    VALUES (@MaNV, @NgayChamCong, @GioVao, @GioRa, @TrangThai, @GhiChu);
+        -- 8. Ghi nhận chấm công (không sở hữu transaction để caller điều phối)
+        INSERT INTO dbo.CHAMCONG (MaNV, NgayChamCong, GioVao, GioRa, TrangThai, GhiChu)
+        VALUES (@MaNV, @NgayChamCong, @GioVao, @GioRa, @TrangThai, @GhiChu);
 
-    -- 9. Trả về mã chấm công vừa sinh qua tham số OUTPUT
-    SET @MaChamCong = SCOPE_IDENTITY();
+        -- 9. Trả về mã chấm công vừa sinh qua tham số OUTPUT
+        SET @MaChamCong = SCOPE_IDENTITY();
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH;
 END;
 GO
 
