@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$ServerInstance = '.',
     [switch]$DemoData,
     [switch]$Benchmarks,
@@ -75,9 +75,11 @@ PRINT 'PASS five business functions installed';
 '@ 'schema_environment' $database
     foreach ($test in @(
         'database\test_module_nhansu_TV1.sql',
+        'database\tests\TV1_Age_Boundaries.sql',
         'database\tests_TV2\test_module_chamcong_TV2.sql',
         'database\tests_TV3\test_module_phucap_khautru_TV3.sql',
         'database\tests\Fix_Regression.sql',
+        'database\tests\TV5_Money_Boundaries.sql',
         'database\test_security_roles_TV5.sql',
         'database\tests\TV4_Payroll_E2E.sql'
     )) { Invoke-SqlFile $test ([IO.Path]::GetFileNameWithoutExtension($test)) }

@@ -1,0 +1,161 @@
+{
+  "schemaVersion": "presentation-finalization.v1",
+  "finalSha256": "e26d60798d5a099678d28461587b6f501bf4024fe00e3ce35472658b2088a35f",
+  "byteCount": 163574,
+  "packageIntegrity": {
+    "chart_count": 0,
+    "claim_boundary": "Structural package checks only; no slide text, notes, formulas, chart values, or native PowerPoint execution were inspected.",
+    "finding_count": 0,
+    "findings": [],
+    "notes_parts_skipped": 15,
+    "relationship_part_count": 40,
+    "slide_count": 15,
+    "status": "pass",
+    "exitCode": 0,
+    "findingCount": 0,
+    "warnings": []
+  },
+  "presentationLayout": {
+    "finding_count": 0,
+    "findings": [],
+    "font_policy": {
+      "checked_text_script_count": 164,
+      "native_font_rendering_verified": false,
+      "observed_font_families": [
+        "Segoe UI"
+      ],
+      "observed_font_use_counts": {
+        "Segoe UI": 164
+      },
+      "passed": true,
+      "performed": true
+    },
+    "slide_count": 15,
+    "slide_size_in": [
+      13.3333,
+      7.5
+    ],
+    "warning_count": 0,
+    "warnings": [],
+    "exitCode": 0,
+    "findingCount": 0,
+    "fontPolicy": {
+      "checked_text_script_count": 164,
+      "native_font_rendering_verified": false,
+      "observed_font_families": [
+        "Segoe UI"
+      ],
+      "observed_font_use_counts": {
+        "Segoe UI": 164
+      },
+      "passed": true,
+      "performed": true
+    }
+  },
+  "fontSelection": {
+    "basis": "reference",
+    "approvedFamilies": [
+      "Segoe UI"
+    ],
+    "scriptFonts": {},
+    "referenceSha256": "e414aeac526cbb79ef4875b9a104ff05273197fd94bff054fd6c91963c524c71",
+    "referenceFontsVerifiedInEncodedText": true,
+    "checked_text_script_count": 164,
+    "native_font_rendering_verified": false,
+    "observed_font_families": [
+      "Segoe UI"
+    ],
+    "observed_font_use_counts": {
+      "Segoe UI": 164
+    },
+    "passed": true,
+    "performed": true
+  },
+  "firstPartyImport": {
+    "performed": true,
+    "passed": true,
+    "slideCount": 15,
+    "sha256": "e26d60798d5a099678d28461587b6f501bf4024fe00e3ce35472658b2088a35f",
+    "runtimeNodeModules": "C:/Users/DUCANHZZ/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules",
+    "nodeExecutable": "C:\\Users\\DUCANHZZ\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe"
+  },
+  "nativeTableArithmetic": {
+    "performed": true,
+    "checked_column_count": 0,
+    "checks": [],
+    "claim_boundary": "Displayed-value arithmetic with rounding tolerance; not source-data verification.",
+    "eligible_table_count": 0,
+    "finding_count": 0,
+    "findings": [],
+    "native_table_count": 4,
+    "passed": true,
+    "schema_version": "presentation-native-table-arithmetic.v1",
+    "skipped_tables": [
+      {
+        "reason": "no_unambiguous_bottom_total",
+        "slide": 6,
+        "table": 1
+      },
+      {
+        "reason": "no_unambiguous_bottom_total",
+        "slide": 10,
+        "table": 1
+      },
+      {
+        "reason": "no_numeric_amounts",
+        "slide": 13,
+        "table": 1
+      },
+      {
+        "reason": "no_numeric_amounts",
+        "slide": 15,
+        "table": 1
+      }
+    ],
+    "slide_count": 15,
+    "warning_count": 0,
+    "warnings": []
+  },
+  "nativeChartTitles": {
+    "performed": true,
+    "checks": [],
+    "finding_count": 0,
+    "findings": [],
+    "native_chart_count": 0,
+    "native_powerpoint_verified": false,
+    "passed": true,
+    "presentation_sha256": "e26d60798d5a099678d28461587b6f501bf4024fe00e3ce35472658b2088a35f",
+    "schema_version": "presentation-native-chart-titles.v1",
+    "slide_count": 15,
+    "source_text_emitted": false,
+    "unresolved_linked_title_count": 0
+  },
+  "sourceDerivedPolicyFlags": [
+    "--expected-slide-size-emu",
+    "12192000,6858000",
+    "--validate-bullet-geometry",
+    "--validate-heading-fit",
+    "--require-native-table-slide",
+    "6",
+    "--require-native-table-slide",
+    "10",
+    "--require-native-table-slide",
+    "13",
+    "--require-native-table-slide",
+    "15",
+    "--cover-role",
+    "none",
+    "--expected-slide-count",
+    "15",
+    "--approved-font-family",
+    "Segoe UI"
+  ],
+  "nativeChartValidation": {
+    "detectedOwnerSlides": [],
+    "detectedChartCount": 0,
+    "targetApplication": "portable",
+    "sourceChartOwnersExplicitlyDeclared": true,
+    "validatorRan": false,
+    "passed": true
+  }
+}

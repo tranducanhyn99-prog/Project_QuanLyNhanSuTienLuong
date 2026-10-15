@@ -34,3 +34,5 @@ Chỉ chạy script có ghi fixture trên database riêng `PRJ_Fix_QA_...`. Khô
 `run_payroll_tests.ps1` chạy E2E và benchmark trừ khi `-SkipBenchmark`, từ chối database ngoài prefix QA. Dùng `-WindowsAuthentication` cho DBA QA hoặc biến môi trường TEST_SQL_USER/TEST_SQL_PASSWORD; không lấy mật khẩu từ config của ứng dụng. Chứng chỉ tự ký local có thể bật `-TrustLocalCertificate` một cách tường minh. Runner này không chạy concurrency hoặc tất cả test chuyên đề.
 
 Log xác minh nằm trong build/, được gitignore. Xem [FIX_TASKLIST](../docs/FIX_TASKLIST.md) để phân biệt source đã sửa, test đã chạy và phần còn chờ xác minh. Các ảnh tracked cũ không phải kết quả của lần chạy hiện tại.
+
+CHECK tuổi TV1 13/10: `NgaySinh <= DATEADD(YEAR,-18,NgayVaoLam)`. Bảng/CHECK module01 tạo khi chưa có; rerun không migrate constraint database cũ. [Age boundary test](tests/TV1_Age_Boundaries.sql) kiểm chín birthday/leap-day cases qua INSERT/SP và rollback profile trên fresh QA.

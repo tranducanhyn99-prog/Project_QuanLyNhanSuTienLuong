@@ -1,0 +1,10 @@
+PASS GUI batch fixture: duplicate belongs to final MaNV in descending Java DAO order; sequence instruments successfully inserted rows even when transaction rolls back.
+TenDangNhap	VaiTro	TrangThai	is_disabled	HashLength	SqlRole
+tv5f_d54a94da_a	Employee	HOAT_DONG	False	90	role_Employee
+tv5f_d54a94da_admin	DB_Admin	HOAT_DONG	False	90	role_DBAdmin
+tv5f_d54a94da_b	HR_Manager	HOAT_DONG	False	90	role_HRManager
+tv5f_d54a94da_hr	HR_Manager	HOAT_DONG	False	90	role_HRManager
+tv5f_d54a94da_payroll	Payroll_Officer	HOAT_DONG	False	90	role_PayrollOfficer
+name	compatibility_level
+PRJ_Fix_QA_20261013_followup_8e2bedb8	170
+name	permission_name	state_desc

@@ -1,0 +1,16 @@
+Window: "PeopleOS · Quản lý Nhân sự & Tiền lương – visual_qa [Quản trị viên (DB_Admin)]", App: java.exe.
+	0 window (disabled) PeopleOS · Quản lý Nhân sự & Tiền lương – visual_qa [Quản trị viên (DB_Admin)] Secondary Actions: Raise
+		1 window TV5 Phone native visual QA Secondary Actions: Raise
+			2 title bar (settable, string) Value: TV5 Phone native visual QA
+				3 button Close
+		4 title bar (settable, string) Value: PeopleOS · Quản lý Nhân sự & Tiền lương – visual_qa [Quản trị viên (DB_Admin)]
+			5 menu bar System ID: MenuBar
+				6 menu item System
+			7 button Minimize
+			8 button Maximize
+			9 button Close
+		1 window TV5 Phone native visual QA Secondary Actions: Raise
+			2 title bar (settable, string) Value: TV5 Phone native visual QA
+				3 button Close
+
+The focused UI element is 1 window TV5 Phone native visual QA Secondary Actions: Raise.

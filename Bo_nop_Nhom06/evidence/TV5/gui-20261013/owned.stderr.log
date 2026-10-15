@@ -1,0 +1,25 @@
+Oct 13, 2026 3:03:05 PM com.ui.auth.LoginFrame$3 done
+WARNING: ??ng nh?p th?t b?i
+com.microsoft.sqlserver.jdbc.SQLServerException: The TCP/IP connection to the host 127.0.0.1, port 14513 has failed. Error: "Connection refused: getsockopt. Verify the connection properties. Make sure that an instance of SQL Server is running on the host and accepting TCP/IP connections at the port. Make sure that TCP connections to the port are not blocked by a firewall.".
+	at com.microsoft.sqlserver.jdbc.SQLServerException.makeFromDriverError(SQLServerException.java:233)
+	at com.microsoft.sqlserver.jdbc.SQLServerException.convertConnectExceptionToSQLServerException(SQLServerException.java:284)
+	at com.microsoft.sqlserver.jdbc.SocketFinder.findSocket(IOBuffer.java:2589)
+	at com.microsoft.sqlserver.jdbc.TDSChannel.open(IOBuffer.java:721)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.connectHelper(SQLServerConnection.java:3763)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.login(SQLServerConnection.java:3348)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.connectInternal(SQLServerConnection.java:3179)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.connect(SQLServerConnection.java:1953)
+	at com.microsoft.sqlserver.jdbc.SQLServerDriver.connect(SQLServerDriver.java:1263)
+	at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:683)
+	at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:191)
+	at com.config.DatabaseConnection.openForLogin(DatabaseConnection.java:38)
+	at com.service.AuthService.login(AuthService.java:42)
+	at com.ui.auth.LoginFrame$3.doInBackground(LoginFrame.java:273)
+	at com.ui.auth.LoginFrame$3.doInBackground(LoginFrame.java:270)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+

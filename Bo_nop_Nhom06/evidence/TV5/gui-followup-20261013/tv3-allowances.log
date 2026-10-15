@@ -1,0 +1,137 @@
+DIALOG Xác nhận chốt bảng lương | Bạn có chắc chắn muốn chốt bảng lương: Tháng 10/2026 – Chưa chốt?
+
+Sau khi chốt:
+• Không thể sửa hoặc xóa chi tiết lương
+• Không thể chốt lại lần nữa
+DIALOG Message | Đã chốt bảng lương.
+Oct 13, 2026 9:32:05 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+com.microsoft.sqlserver.jdbc.SQLServerException: Kỳ lương đã chốt: không được thay đổi phụ cấp.
+	at com.microsoft.sqlserver.jdbc.SQLServerException.makeFromDatabaseError(SQLServerException.java:261)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.getNextResult(SQLServerStatement.java:1752)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.doExecutePreparedStatement(SQLServerPreparedStatement.java:675)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement$PrepStmtExecCmd.doExecute(SQLServerPreparedStatement.java:594)
+	at com.microsoft.sqlserver.jdbc.TDSCommand.execute(IOBuffer.java:7739)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.executeCommand(SQLServerConnection.java:4384)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeCommand(SQLServerStatement.java:293)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeStatement(SQLServerStatement.java:263)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.executeUpdate(SQLServerPreparedStatement.java:537)
+	at com.dao.PhuCapDAO.insert(PhuCapDAO.java:57)
+	at com.service.PhuCapKhauTruService.themPhuCap(PhuCapKhauTruService.java:36)
+	at com.ui.luong.PhuCapKhauTruPanel.lambda$handleThemPhuCap$16(PhuCapKhauTruPanel.java:306)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DIALOG Lỗi | Kỳ lương đã chốt: không được thay đổi phụ cấp.
+PASS GUI rejects allowance insert on closed period
+Oct 13, 2026 9:32:06 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+com.microsoft.sqlserver.jdbc.SQLServerException: Kỳ lương đã chốt: không được thay đổi khấu trừ.
+	at com.microsoft.sqlserver.jdbc.SQLServerException.makeFromDatabaseError(SQLServerException.java:261)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.getNextResult(SQLServerStatement.java:1752)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.doExecutePreparedStatement(SQLServerPreparedStatement.java:675)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement$PrepStmtExecCmd.doExecute(SQLServerPreparedStatement.java:594)
+	at com.microsoft.sqlserver.jdbc.TDSCommand.execute(IOBuffer.java:7739)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.executeCommand(SQLServerConnection.java:4384)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeCommand(SQLServerStatement.java:293)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeStatement(SQLServerStatement.java:263)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.executeUpdate(SQLServerPreparedStatement.java:537)
+	at com.dao.KhauTruDAO.insert(KhauTruDAO.java:56)
+	at com.service.PhuCapKhauTruService.themKhauTru(PhuCapKhauTruService.java:57)
+	at com.ui.luong.PhuCapKhauTruPanel.lambda$handleThemKhauTru$20(PhuCapKhauTruPanel.java:360)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DIALOG Lỗi | Kỳ lương đã chốt: không được thay đổi khấu trừ.
+PASS GUI rejects deduction insert on closed period
+DIALOG Xác nhận xóa phụ cấp | Xác nhận xóa khoản phụ cấp [QA report] của nhân viên [TEST Giao dien A] (Mã PC: 3)?
+Oct 13, 2026 9:32:06 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+com.microsoft.sqlserver.jdbc.SQLServerException: Kỳ lương đã chốt: không được thay đổi phụ cấp.
+	at com.microsoft.sqlserver.jdbc.SQLServerException.makeFromDatabaseError(SQLServerException.java:261)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.getNextResult(SQLServerStatement.java:1752)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.doExecutePreparedStatement(SQLServerPreparedStatement.java:675)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement$PrepStmtExecCmd.doExecute(SQLServerPreparedStatement.java:594)
+	at com.microsoft.sqlserver.jdbc.TDSCommand.execute(IOBuffer.java:7739)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.executeCommand(SQLServerConnection.java:4384)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeCommand(SQLServerStatement.java:293)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeStatement(SQLServerStatement.java:263)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.executeUpdate(SQLServerPreparedStatement.java:537)
+	at com.dao.PhuCapDAO.delete(PhuCapDAO.java:66)
+	at com.service.PhuCapKhauTruService.xoaPhuCap(PhuCapKhauTruService.java:41)
+	at com.ui.luong.PhuCapKhauTruPanel.lambda$handleXoaPhuCap$18(PhuCapKhauTruPanel.java:335)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DIALOG Lỗi | Kỳ lương đã chốt: không được thay đổi phụ cấp.
+PASS GUI rejects deleting existing allowance on closed period
+DIALOG Xác nhận xóa kỳ lương | Xóa bảng lương nháp cùng toàn bộ chi tiết của kỳ 10/2026?
+Kỳ lương đã chốt sẽ được giữ nguyên.
+Bạn có muốn tiếp tục?
+Oct 13, 2026 9:32:07 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+com.microsoft.sqlserver.jdbc.SQLServerException: Kỳ lương tháng 10/2026 đã được CHỐT SỔ! Không được phép xóa dữ liệu!
+	at com.microsoft.sqlserver.jdbc.SQLServerException.makeFromDatabaseError(SQLServerException.java:261)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.getNextResult(SQLServerStatement.java:1752)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.doExecutePreparedStatement(SQLServerPreparedStatement.java:675)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement$PrepStmtExecCmd.doExecute(SQLServerPreparedStatement.java:594)
+	at com.microsoft.sqlserver.jdbc.TDSCommand.execute(IOBuffer.java:7739)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.executeCommand(SQLServerConnection.java:4384)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeCommand(SQLServerStatement.java:293)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeStatement(SQLServerStatement.java:263)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.execute(SQLServerPreparedStatement.java:571)
+	at com.dao.KhauTruDAO.xoaKyLuongChuaChot(KhauTruDAO.java:93)
+	at com.service.PhuCapKhauTruService.xoaKyLuongChuaChot(PhuCapKhauTruService.java:78)
+	at com.ui.luong.PhuCapKhauTruPanel.lambda$handleXoaKyLuong$24(PhuCapKhauTruPanel.java:410)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DIALOG Lỗi | Kỳ lương tháng 10/2026 đã được CHỐT SỔ! Không được phép xóa dữ liệu!
+PASS GUI rejects deleting closed payroll header
+DIALOG Xác nhận mở lại bảng lương | Bạn có chắc chắn muốn MỞ LẠI (HỦY CHỐT) bảng lương Tháng 10/2026 – Đã chốt?
+
+Sau khi mở lại:
+• Kỳ lương sẽ trở về trạng thái CHƯA CHỐT (Bản nháp)
+• Bạn có thể vào phân hệ Chấm công sửa/xóa ngày công, tính lại lương hoặc xóa kỳ lương này
+DIALOG Message | Đã mở lại bảng lương.
+DIALOG Thông báo | Thêm phụ cấp thành công!
+PASS GUI allowance inserted on draft period
+DIALOG Thông báo | Thêm khoản khấu trừ thành công!
+PASS GUI deduction inserted on draft period
+DIALOG Xác nhận xóa phụ cấp | Xác nhận xóa khoản phụ cấp [TV5_GUI_PC_tv5f_d54a94da_] của nhân viên [TEST Giao dien B] (Mã PC: 5)?
+DIALOG Thông báo | Đã xóa phụ cấp thành công!
+PASS GUI owned allowance deleted
+DIALOG Xác nhận xóa khấu trừ | Xác nhận xóa khoản khấu trừ [TV5_GUI_KT_tv5f_d54a94da_] của nhân viên [TEST Giao dien B] (Mã KT: 2)?
+DIALOG Thông báo | Đã xóa khoản khấu trừ thành công!
+PASS GUI owned deduction deleted
+DIALOG Xác nhận xóa kỳ lương | Xóa bảng lương nháp cùng toàn bộ chi tiết của kỳ 10/2026?
+Kỳ lương đã chốt sẽ được giữ nguyên.
+Bạn có muốn tiếp tục?
+DIALOG Thành công | Đã xóa kỳ lương nháp thành công!
+PASS GUI draft payroll header deleted
+PASS draft delete leaves no orphan salary details
+PASS live GUI tv3-allowances: 10 assertions. Production handlers; dialogs automated; no manual-test claim.

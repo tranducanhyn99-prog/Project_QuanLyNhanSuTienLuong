@@ -1,0 +1,9 @@
+Changed database context to 'PRJ_Fix_QA_20261013_153426_f82004c6'.
+[TV5] Đã tạo function fn_TinhThucNhan.
+[TV5] Đã tạo view vw_BangLuongChiTiet.
+[TV5] Đã tạo trigger trg_ChiTietLuong_KhongSuaKhiDaChot.
+[TV5] Đã tạo stored procedure sp_ChotBangLuong (UPDLOCK + TRY...CATCH).
+[TV5] Đã tạo 4 Database Role.
+[TV5] Đã cấp quyền cho role_HRManager.
+[TV5] Đã cấp quyền cho role_PayrollOfficer.
+[TV5] Đã cấp quyền cho role_Employee.

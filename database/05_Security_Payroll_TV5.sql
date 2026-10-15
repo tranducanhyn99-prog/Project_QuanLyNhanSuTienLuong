@@ -61,17 +61,17 @@ BEGIN
         MaChiTiet     INT           IDENTITY(1,1)  PRIMARY KEY,
         MaBangLuong   INT           NOT NULL,
         MaNV          INT           NOT NULL,
-        LuongCoBan    DECIMAL(15,2) NOT NULL
+        LuongCoBan    DECIMAL(18,2) NOT NULL
             CONSTRAINT CHK_CTBL_LuongCoBan CHECK (LuongCoBan >= 0),
         NgayCongThucTe INT          NOT NULL        DEFAULT 0
             CONSTRAINT CHK_CTBL_NgayCongThucTe CHECK (NgayCongThucTe >= 0),
-        TienCong      DECIMAL(15,2) NOT NULL        DEFAULT 0
+        TienCong      DECIMAL(18,2) NOT NULL        DEFAULT 0
             CONSTRAINT CHK_CTBL_TienCong CHECK (TienCong >= 0),
-        TongPhuCap    DECIMAL(15,2) NOT NULL        DEFAULT 0
+        TongPhuCap    DECIMAL(18,2) NOT NULL        DEFAULT 0
             CONSTRAINT CHK_CTBL_TongPhuCap CHECK (TongPhuCap >= 0),
-        TongKhauTru   DECIMAL(15,2) NOT NULL        DEFAULT 0
+        TongKhauTru   DECIMAL(18,2) NOT NULL        DEFAULT 0
             CONSTRAINT CHK_CTBL_TongKhauTru CHECK (TongKhauTru >= 0),
-        ThucNhan      DECIMAL(15,2) NOT NULL        DEFAULT 0,
+        ThucNhan      DECIMAL(18,2) NOT NULL        DEFAULT 0,
 
         CONSTRAINT FK_CTBL_BANGLUONG
             FOREIGN KEY (MaBangLuong) REFERENCES BANGLUONG(MaBangLuong),
@@ -103,14 +103,15 @@ GO
 -- PHẦN A2: FUNCTION THEO PHÂN CÔNG (TV5: fn_TinhThucNhan)
 -- Công thức: Thực nhận = Tiền công + Tổng phụ cấp – Tổng khấu trừ
 -- Ghi chú: Thực nhận CÓ THỂ ÂM nếu khấu trừ lớn hơn thu nhập
+-- NULL được tính là 0; ngoài miền DECIMAL(18,2) phải báo lỗi 8115, không cắt số.
 -- ============================================================================
 CREATE OR ALTER FUNCTION fn_TinhThucNhan
 (
-    @TienCong    DECIMAL(15,2),
-    @TongPhuCap  DECIMAL(15,2),
-    @TongKhauTru DECIMAL(15,2)
+    @TienCong    DECIMAL(18,2),
+    @TongPhuCap  DECIMAL(18,2),
+    @TongKhauTru DECIMAL(18,2)
 )
-RETURNS DECIMAL(15,2)
+RETURNS DECIMAL(18,2)
 AS
 BEGIN
     RETURN ISNULL(@TienCong, 0) + ISNULL(@TongPhuCap, 0) - ISNULL(@TongKhauTru, 0);

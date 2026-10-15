@@ -1,0 +1,29 @@
+Oct 13, 2026 9:12:15 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+java.lang.Exception: Lỗi cập nhật trạng thái tài khoản: SQL Server did not return a response. The connection has been closed.
+	at com.service.AuthService.doiTrangThaiTaiKhoan(AuthService.java:95)
+	at com.ui.admin.TaiKhoanPanel.lambda$handleKhoaMoKhoa$6(TaiKhoanPanel.java:212)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: com.microsoft.sqlserver.jdbc.SQLServerException: SQL Server did not return a response. The connection has been closed.
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.terminate(SQLServerConnection.java:4266)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.terminate(SQLServerConnection.java:4255)
+	at com.microsoft.sqlserver.jdbc.TDSReader.readPacket(IOBuffer.java:6872)
+	at com.microsoft.sqlserver.jdbc.TDSCommand.startResponse(IOBuffer.java:8139)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.doExecutePreparedStatement(SQLServerPreparedStatement.java:673)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement$PrepStmtExecCmd.doExecute(SQLServerPreparedStatement.java:594)
+	at com.microsoft.sqlserver.jdbc.TDSCommand.execute(IOBuffer.java:7739)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.executeCommand(SQLServerConnection.java:4384)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeCommand(SQLServerStatement.java:293)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeStatement(SQLServerStatement.java:263)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.execute(SQLServerPreparedStatement.java:571)
+	at com.dao.TaiKhoanDAO.updateTrangThai(TaiKhoanDAO.java:138)
+	at com.service.AuthService.doiTrangThaiTaiKhoan(AuthService.java:93)
+	... 9 more
+

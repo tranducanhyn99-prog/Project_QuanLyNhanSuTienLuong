@@ -1,0 +1,146 @@
+Oct 13, 2026 9:29:25 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+java.lang.Exception: Số điện thoại phòng ban phải gồm 10–15 chữ số hoặc để trống.
+	at com.service.DanhMucService.normalizePhone(DanhMucService.java:56)
+	at com.service.DanhMucService.themPhongBan(DanhMucService.java:34)
+	at com.ui.nhanvien.DanhMucPanel.lambda$xuLyThemPB$14(DanhMucPanel.java:269)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DIALOG Lỗi | Số điện thoại phòng ban phải gồm 10–15 chữ số hoặc để trống.
+PASS invalid department phone rejected without row
+DIALOG Message | Thêm phòng ban thành công!
+PASS GUI department created
+Oct 13, 2026 9:29:26 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+java.lang.Exception: Số điện thoại phòng ban phải gồm 10–15 chữ số hoặc để trống.
+	at com.service.DanhMucService.normalizePhone(DanhMucService.java:56)
+	at com.service.DanhMucService.capNhatPhongBan(DanhMucService.java:43)
+	at com.ui.nhanvien.DanhMucPanel.lambda$xuLySuaPB$16(DanhMucPanel.java:284)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DIALOG Lỗi | Số điện thoại phòng ban phải gồm 10–15 chữ số hoặc để trống.
+PASS invalid update phone preserves department SQL row
+DIALOG Message | Cập nhật phòng ban thành công!
+PASS GUI department updated in SQL
+DIALOG Xác nhận | Bạn có chắc chắn muốn xóa phòng ban này?
+DIALOG Message | Đã xóa phòng ban thành công!
+PASS GUI unused department deleted
+Oct 13, 2026 9:29:27 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+java.lang.Exception: Phụ cấp chức vụ không được âm!
+	at com.service.DanhMucService.themChucVu(DanhMucService.java:73)
+	at com.ui.nhanvien.DanhMucPanel.lambda$xuLyThemCV$20(DanhMucPanel.java:328)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DIALOG Lỗi | Phụ cấp chức vụ không được âm!
+PASS negative position allowance rejected
+DIALOG Message | Thêm chức vụ thành công!
+PASS GUI position created
+DIALOG Message | Cập nhật chức vụ thành công!
+PASS GUI position allowance updated
+DIALOG Xác nhận | Bạn có chắc chắn muốn xóa chức vụ này?
+DIALOG Message | Đã xóa chức vụ thành công!
+PASS GUI unused position deleted
+Oct 13, 2026 9:29:30 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+java.lang.Exception: Nhân viên phải từ 18 tuổi trở lên khi vào làm việc!
+	at com.service.NhanVienService.validateNhanVien(NhanVienService.java:84)
+	at com.service.NhanVienService.themNhanVien(NhanVienService.java:36)
+	at com.ui.nhanvien.NhanVienPanel.lambda$xuLyThemNhanVien$17(NhanVienPanel.java:439)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DIALOG Lỗi | Nhân viên phải từ 18 tuổi trở lên khi vào làm việc!
+PASS GUI rejects day before eighteenth birthday
+Oct 13, 2026 9:29:31 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+com.microsoft.sqlserver.jdbc.SQLServerException: Tên đăng nhập đã tồn tại trong hệ thống!
+	at com.microsoft.sqlserver.jdbc.SQLServerException.makeFromDatabaseError(SQLServerException.java:261)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.getNextResult(SQLServerStatement.java:1752)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.doExecutePreparedStatement(SQLServerPreparedStatement.java:675)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement$PrepStmtExecCmd.doExecute(SQLServerPreparedStatement.java:594)
+	at com.microsoft.sqlserver.jdbc.TDSCommand.execute(IOBuffer.java:7739)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.executeCommand(SQLServerConnection.java:4384)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeCommand(SQLServerStatement.java:293)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeStatement(SQLServerStatement.java:263)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.execute(SQLServerPreparedStatement.java:571)
+	at com.dao.NhanVienDAO.themNhanVien(NhanVienDAO.java:73)
+	at com.service.NhanVienService.themNhanVien(NhanVienService.java:56)
+	at com.ui.nhanvien.NhanVienPanel.lambda$xuLyThemNhanVien$17(NhanVienPanel.java:439)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DIALOG Lỗi | Tên đăng nhập đã tồn tại trong hệ thống!
+PASS GUI duplicate profile rolls back employee insertion
+PASS duplicate-profile failure preserves existing owned B
+DIALOG Message | Thêm nhân viên thành công! Mã NV: 7
+PASS GUI employee created without unrequested SQL login
+DIALOG Message | Cập nhật thông tin nhân viên thành công!
+PASS GUI employee update persists salary
+DIALOG Xác nhận xóa | Hệ thống sẽ kiểm tra ràng buộc lương và chấm công trước khi xóa.
+Bạn có chắc chắn muốn xóa nhân viên này?
+DIALOG Message | Đã xóa nhân viên thành công!
+PASS GUI unused employee deleted
+PASS employee delete cleans owned salary history
+DIALOG Xác nhận xóa | Hệ thống sẽ kiểm tra ràng buộc lương và chấm công trước khi xóa.
+Bạn có chắc chắn muốn xóa nhân viên này?
+Oct 13, 2026 9:29:34 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+com.microsoft.sqlserver.jdbc.SQLServerException: Không được phép xóa nhân viên đã có dữ liệu chấm công hoặc lương. Vui lòng chuyển trạng thái sang NGHI_VIEC!
+	at com.microsoft.sqlserver.jdbc.SQLServerException.makeFromDatabaseError(SQLServerException.java:261)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.getNextResult(SQLServerStatement.java:1752)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.doExecutePreparedStatement(SQLServerPreparedStatement.java:675)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement$PrepStmtExecCmd.doExecute(SQLServerPreparedStatement.java:594)
+	at com.microsoft.sqlserver.jdbc.TDSCommand.execute(IOBuffer.java:7739)
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.executeCommand(SQLServerConnection.java:4384)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeCommand(SQLServerStatement.java:293)
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeStatement(SQLServerStatement.java:263)
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.executeUpdate(SQLServerPreparedStatement.java:537)
+	at com.dao.NhanVienDAO.delete(NhanVienDAO.java:112)
+	at com.service.NhanVienService.xoaNhanVien(NhanVienService.java:70)
+	at com.ui.nhanvien.NhanVienPanel.lambda$xuLyXoaNhanVien$21(NhanVienPanel.java:473)
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:49)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DIALOG Lỗi | Không được phép xóa nhân viên đã có dữ liệu chấm công hoặc lương. Vui lòng chuyển trạng thái sang NGHI_VIEC!
+PASS GUI rejects deleting employee with payroll/attendance
+PASS live GUI tv1-crud: 17 assertions. Production handlers; dialogs automated; no manual-test claim.

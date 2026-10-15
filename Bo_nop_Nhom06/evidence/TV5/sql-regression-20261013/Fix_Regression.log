@@ -1,0 +1,21 @@
+﻿Đã chốt bảng lương mã 3 với 2 chi tiết.
+PASS historical employee/rate
+PASS detail insert
+PASS detail update
+PASS detail delete
+PASS detail move into closed
+PASS detail move out of closed
+PASS allowance insert
+PASS allowance update
+PASS allowance delete
+PASS allowance move
+PASS deduction insert
+PASS deduction update
+PASS deduction delete
+PASS deduction move
+PASS attendance insert
+PASS attendance update
+PASS attendance delete
+PASS attendance move
+PASS allowance function sum/empty
+PASS cleanup

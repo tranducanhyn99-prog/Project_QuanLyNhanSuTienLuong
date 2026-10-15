@@ -1,0 +1,17 @@
+login-min logical=java.awt.Dimension[width=1000,height=700] deviceTransform=AffineTransform[[1.5, 0.0, 0.0], [0.0, 1.5, 0.0]]
+main-min logical=java.awt.Dimension[width=1024,height=680] deviceTransform=AffineTransform[[1.5, 0.0, 0.0], [0.0, 1.5, 0.0]]
+report-min logical=java.awt.Dimension[width=760,height=550] deviceTransform=AffineTransform[[1.5, 0.0, 0.0], [0.0, 1.5, 0.0]]
+Oct 13, 2026 8:58:01 PM com.ui.theme.DatabaseTask$1 done
+WARNING: Database task failed
+java.lang.SecurityException: Phi�n ??ng nh?p ?� thay ??i.
+	at com.config.DatabaseConnection.withIdentity(DatabaseConnection.java:46)
+	at com.ui.theme.DatabaseTask$1.doInBackground(DatabaseTask.java:49)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:305)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:342)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+DB task failed: Phi�n ??ng nh?p ?� thay ??i.
+PASS minimum-window button bounds: 7 assertions. Java uiScale=1.5; fixture session, report data not loaded.

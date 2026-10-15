@@ -1,0 +1,4 @@
+PASS Java 11 compilation: 54 sources.
+Running SecurityRegressionTest
+PASS offline Java regressions: 104 assertions. SQL behavior requires live SQL tests.
+Log: C:\Users\DUCANHZZ\Downloads\HQTCSDL\PRJ\build\tv5-followup-20261013\package-source\build\test-results\Java_Verification_20261013_213732_214.log

@@ -9,10 +9,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
+import java.sql.SQLException;
+import java.sql.SQLTimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.*;
 
 /** Shared SwingWorker boundary: DB work off EDT, UI callbacks on EDT. */
 public final class DatabaseTask {
+    private static final Logger LOG = Logger.getLogger(DatabaseTask.class.getName());
     // EDT owns this map; overlapping parent/child workers share disable counts.
     private static final Map<Component, BusyState> busy = new IdentityHashMap<>();
     private static final class BusyState {
@@ -57,11 +62,33 @@ public final class DatabaseTask {
                 try { success.accept(get()); }
                 catch (Exception ex) {
                     Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-                    if (owner.isShowing()) JOptionPane.showMessageDialog(owner, cause.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    LOG.log(Level.WARNING, "Database task failed", cause);
+                    if (owner.isShowing()) JOptionPane.showMessageDialog(owner, errorMessage(cause), "Lỗi", JOptionPane.ERROR_MESSAGE);
                     else System.err.println("DB task failed: " + cause.getMessage());
                 }
             }
         }.execute();
+    }
+    private static String errorMessage(Throwable failure) {
+        // Services wrap SQLException; retain business errors but shorten infrastructure failures.
+        for (Throwable error = failure; error != null; error = error.getCause()) {
+            if (!(error instanceof SQLException)) continue;
+            SQLException sql = (SQLException) error;
+            String state = sql.getSQLState();
+            if (sql instanceof SQLTimeoutException) {
+                return "Thao tác dữ liệu bị hủy hoặc quá thời gian. Kiểm tra kết quả trước khi thử lại.";
+            }
+            if (state != null && state.startsWith("08")) {
+                return "Không kết nối được SQL Server. Vui lòng thử lại khi kết nối được khôi phục.";
+            }
+            if (sql.getErrorCode() == 18456 || (state != null && state.startsWith("28"))) {
+                return "Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.";
+            }
+            if (sql.getErrorCode() == 229 || sql.getErrorCode() == 15151 || sql.getErrorCode() == 15247) {
+                return "Tài khoản không có quyền thực hiện thao tác này. Liên hệ quản trị viên.";
+            }
+        }
+        return failure.getMessage();
     }
     private static void remember(Component component, List<Component> components) {
         components.add(component);

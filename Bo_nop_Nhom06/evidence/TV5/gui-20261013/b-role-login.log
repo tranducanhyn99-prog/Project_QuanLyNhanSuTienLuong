@@ -1,0 +1,1 @@
+PASS live SQL login + wrong-password rejection; no claim about unexecuted accounts.

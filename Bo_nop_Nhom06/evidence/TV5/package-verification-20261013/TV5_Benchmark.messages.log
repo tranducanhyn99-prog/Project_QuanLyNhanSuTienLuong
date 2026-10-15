@@ -1,0 +1,41 @@
+RESULT 1 rows=1 file=TV5_Benchmark_Results_1.tsv
+MEASURE BEFORE: forced clustered scan
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 0 ms.
+SQL Server parse and compile time: 
+   CPU time = 0 ms, elapsed time = 1 ms.
+RESULT 2 rows=833 file=TV5_Benchmark_Results_2.tsv
+Table '#BenchmarkNhanVien__________________________________________________________________________________________________000000000027'. Scan count 1, logical reads 126, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 2 ms.
+SQL Server parse and compile time: 
+   CPU time = 0 ms, elapsed time = 1 ms.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 0 ms.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 0 ms.
+MEASURE AFTER: forced covering seek
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 0 ms.
+SQL Server parse and compile time: 
+   CPU time = 0 ms, elapsed time = 1 ms.
+RESULT 3 rows=833 file=TV5_Benchmark_Results_3.tsv
+Table '#BenchmarkNhanVien__________________________________________________________________________________________________000000000027'. Scan count 1, logical reads 13, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 1 ms.
+SQL Server parse and compile time: 
+   CPU time = 16 ms, elapsed time = 27 ms.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 0 ms.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 0 ms.
+RESULT 4 rows=1 file=TV5_Benchmark_Results_4.tsv
+PASS benchmark complete results equality, two actual XML plans and temp fixture cleanup
