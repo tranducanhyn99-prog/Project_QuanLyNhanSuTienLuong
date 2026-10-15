@@ -2,13 +2,36 @@
 
 **Trần Đức Anh — 24110155 · Cập nhật 15/10/2026**
 
-[Word nhóm](Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx) đồng nhất byte với bản trong `docs/`. Lượt 15/10 cập nhật nguồn và phạm vi TV3 tại bảng SQL, benchmark, bàn giao và phụ lục theo PR #43/#48. TV2 giữ canonical v3 và các số Messages/XML đã phân biệt. Không thêm năm trang Word TV3 vào độ dài báo cáo nhóm.
+[Word trong bộ nộp](Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx) đã chuẩn hóa trình bày theo cẩm nang do người dùng cung cấp ngày 15/10; bản đã kiểm bố cục có 69 trang tổng, 56 trang nội dung. Bản trong `docs/` được lưu sau đó và hiện không đồng nhất byte với bản trong bộ nộp. Lượt tích hợp trước đó ngày 15/10 cập nhật nguồn và phạm vi TV3 tại bảng SQL, benchmark, bàn giao và phụ lục theo PR #43/#48. TV2 giữ canonical v3 và các số Messages/XML đã phân biệt. Không thêm năm trang Word TV3 vào độ dài báo cáo nhóm.
 
-SHA-256 của cả hai bản Word:
+SHA-256 của bản Word trong bộ nộp:
 
 ```text
-534e5ab8cfa34879f54d118e9abc33ec6ff4c06ca864bbfdfdbba5a0d8409eb7
+be36924dfc08011cf6de02250f11f7b9dcd015e7f9829db6cc935cfada1dbf8e
 ```
+
+SHA-256 của bản Word trong `docs/`:
+
+```text
+a01ef6ac7fedd659757444b7ebc96feb632ae34f4e962f4ce03ae613c7cc85b1
+```
+
+**Đối chiếu trước khi commit bản local:** cả hai DOCX đọc được và toàn bộ nội dung chữ của các đoạn không rỗng khớp nhau. Bản trong `docs/` có thêm 22 đoạn trống đầu tài liệu, cùng thay đổi XML định dạng/thiết lập và metadata; chưa kiểm lại bố cục bản này. Giữ nguyên cả hai file local khi đưa lên GitHub. Kết quả 69 trang/56 trang nội dung và QA bên dưới chỉ áp dụng cho bản trong bộ nộp có hash `be36924d…`; cần chọn và đồng bộ bản cuối trước khi nộp.
+
+## Chuẩn hóa theo cẩm nang ngày 15 tháng 10
+
+Áp dụng `QUY_CHUAN_BAO_CAO_DO_AN_MON_HOC_VIET_NAM.md` (bản 1.0 ngày 15/10/2026) như hướng dẫn tham khảo. Không coi đây là mẫu chính thức của trường hoặc quy chuẩn bắt buộc toàn quốc. Kế hoạch học phần vẫn được ưu tiên: 50–100 trang nội dung, không cộng bìa, mục lục và phụ lục. Chưa có mẫu trình bày riêng của giảng viên trong lượt chỉnh này.
+
+- A4 dọc; lề trên/dưới 2,5 cm, trái 3,5 cm, phải 2 cm. Chính văn Times New Roman 13 pt, giãn dòng 1,5; trước đoạn 0 pt, sau đoạn 6 pt. Bảng/chú thích 11,5 pt; mã Consolas 10 pt.
+- Giữ chín chương; sửa số mục dạng `1.1.`, bổ sung tóm tắt 220 từ và thuật ngữ đã dùng. Chương bắt đầu trang mới; bỏ các đoạn trống dùng để ép trang.
+- Có 53 chú thích bảng (52 trong chính văn và Bảng A.1), bốn chú thích hình, nguồn và dẫn chiếu trong bài; lặp hàng tiêu đề khi bảng tiếp trang. Mục lục, danh mục bảng/hình dùng trường Word và đã cập nhật.
+- Bìa không hiện số; phần đầu dùng i–viii; chính văn bắt đầu từ 1, tài liệu tham khảo và phụ lục tiếp tục số Ả Rập. Bản Word trong bộ nộp có **69 trang vật lý**; chính văn ở **trang vật lý 10–65 = 56 trang**. Nguồn tham khảo bắt đầu trang vật lý 66.
+- Tài liệu tham khảo chuyển từ bảng đường dẫn sang 15 mục có chủ thể, nguồn nội bộ, phiên bản/ngày và giới hạn. Phân biệt 224 assertions ngày 09/10 với 257 assertions ngày 15/10; cập nhật câu về ngắt relay ngày 13/10. Không tạo số đo hoặc kết quả kiểm thử mới.
+- Giữ nguyên số liệu và nội dung bảng nghiệp vụ, bốn ảnh nhúng, mã Java/SQL và minh chứng bàn giao; chỉ sửa nhãn cột `Số assertion`, bổ sung bảng viết tắt và chuyển danh mục nguồn sang đoạn văn. Số liệu TV2 Messages/XML và giới hạn TV3 được bảo toàn.
+
+Bản trong bộ nộp đã xuất bằng Microsoft Word và xem toàn bộ 69 trang PNG. Sau bốn sửa cục bộ cuối, chín trang 6/8/9/37/56/66/67/68/69 được xem lại; 60 trang còn lại trùng pixel với bản đã rà. Không có trang trắng, chữ tràn lề, hàng bảng bị cắt mất hoặc tiêu đề đứng một mình. Kiểm lại các trường số trang/chú thích không có lỗi hay giá trị chờ cập nhật.
+
+`render_docx.py` không chạy được vì máy thiếu LibreOffice trên PATH; bản QA được xuất bằng Microsoft Word cài trên máy và chuyển PDF thành PNG bằng Poppler. PDF/PNG chỉ dùng kiểm bố cục, lưu ở `build/report-vn-guidelines/`, không được đóng gói thay PDF nộp cuối. Không chạy lại SQL/Java/live GUI trong lượt chỉnh báo cáo.
 
 ## Nội dung đã cập nhật
 
@@ -19,7 +42,7 @@ SHA-256 của cả hai bản Word:
 - Kiểm thử: Java offline hiện **257 assertions** (GuiQa 88, Security 104, LightTheme 45, LoginChip 20), tách **87 assertions GUI live**, bảy kiểm lại điện thoại và 21 layout bounds. Handler Swing/dialog tự động không thay tập dượt bằng tay. [GUI bổ sung](../evidence/TV5/gui-followup-20261013/) ghi phép đo, cleanup và giới hạn ảnh render.
 - Metadata source, danh mục minh chứng, số trang và trạng thái [deck chung 15 slide](../slides/Nhom06_ThuyetTrinh_15_Slides.pptx) đã cập nhật. Fixture demo 09/10 cho A 730.000đ/B 0đ giữ riêng với số QA bổ sung 1.230.000đ.
 
-## Kiểm bố cục ngày 15 tháng 10
+## Kiểm bố cục ngày 15 tháng 10 trước chuẩn hóa
 
 Đã xuất trước/sau bằng Microsoft Word, đều 61 trang vật lý và 55 trang nội dung (trang 5–59). Chỉ sáu trang 2, 53, 55, 58, 60, 61 đổi; đã xem từng trang, bảng/text không tràn hoặc mất nội dung. 55 trang còn lại trùng pixel. [QA package](../evidence/TV5/package-integration-20261015/README.md) có phạm vi/log/hash; PDF QA ở `build/tv5-integrate-tv3/`, chưa dùng làm PDF nộp cuối.
 
