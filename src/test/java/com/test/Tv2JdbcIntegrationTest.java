@@ -84,6 +84,142 @@ public class Tv2JdbcIntegrationTest {
     }
 
     /**
+     * Resolves the JDBC connection URL from shared explicit configuration.
+     * Rejects ambiguous, invalid, or missing configurations without silent fallback.
+     */
+    public static String resolveJdbcUrl(String explicitUrl, String serverInstance, String host, String port, String instanceName, String dbName) {
+        if (dbName == null || dbName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Database name cannot be null or empty.");
+        }
+        String cleanDb = dbName.trim();
+        if (cleanDb.contains(";") || cleanDb.contains("=") || cleanDb.contains(" ") || !cleanDb.matches("^[a-zA-Z0-9_]+$")) {
+            throw new IllegalArgumentException("Database name contains invalid or delimiter characters: " + cleanDb);
+        }
+        if (explicitUrl != null && !explicitUrl.trim().isEmpty()) {
+            String url = explicitUrl.trim();
+            if (!url.startsWith("jdbc:sqlserver://")) {
+                throw new IllegalArgumentException("Explicit JDBC URL must start with 'jdbc:sqlserver://': " + url);
+            }
+            if (url.contains("\0") || url.contains("\n") || url.contains("\r")) {
+                throw new IllegalArgumentException("Explicit JDBC URL contains illegal characters.");
+            }
+            if (!url.contains("databaseName=")) {
+                url = url + ";databaseName=" + cleanDb;
+            }
+            if (!url.contains("encrypt=")) {
+                url = url + ";encrypt=true";
+            }
+            if (!url.contains("trustServerCertificate=")) {
+                url = url + ";trustServerCertificate=true";
+            }
+            return url;
+        }
+
+        String targetHost = (host != null && !host.trim().isEmpty()) ? host.trim() : null;
+        String targetPort = (port != null && !port.trim().isEmpty()) ? port.trim() : null;
+        String targetInstance = (instanceName != null && !instanceName.trim().isEmpty()) ? instanceName.trim() : null;
+
+        if (serverInstance != null && !serverInstance.trim().isEmpty()) {
+            String inst = serverInstance.trim();
+            if (inst.contains(";") || inst.contains("=") || inst.contains(" ") || inst.contains("\0") || inst.contains("{") || inst.contains("}")) {
+                throw new IllegalArgumentException("Server instance contains invalid delimiter characters: " + inst);
+            }
+            if (inst.equals(".") || inst.equalsIgnoreCase("(local)") || inst.equalsIgnoreCase("localhost") || inst.equalsIgnoreCase("MSSQLSERVER")) {
+                targetHost = "localhost";
+                if (targetPort == null) targetPort = "1433";
+            } else if (inst.matches("^([a-zA-Z0-9\\.\\-_]+)[,:]([0-9]{1,5})$")) {
+                String[] parts = inst.split("[,:]");
+                targetHost = parts[0];
+                targetPort = parts[1];
+            } else if (inst.matches("^([a-zA-Z0-9\\.\\-_]+)\\\\([a-zA-Z0-9_\\-]+)[,:]([0-9]{1,5})$")) {
+                int slash = inst.indexOf('\\');
+                targetHost = inst.substring(0, slash);
+                String rest = inst.substring(slash + 1);
+                String[] parts = rest.split("[,:]");
+                targetInstance = parts[0];
+                targetPort = parts[1];
+            } else if (inst.matches("^([a-zA-Z0-9\\.\\-_]+)\\\\([a-zA-Z0-9_\\-]+)$")) {
+                throw new IllegalArgumentException("Unported named instance rejected: '" + inst + "'. Explicit TCP port required (e.g. host\\instance,port).");
+            } else if (inst.matches("^[a-zA-Z0-9\\.\\-_]+$")) {
+                targetHost = inst;
+                if (targetPort == null) targetPort = "1433";
+            } else {
+                throw new IllegalArgumentException("Invalid or ambiguous server instance format: " + inst);
+            }
+        }
+
+        if (targetHost == null || targetHost.isEmpty()) {
+            throw new IllegalStateException("JDBC target host not specified. Provide -Dqa.jdbc.url or -Dqa.server.instance.");
+        }
+        if (targetHost.equals(".") || targetHost.equalsIgnoreCase("(local)")) {
+            targetHost = "localhost";
+        }
+        if (!targetHost.matches("^[a-zA-Z0-9\\.\\-_]+$")) {
+            throw new IllegalArgumentException("Target host contains disallowed characters: " + targetHost);
+        }
+        if (targetInstance != null && !targetInstance.matches("^[a-zA-Z0-9_\\-]+$")) {
+            throw new IllegalArgumentException("Target instance contains disallowed characters: " + targetInstance);
+        }
+
+        StringBuilder url = new StringBuilder("jdbc:sqlserver://").append(targetHost);
+        if (targetPort != null && !targetPort.isEmpty()) {
+            int p;
+            try {
+                p = Integer.parseInt(targetPort);
+            } catch (NumberFormatException nfe) {
+                throw new IllegalArgumentException("Invalid TCP port number: " + targetPort);
+            }
+            if (p < 1 || p > 65535) {
+                throw new IllegalArgumentException("TCP port out of range (1-65535): " + p);
+            }
+            url.append(":").append(p);
+        }
+        if (targetInstance != null && !targetInstance.isEmpty()) {
+            url.append(";instanceName=").append(targetInstance);
+        }
+        url.append(";databaseName=").append(cleanDb);
+        url.append(";encrypt=true;trustServerCertificate=true");
+        return url.toString();
+    }
+
+    /**
+     * Validates that connected SQL Server identity matches expected SQLCMD target.
+     * Fails closed on any identity mismatch or missing expected value before test mutations occur.
+     */
+    public static void validateServerIdentity(
+            String actualServerName, String actualInstanceName, String actualMachineName, Integer actualProcessId,
+            String expectedServerName, String expectedInstanceName, String expectedMachineName, Integer expectedProcessId) {
+        if (expectedServerName == null || expectedServerName.trim().isEmpty()) {
+            throw new SecurityException("Expected ServerName is missing or empty.");
+        }
+        if (expectedInstanceName == null || expectedInstanceName.trim().isEmpty()) {
+            throw new SecurityException("Expected InstanceName is missing or empty.");
+        }
+        if (expectedMachineName == null || expectedMachineName.trim().isEmpty()) {
+            throw new SecurityException("Expected MachineName is missing or empty.");
+        }
+        if (expectedProcessId == null || expectedProcessId <= 0) {
+            throw new SecurityException("Expected ProcessID is missing or invalid: " + expectedProcessId);
+        }
+        if (actualServerName == null || !actualServerName.equalsIgnoreCase(expectedServerName.trim())) {
+            throw new SecurityException("SQL Server identity mismatch: expected ServerName '" +
+                    expectedServerName.trim() + "' but connected to '" + actualServerName + "'");
+        }
+        if (actualInstanceName == null || !actualInstanceName.equalsIgnoreCase(expectedInstanceName.trim())) {
+            throw new SecurityException("SQL Server identity mismatch: expected InstanceName '" +
+                    expectedInstanceName.trim() + "' but connected to '" + actualInstanceName + "'");
+        }
+        if (actualMachineName == null || !actualMachineName.equalsIgnoreCase(expectedMachineName.trim())) {
+            throw new SecurityException("SQL Server identity mismatch: expected MachineName '" +
+                    expectedMachineName.trim() + "' but connected to '" + actualMachineName + "'");
+        }
+        if (actualProcessId == null || !actualProcessId.equals(expectedProcessId)) {
+            throw new SecurityException("SQL Server identity mismatch: expected ProcessID '" +
+                    expectedProcessId + "' but connected to '" + actualProcessId + "'");
+        }
+    }
+
+    /**
      * Negative guard: Rejects any attempt to target an unverified or protected database before mutation.
      */
     public static void validateTargetOrThrow(String dbName, String marker) {
@@ -174,6 +310,98 @@ public class Tv2JdbcIntegrationTest {
             check(true, "Negative guard rejected missing environment credentials (no SQL mutation)");
         }
 
+        // Endpoint and identity validation negative guards
+        try {
+            validateServerIdentity("SERVER_A", "MSSQLSERVER", "MACHINE_A", 100, null, "MSSQLSERVER", "MACHINE_A", 100);
+            throw new AssertionError("Guard failed to reject missing expected server name");
+        } catch (SecurityException ex) {
+            check(true, "Negative guard rejected missing expected server name");
+        }
+        try {
+            validateServerIdentity("SERVER_A", "MSSQLSERVER", "MACHINE_A", 100, "SERVER_A", "", "MACHINE_A", 100);
+            throw new AssertionError("Guard failed to reject missing expected instance name");
+        } catch (SecurityException ex) {
+            check(true, "Negative guard rejected missing expected instance name");
+        }
+        try {
+            validateServerIdentity("SERVER_A", "MSSQLSERVER", "MACHINE_A", 100, "SERVER_A", "MSSQLSERVER", "  ", 100);
+            throw new AssertionError("Guard failed to reject missing expected machine name");
+        } catch (SecurityException ex) {
+            check(true, "Negative guard rejected missing expected machine name");
+        }
+        try {
+            validateServerIdentity("SERVER_A", "MSSQLSERVER", "MACHINE_A", 100, "SERVER_A", "MSSQLSERVER", "MACHINE_A", 0);
+            throw new AssertionError("Guard failed to reject invalid expected process ID");
+        } catch (SecurityException ex) {
+            check(true, "Negative guard rejected invalid expected process ID");
+        }
+        try {
+            validateServerIdentity("SERVER_A", "MSSQLSERVER", "MACHINE_A", 100, "SERVER_B", "MSSQLSERVER", "MACHINE_A", 100);
+            throw new AssertionError("Guard failed to reject server name mismatch");
+        } catch (SecurityException ex) {
+            check(true, "Negative guard rejected server name mismatch");
+        }
+        try {
+            validateServerIdentity("SERVER_A", "MSSQLSERVER", "MACHINE_A", 100, "SERVER_A", "SQLEXPRESS", "MACHINE_A", 100);
+            throw new AssertionError("Guard failed to reject instance name mismatch");
+        } catch (SecurityException ex) {
+            check(true, "Negative guard rejected instance name mismatch");
+        }
+        try {
+            validateServerIdentity("SERVER_A", "MSSQLSERVER", "MACHINE_A", 100, "SERVER_A", "MSSQLSERVER", "MACHINE_B", 100);
+            throw new AssertionError("Guard failed to reject machine name mismatch");
+        } catch (SecurityException ex) {
+            check(true, "Negative guard rejected machine name mismatch");
+        }
+        try {
+            validateServerIdentity("SERVER_A", "MSSQLSERVER", "MACHINE_A", 100, "SERVER_A", "MSSQLSERVER", "MACHINE_A", 200);
+            throw new AssertionError("Guard failed to reject process ID mismatch");
+        } catch (SecurityException ex) {
+            check(true, "Negative guard rejected process ID mismatch");
+        }
+        try {
+            resolveJdbcUrl(null, "invalid:::instance", null, null, null, "PRJ_Fix_QA_20261015_000000_12345678");
+            throw new AssertionError("Guard failed to reject invalid server instance format");
+        } catch (IllegalArgumentException ex) {
+            check(true, "Negative guard rejected invalid server instance format");
+        }
+        try {
+            resolveJdbcUrl(null, "localhost:99999", null, null, null, "PRJ_Fix_QA_20261015_000000_12345678");
+            throw new AssertionError("Guard failed to reject out-of-range port");
+        } catch (IllegalArgumentException ex) {
+            check(true, "Negative guard rejected out-of-range TCP port");
+        }
+        try {
+            resolveJdbcUrl(null, "localhost\\SQLEXPRESS", null, null, null, "PRJ_Fix_QA_20261015_000000_12345678");
+            throw new AssertionError("Guard failed to reject unported named instance");
+        } catch (IllegalArgumentException ex) {
+            check(true, "Negative guard rejected unported named instance");
+        }
+        try {
+            resolveJdbcUrl(null, "localhost;databaseName=evil;", null, null, null, "PRJ_Fix_QA_20261015_000000_12345678");
+            throw new AssertionError("Guard failed to reject server instance delimiter injection");
+        } catch (IllegalArgumentException ex) {
+            check(true, "Negative guard rejected server instance delimiter injection");
+        }
+        try {
+            resolveJdbcUrl(null, "localhost:1433", null, null, null, "PRJ_Fix_QA_20261015_000000_12345678;DROP TABLE x;");
+            throw new AssertionError("Guard failed to reject database name delimiter injection");
+        } catch (IllegalArgumentException ex) {
+            check(true, "Negative guard rejected database name delimiter injection");
+        }
+        try {
+            resolveJdbcUrl(null, null, null, null, null, "PRJ_Fix_QA_20261015_000000_12345678");
+            throw new AssertionError("Guard failed to reject missing endpoint");
+        } catch (IllegalStateException ex) {
+            check(true, "Negative guard rejected missing endpoint configuration");
+        }
+        String testResolvedUrl = resolveJdbcUrl(null, ".", null, null, null, "PRJ_Fix_QA_20261015_000000_12345678");
+        check(testResolvedUrl.contains("localhost:1433") && testResolvedUrl.contains("databaseName=PRJ_Fix_QA_20261015_000000_12345678"),
+                "Negative guard confirmed default local instance resolves to localhost:1433 with target database");
+        String testNamedUrl = resolveJdbcUrl(null, "127.0.0.1\\QA_INST,14333", null, null, null, "PRJ_Fix_QA_20261015_000000_12345678");
+        check(testNamedUrl.contains("127.0.0.1:14333") && testNamedUrl.contains("instanceName=QA_INST"),
+                "Negative guard confirmed ported named instance resolves with explicit TCP port and instanceName");
+
         if (Boolean.getBoolean("qa.guards.only")) {
             System.out.println("\nAll negative guard tests passed successfully.");
             return;
@@ -196,8 +424,15 @@ public class Tv2JdbcIntegrationTest {
 
         String password = resolvePasswordOrThrow(System.getenv("TV2_QA_PASSWORD"), System.getenv("DB_PASSWORD"));
 
-        String jdbcUrl = "jdbc:sqlserver://localhost:1433;databaseName=" + dbName + ";encrypt=true;trustServerCertificate=true";
+        String explicitUrl = System.getProperty("qa.jdbc.url", System.getProperty("db.url"));
+        String serverInstance = System.getProperty("qa.server.instance");
+        String host = System.getProperty("qa.server.host");
+        String port = System.getProperty("qa.server.port");
+        String instanceName = System.getProperty("qa.server.instanceName");
+        String jdbcUrl = resolveJdbcUrl(explicitUrl, serverInstance, host, port, instanceName, dbName);
         System.setProperty("db.url", jdbcUrl);
+        System.setProperty("qa.jdbc.url", jdbcUrl);
+        check(true, "Shared endpoint resolved JDBC URL: " + jdbcUrl);
 
         // Authenticate as login_HRManager using externally supplied in-memory credential
         DatabaseConnection.authenticated("login_HRManager", password);
@@ -214,10 +449,34 @@ public class Tv2JdbcIntegrationTest {
             try (Connection conn = DatabaseConnection.getConnection()) {
                 check(conn != null, "Connected via DatabaseConnection as login_HRManager");
                 try (Statement stmt = conn.createStatement()) {
-                    try (ResultSet rs = stmt.executeQuery("SELECT ORIGINAL_LOGIN() AS Lg, DB_NAME() AS Db")) {
+                    try (ResultSet rs = stmt.executeQuery("SELECT " +
+                            "CAST(SERVERPROPERTY('ServerName') AS VARCHAR(128)) AS SrvName, " +
+                            "CAST(COALESCE(SERVERPROPERTY('InstanceName'), 'MSSQLSERVER') AS VARCHAR(128)) AS InstName, " +
+                            "CAST(SERVERPROPERTY('MachineName') AS VARCHAR(128)) AS MachName, " +
+                            "CAST(SERVERPROPERTY('ProcessID') AS INT) AS ProcId, " +
+                            "ORIGINAL_LOGIN() AS Lg, " +
+                            "DB_NAME() AS Db")) {
                         if (rs.next()) {
-                            check("login_HRManager".equalsIgnoreCase(rs.getString("Lg")), "Verified ORIGINAL_LOGIN is login_HRManager");
-                            check(dbName.equalsIgnoreCase(rs.getString("Db")), "Verified connected DB is " + dbName);
+                            String actualSrv = rs.getString("SrvName");
+                            String actualInst = rs.getString("InstName");
+                            String actualMach = rs.getString("MachName");
+                            int actualProcId = rs.getInt("ProcId");
+                            String lg = rs.getString("Lg");
+                            String db = rs.getString("Db");
+
+                            check("login_HRManager".equalsIgnoreCase(lg), "Verified ORIGINAL_LOGIN is login_HRManager");
+                            check(dbName.equalsIgnoreCase(db), "Verified connected DB is " + dbName);
+
+                            String expSrv = System.getProperty("qa.expected.server.name");
+                            String expInst = System.getProperty("qa.expected.instance.name");
+                            String expMach = System.getProperty("qa.expected.machine.name");
+                            String expProc = System.getProperty("qa.expected.process.id");
+                            Integer expPid = (expProc != null && !expProc.trim().isEmpty()) ? Integer.parseInt(expProc.trim()) : null;
+
+                            validateServerIdentity(actualSrv, actualInst, actualMach, actualProcId, expSrv, expInst, expMach, expPid);
+                            check(true, "Verified SQLCMD and JDBC connected to identical SQL Server (" + actualSrv + ", PID=" + actualProcId + ")");
+                        } else {
+                            throw new SecurityException("Failed to query SQL Server identity.");
                         }
                     }
 
