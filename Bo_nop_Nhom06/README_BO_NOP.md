@@ -1,13 +1,14 @@
-# Bộ nộp Nhóm 06 — đã nhận TV4 và TV5
+# Bộ nộp Nhóm 06 — đã nhận TV1, TV4 và TV5
 
-Source Java/SQL được đóng gói ngày **11/10/2026**, từ `main` commit **f2a41f7c9bfc0b911613ed4355ccc79f8281ddd5**. TV5: **Trần Đức Anh — 24110155**. Ngày **13/10/2026** nhận bộ TV4 **Nguyễn Quang Vinh — 24110385** từ PR #41 (đã merge); source dùng thu minh chứng TV4 ở `62223d5` có Java/SQL khớp snapshot hiện tại. Bộ này có source, JDBC, SQL tái tạo và evidence TV4/TV5. **Bộ nộp nhóm chưa hoàn tất**: còn chờ ERD TV1, benchmark/4 actual plans CHAMCONG TV2, slide/evidence TV1–TV3 và rehearsal chung. Hai deck TV4/TV5 gồm tổng cộng 6 slide riêng, chưa thay deck nhóm ≤15 slide.
+Source Java/SQL được đóng gói ngày **11/10/2026**, từ `main` commit **f2a41f7c9bfc0b911613ed4355ccc79f8281ddd5**. TV5: **Trần Đức Anh — 24110155**. Ngày **13/10/2026** nhận bộ TV4 **Nguyễn Quang Vinh — 24110385** từ PR #41. Ngày **15/10/2026** nhận bộ TV1 **Nguyễn Minh Trí — 24110359** (ERD 10 bảng, 8 ảnh minh chứng, log test nhân sự 7/7 PASS, log benchmark 75→10). Bộ này có source, JDBC, SQL tái tạo và evidence TV1/TV4/TV5. **Bộ nộp nhóm chưa hoàn tất**: còn chờ benchmark/4 actual plans CHAMCONG TV2, slide/evidence TV2–TV3 và rehearsal chung.
 
 | Thư mục | Nội dung |
 |---|---|
 | [source](source/README.md) | Java main/test, template URL, JDBC JAR, launcher/provision/test runner |
 | [database](database/README.md) | Module 01→05, seed 06 tùy chọn, demo account manifest và script kiểm thử |
-| [evidence/TV5](evidence/TV5/README_EVIDENCE.md) | Log/plan gốc đã chọn, phạm vi đo và danh mục SHA256 |
+| [bộ TV1](evidence/TV1/README_EVIDENCE.md) | ERD 10 bảng hiện hành, 8 ảnh minh chứng, log test nhân sự 7/7 PASS, log benchmark 75→10 logical reads |
 | [bộ TV4](evidence/TV4/README_EVIDENCE.md) | Word phần TV4 đã sửa bảng, slide 10–12 và 13 file minh chứng; giữ cấu trúc `Minh_chung/` để tham chiếu trong tài liệu mở được |
+| [evidence/TV5](evidence/TV5/README_EVIDENCE.md) | Log/plan gốc đã chọn, phạm vi đo và danh mục SHA256 |
 | [evidence](evidence/README_EVIDENCE.md) | Trạng thái bàn giao từng thành viên |
 | [report/Word](report/Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx), [rà soát báo cáo](report/TV5_Ra_Soat_Bao_Cao.md) | Bản Word sao nguyên byte và kết quả đối chiếu; chưa cung cấp PDF từ bản Word cuối |
 | [slide TV5 13–15](slides/TV5_Slide_13-15.pptx), [README slide](slides/README_SLIDES.md) | Deck editable 3 slide riêng TV5; deck nhóm ≤15 slide còn chờ |

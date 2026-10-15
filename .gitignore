@@ -1,4 +1,4 @@
-﻿# Java / IDE
+# Java / IDE
 *.class
 target/
 out/
@@ -34,4 +34,5 @@ application.properties
 # Keep selected submission evidence; ZIP duplicates this tracked directory.
 !Bo_nop_Nhom06/evidence/TV5/**/*.log
 !Bo_nop_Nhom06/evidence/TV4/**/*.log
+!Bo_nop_Nhom06/evidence/TV1/**/*.log
 /Bo_nop_Nhom06_*.zip
