@@ -1,8 +1,8 @@
-# Bộ nộp Nhóm 06 — đã nhận TV2, TV4, TV5; có deck chung15
+# Bộ nộp Nhóm 06 — đã nhận TV2, TV3, TV4, TV5; có deck chung 15 slide
 
-Source Java/SQL được đóng gói ngày **11/10/2026**, từ `main` commit **f2a41f7c9bfc0b911613ed4355ccc79f8281ddd5**. TV5: **Trần Đức Anh — 24110155**. Ngày **13/10/2026** nhận bộ TV4 **Nguyễn Quang Vinh — 24110385** từ PR #41 (đã merge); source dùng thu minh chứng TV4 ở `62223d5` có Java/SQL khớp snapshot hiện tại. Bộ này có source, JDBC, SQL tái tạo và evidence TV4/TV5. **Bộ nộp nhóm chưa hoàn tất**: còn chờ ERD/logs TV1, TV3 sửa/chốt bàn giao, máy nhận và rehearsal. [Deck chung15](slides/Nhom06_ThuyetTrinh_15_Slides.pptx) do TV5 tổng hợp đã kiểm native/font/notes; không thay ownerTV1/TV3 nghiệm thu cuối.
+Source Java/SQL được đóng gói ngày **11/10/2026**, từ `main` commit **f2a41f7c9bfc0b911613ed4355ccc79f8281ddd5**, có các bản cập nhật TV5 13/10 ghi bên dưới. TV5: **Trần Đức Anh — 24110155**. Đã nhận TV2, TV4 và ngày **15/10/2026** tích hợp [bộ TV3](evidence/TV3/README_EVIDENCE.md) từ PR #43/#48. **Bộ nộp nhóm chưa nghiệm thu cuối**: còn ERD/log/plan và xác nhận slide 1–3 của TV1, máy nhận, Windows DPI thật và rehearsal. [Deck chung 15 slide](slides/Nhom06_ThuyetTrinh_15_Slides.pptx) đã nhận notes TV3; không thay xác nhận phần trình bày thực tế của từng người.
 
-**Cập nhật TV5 13/10:** source module 05/function tiền, benchmark, runner và thông báo lỗi GUI đã sửa từ working tree dựa trên `a7e1096`; Word đồng bộ mô tả tiền. SHA-256 trong provenance xác định file cụ thể, chưa gán thay đổi này cho một commit mới. Có [money/benchmark mới](evidence/TV5/verification-20261013/summary.txt), [kiểm package standalone](evidence/TV5/package-verification-20261013/summary.txt) và [GUI QA](evidence/TV5/gui-20261013/write-outage-fixed.png). Source TV4 giữ nguyên; evidence TV4 thu trước thay đổi tiền TV5, không tự nhận đã kiểm miền tiền mới. PR43 của TV3 đã review nhưng chưa nghiệm thu/merge vì notes, Word và provenance cần sửa.
+**Cập nhật TV5 13/10:** source module 05/function tiền, benchmark, runner và thông báo lỗi GUI đã sửa từ working tree dựa trên `a7e1096`; Word đồng bộ mô tả tiền. SHA-256 trong provenance xác định file cụ thể, chưa gán thay đổi này cho một commit mới. Có [money/benchmark mới](evidence/TV5/verification-20261013/summary.txt), [kiểm package standalone](evidence/TV5/package-verification-20261013/summary.txt) và [GUI QA](evidence/TV5/gui-20261013/write-outage-fixed.png). Source TV4 giữ nguyên; evidence TV4 thu trước thay đổi tiền TV5, không tự nhận đã kiểm miền tiền mới. PR #43 đã merge; Word TV3 đã hiệu đính qua PR #48, log/plan/ảnh và PPTX gốc giữ nguyên. Biên nhận TV3 phân biệt commit bàn giao với commit SQL chưa xác minh.
 
 **Follow-up TV5:** [GUI87 + focusedphone7](evidence/TV5/gui-followup-20261013/README.md), [age fresh QA](evidence/TV5/age-boundaries-20261013/README.md), current offline257=88+104+45+20. Admin full/denied, report+in-flight outage, session/period/repeat, CRUD TV1, batch/adjustTV2, PC/KT TV3 và payrolllifecycle đã kiểm tự động. Word61/55 và deck15 có native QA; Windows DPI thật/máy nhận chưa kiểm. [Biên nhận TV2](evidence/TV2/README_TV5_RECEIPT.md) giữ nguyên 52 file PR44 đã merge và ghi hiệu đính sử dụng v3 của TV5; không sửa bản bàn giao gốc. CHECK tuổi module01 create-only, không tự migrate constraint database cũ.
 
@@ -11,10 +11,11 @@ Source Java/SQL được đóng gói ngày **11/10/2026**, từ `main` commit **
 | [source](source/README.md) | Java main/test, template URL, JDBC JAR, launcher/provision/test runner |
 | [database](database/README.md) | Module 01→05, seed 06 tùy chọn, demo account manifest và script kiểm thử |
 | [evidence/TV5](evidence/TV5/README_EVIDENCE.md) | Log/plan gốc đã chọn, phạm vi đo và danh mục SHA256 |
-| [bộ TV4](evidence/TV4/README_EVIDENCE.md) | Word phần TV4 đã sửa bảng, slide 10–12 và 13 file minh chứng; giữ cấu trúc `Minh_chung/` để tham chiếu trong tài liệu mở được |
+| [bộ TV3](evidence/TV3/README_EVIDENCE.md) | 13 file bàn giao: Word hiệu đính PR #48, slide 7–9, hai log, một plan và tám ảnh lịch sử; nguồn/hash trong SHA256_TV3.csv |
+| [bộ TV4](evidence/TV4/README_EVIDENCE.md) | Word phần TV4 đã sửa bảng, slide 10–12 và 13 file minh chứng; giữ cấu trúc `Minh_chung/` để mở tham chiếu |
 | [evidence](evidence/README_EVIDENCE.md) | Trạng thái bàn giao từng thành viên |
 | [report/Word](report/Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx), [rà soát báo cáo](report/TV5_Ra_Soat_Bao_Cao.md) | Bản Word sao nguyên byte và kết quả đối chiếu; chưa cung cấp PDF từ bản Word cuối |
-| [slide TV5 13–15](slides/TV5_Slide_13-15.pptx), [README slide](slides/README_SLIDES.md) | Deck editable 3 slide riêng TV5; deck chung15 đã có, ownerTV1/TV3 final còn chờ |
+| [slide TV5 13–15](slides/TV5_Slide_13-15.pptx), [README slide](slides/README_SLIDES.md) | Deck riêng TV5 và deck chung 15 slide; đã nhận TV2/TV3/TV4, TV1 còn chờ xác nhận |
 | [TV5_TAP_DEMO](TV5_TAP_DEMO.md) | Kịch bản tập và bảng kết quả trống; chưa nhận là rehearsal đã PASS |
 
 ## Cài và chạy trên máy khác

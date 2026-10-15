@@ -1,12 +1,12 @@
 # TV5 — Checklist hoàn thiện dự án theo rubric
 
-**Trần Đức Anh — 24110155 · Nhóm 06 · Cập nhật 13/10/2026**
+**Trần Đức Anh — 24110155 · Nhóm 06 · Cập nhật 15/10/2026**
 
 Phạm vi: phần SQL/Java của TV5, kiểm thử tích hợp và tổng hợp bộ nộp. Chưa tính luyện nói, vấn đáp hoặc chấm điểm thuyết trình; slide vẫn được theo dõi như một sản phẩm cần bàn giao. Trạng thái hoàn tất được đánh dấu theo minh chứng; các mục còn lại vẫn chờ kiểm/nghiệm thu.
 
-Căn cứ: [phân công](Ke_hoach_phan_cong_Project_DBMS_Nhom06.md), [hướng dẫn hoàn thiện bộ nộp](HUONG_DAN_HOAN_THIEN_BO_NOP.md), [GUI QA](GUI_TEST_REPORT_20261009.md), [evidence TV5](../Bo_nop_Nhom06/evidence/TV5/README_EVIDENCE.md) và [trạng thái bộ nộp](../Bo_nop_Nhom06/README_BO_NOP.md). Source local đối chiếu ở `a7e1096`. Trọng số áp dụng cho cả nhóm; checklist không quy định mức trừ điểm từng việc.
+Căn cứ: [phân công](Ke_hoach_phan_cong_Project_DBMS_Nhom06.md), [hướng dẫn hoàn thiện bộ nộp](HUONG_DAN_HOAN_THIEN_BO_NOP.md), [GUI QA](GUI_TEST_REPORT_20261009.md), [evidence TV5](../Bo_nop_Nhom06/evidence/TV5/README_EVIDENCE.md) và [trạng thái bộ nộp](../Bo_nop_Nhom06/README_BO_NOP.md). Tích hợp 15/10 dựa trên `a98371d`; SQL/Java giữ nguyên. Trọng số áp dụng cho cả nhóm; checklist không quy định mức trừ điểm từng việc.
 
-**Tiến độ 13/10:** TV5-01/02 SQL PASS; GUI tích hợp87 assertions tự động và focusedphone7; birthday/phone fixes đã kiểm, Word61/55 và deck chung15 đã render. TV2 evidence đã nhận; máy nhận/WindowsDPI thật/ownerTV1–TV3 còn chờ. Xem [kết quả và việc còn chờ](TV5_THUC_HIEN_20261013.md). Các mục chưa nghiệm thu không được đánh dấu hoàn tất toàn bộ.
+**Tiến độ 15/10:** đã tích hợp TV2/TV3/TV4/TV5, cập nhật Word/deck và kiểm package theo [biên bản hiện tại](TV5_THUC_HIEN_20261015.md). Các kiểm SQL/GUI 13/10 giữ nguyên phạm vi; còn TV1, máy nhận, Windows DPI thật, rehearsal và PDF cuối nếu yêu cầu.
 
 ## 1. Đã có — giữ lại, chỉ kiểm lại phần bị ảnh hưởng khi sửa
 
@@ -88,16 +88,17 @@ Các case dưới được chạy bằng Swing/handler/JDBC thật, dialog tự 
 
 - [ ] TV1: xác nhận ERD 10 bảng đang có trong Word, chọn/bàn giao hình cuối và log/plan nhân sự; không dùng ảnh ERD cũ 9 bảng.
 - [x] TV2: nhận benchmark CHAMCONG mới gồm Messages, Results, bốn actual plans và summary; không dùng số lịch sử 574→5 làm kết quả mới.
-- [ ] TV3: nhận bộ log/plan phụ cấp–khấu trừ đã chọn và rà nội dung báo cáo module.
-- [ ] Kiểm file thực có, ngày/môi trường, query/testcase, kết quả và giới hạn; thay marker chờ bàn giao chỉ sau khi nhận đủ.
+- [x] TV3: nhận 13 file PR #43/#48 vào package; kiểm byte/hash, log/plan, Word và notes; giữ giới hạn provenance theo [biên nhận](../Bo_nop_Nhom06/evidence/TV3/README_EVIDENCE.md).
+- [ ] Hoàn tất kiểm file/ngày/môi trường/query/giới hạn cho toàn nhóm. TV2/TV3/TV4/TV5 đã có biên nhận, marker TV3 đã thay; TV1 còn chờ.
 
 **Hoàn tất khi:** evidence TV1–TV3 mở được trong bộ nộp, có nguồn rõ ràng; không bắt chạy lại log đã hợp lệ chỉ để đổi ngày.
 
 ### TV5-09 — Chốt Word và deck chung
 
-Đã có deck15 do TV5 tổng hợp theo guide/source và đầu vào TV2/TV4/TV5, native render/notes/font PASS. Việc nhận/chốt owner slidesTV1/TV3 còn mở; deck tổng hợp không thay biên nhận đó.
+Đã có deck 15 slide, nhận đầu vào TV2/TV3/TV4/TV5; notes TV3 được tích hợp 15/10, đã kiểm native render/notes/font. TV1 còn chờ xác nhận phần 1–3; việc tập nói của mọi thành viên thuộc rehearsal chung.
 
-- [ ] Nhận slide 1–9 của TV1–TV3, ghép với phần TV4 10–12 và TV5 13–15 thành một deck tối đa 15 slide; kiểm thứ tự, theme, font, notes và link.
+- [x] Nhận TV2 slide 4–6, TV3 slide 7–9, TV4 slide 10–12 và phần TV5; deck chung đúng 15 slide, theme/notes/link và render đã kiểm.
+- [ ] TV1 xác nhận slide 1–3/ERD hoặc bàn giao bản chỉnh; kiểm lại đúng phần bị ảnh hưởng sau khi nhận.
 - [x] Cập nhật Word theo source/số đo đã xác minh; giữ đúng ownership, giải thích 3NF và snapshot, phân biệt minh chứng hiện hành với ảnh/số lịch sử.
 - [x] Kiểm mục lục, số trang, bảng/hình/link và độ dài 50–100 trang nội dung trên bản cuối. Không tự cộng bốn trang báo cáo TV4 vào Word nhóm.
 - [ ] Xuất và kiểm PDF nếu hình thức nộp yêu cầu; năm guide Markdown không thay deck chung.
@@ -120,4 +121,4 @@ Các case dưới được chạy bằng Swing/handler/JDBC thật, dialog tự 
 3. TV5-06 để phát hiện thiếu sót cài đặt sớm.
 4. Nhận đủ đầu ra TV5-08, hoàn thiện TV5-09 và nghiệm thu TV5-10.
 
-Đánh dấu từng việc sau khi có đầu ra thực tế. Đã sửa source/chạy QA mới theo báo cáo tiến độ 13/10; chưa commit hoặc merge trong lượt này.
+Đánh dấu từng việc sau khi có đầu ra thực tế. Xem [tiến độ tích hợp 15/10](TV5_THUC_HIEN_20261015.md) cho Word/deck, package và các việc còn chờ.

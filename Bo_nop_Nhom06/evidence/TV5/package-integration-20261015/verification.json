@@ -1,0 +1,82 @@
+{
+  "date_local": "2026-10-15",
+  "base_snapshot_commit": "a98371d40b23cd14282dbc65972f1cf773d98bfb",
+  "scope": "TV3 handoff integration and same-machine standalone offline package verification; no live SQL or manual demo",
+  "compiled_java_sources": 54,
+  "java_target_release": 11,
+  "offline_assertions": {
+    "SecurityRegressionTest": 104,
+    "GuiQaRegressionTest": 88,
+    "LightThemeRegressionTest": 45,
+    "LoginChipRegressionTest": 20
+  },
+  "word_native_render": {
+    "before_pages": 61,
+    "after_pages": 61,
+    "changed_rendered_pages": [
+      2,
+      53,
+      55,
+      58,
+      60,
+      61
+    ]
+  },
+  "word_content_pages": 55,
+  "word_sha256": "534e5ab8cfa34879f54d118e9abc33ec6ff4c06ca864bbfdfdbba5a0d8409eb7",
+  "powerpoint_native_render": {
+    "before_pages": 15,
+    "after_pages": 15,
+    "changed_rendered_pages": []
+  },
+  "pptx_changed_parts": [
+    "ppt/notesSlides/notesSlide7.xml",
+    "ppt/notesSlides/notesSlide8.xml",
+    "ppt/notesSlides/notesSlide9.xml"
+  ],
+  "pptx_sha256": "e26d60798d5a099678d28461587b6f501bf4024fe00e3ce35472658b2088a35f",
+  "tv3_payload_files": 13,
+  "unchanged_source_and_database_files": 81,
+  "recorded_outputs": [
+    {
+      "PackagePath": "evidence/TV5/package-integration-20261015/Java_Security.log",
+      "OriginalRepositoryPath": "build/tv5-integrate-tv3/standalone/Bo_nop_Nhom06/source/build/test-results/Java_Verification_20261015_132326_189.log",
+      "SHA256": "b0e82e728f178423ab1f320efee09d6dd18e8b81130abb91acec828b23844143"
+    },
+    {
+      "PackagePath": "evidence/TV5/package-integration-20261015/Java_GuiQa.log",
+      "OriginalRepositoryPath": "build/tv5-integrate-tv3/standalone/GuiQaRegressionTest.log",
+      "SHA256": "d2db3839b80956077b2efe9b7c50f7c159fb4fc774229dbc0fde81f90f81f0ee"
+    },
+    {
+      "PackagePath": "evidence/TV5/package-integration-20261015/Java_LightTheme.log",
+      "OriginalRepositoryPath": "build/tv5-integrate-tv3/standalone/LightThemeRegressionTest.log",
+      "SHA256": "702787f0434948b23fd7e2de2a5dab523ac679737e081242b688a82aedf7c2da"
+    },
+    {
+      "PackagePath": "evidence/TV5/package-integration-20261015/Java_LoginChip.log",
+      "OriginalRepositoryPath": "build/tv5-integrate-tv3/standalone/LoginChipRegressionTest.log",
+      "SHA256": "12c2de79f1c3a253834b7f9d90e05ba7c461a965673c0008ee6f2996beeb3562"
+    },
+    {
+      "PackagePath": "evidence/TV5/package-integration-20261015/deck-validation.json",
+      "OriginalRepositoryPath": "build/tv5-integrate-tv3/deck-validation.json",
+      "SHA256": "7b9e038499ac600d73b898be6dd677e244b77f633507feca1c6b24e3288943e8"
+    }
+  ],
+  "live_sql_run": false,
+  "other_machine_test": false,
+  "windows_dpi_test": false,
+  "manual_rehearsal": false,
+  "package_audit": {
+    "inventory_rows": {
+      "source/SHA256_INVENTORY.csv": 511,
+      "SHA256_MANIFEST.csv": 537
+    },
+    "tv3_payload_verified": 13,
+    "original_tv2_tv4_tv5_files_unchanged": 396,
+    "package_relative_links_checked": 273,
+    "broken_package_links": [],
+    "package_files": 538
+  }
+}

@@ -1,12 +1,12 @@
 # TV5 — Hướng dẫn trình bày và thuyết trình cá nhân
 
-**Trần Đức Anh · MSSV 24110155 · Nhóm 06 · Cập nhật 14/10/2026**
+**Trần Đức Anh · MSSV 24110155 · Nhóm 06 · Cập nhật 15/10/2026**
 
-Cập nhật trạng thái 14/10: [deck chung 15 slide](../Bo_nop_Nhom06/slides/Nhom06_ThuyetTrinh_15_Slides.pptx) đã ghép, gồm TV2 slide 4–6 và benchmark canonical v3. TV1/TV3 vẫn cần xác nhận nội dung; rehearsal chung chưa chạy.
+Cập nhật trạng thái 15/10: [deck chung 15 slide](../Bo_nop_Nhom06/slides/Nhom06_ThuyetTrinh_15_Slides.pptx) đã nhận notes TV3 theo PR #43/#48; TV2 giữ canonical v3. TV1 còn chờ xác nhận phần 1–3; rehearsal chung chưa chạy.
 
-Tiến độ bổ sung 13/10: [checklist TV5](TV5_TASKLIST_HOAN_THIEN.md) và [kết quả thực hiện](TV5_THUC_HIEN_20261013.md) ghi sửa kiểu tiền, benchmark mới 126→13/833 dòng và GUI connection/role/permission. Các số đo 07–09/10 trong lời nói mẫu bên dưới vẫn thuộc lượt lịch sử; không thay bằng số mới khác fixture. Phần TV3 vẫn cần Đạt xác nhận notes/Word/provenance của mình trước nghiệm thu lời trình bày.
+Tiến độ bổ sung 13/10: [checklist TV5](TV5_TASKLIST_HOAN_THIEN.md) và [kết quả thực hiện](TV5_THUC_HIEN_20261013.md) ghi sửa kiểu tiền, benchmark mới 126→13/833 dòng và GUI connection/role/permission. Các số đo 07–09/10 trong lời nói mẫu bên dưới vẫn thuộc lượt lịch sử; không thay bằng số mới khác fixture. TV3 đã có bản bàn giao và hiệu đính PR #43/#48; phần luyện nói vẫn cần rehearsal chung.
 
-Đã nhận [bộ TV4 từ PR #41](../Bo_nop_Nhom06/evidence/TV4/README_EVIDENCE.md) và [bộ TV2 từ PR #44](../Bo_nop_Nhom06/evidence/TV2/README_TV5_RECEIPT.md); còn chờ xác nhận TV1/TV3. Concurrency TV4 ngày 10/10 đo 21072 ms là lượt riêng trên SQL Server 2022; số 20631 ms của TV5 ngày 07/10 dưới đây được giữ đúng nguồn, không thay bằng số mới.
+Đã nhận [bộ TV4 từ PR #41](../Bo_nop_Nhom06/evidence/TV4/README_EVIDENCE.md) và [bộ TV2 từ PR #44](../Bo_nop_Nhom06/evidence/TV2/README_TV5_RECEIPT.md); đã nhận thêm [TV3](../Bo_nop_Nhom06/evidence/TV3/README_EVIDENCE.md), còn TV1 chờ bàn giao/xác nhận. Concurrency TV4 ngày 10/10 đo 21072 ms là lượt riêng trên SQL Server 2022; số 20631 ms của TV5 ngày 07/10 dưới đây được giữ đúng nguồn, không thay bằng số mới.
 
 Đầu ra đã chuẩn bị: [deck chung 15 slide](../Bo_nop_Nhom06/slides/Nhom06_ThuyetTrinh_15_Slides.pptx), [PowerPoint riêng TV5 13–15](../Bo_nop_Nhom06/slides/TV5_Slide_13-15.pptx), [kịch bản tập demo](../Bo_nop_Nhom06/TV5_TAP_DEMO.md), [README bộ nộp](../Bo_nop_Nhom06/README_BO_NOP.md) và [rà soát Word](../Bo_nop_Nhom06/report/TV5_Ra_Soat_Bao_Cao.md). Chưa thực hiện lượt rehearsal mới; theo dõi [checklist hiện tại](HUONG_DAN_HOAN_THIEN_BO_NOP.md).
 

@@ -162,4 +162,4 @@ Nhóm chủ động lưu rõ mật khẩu của bộ tài khoản demo trong `da
 
 **Repository:** `tranducanhyn99-prog/Project_QuanLyNhanSuTienLuong`
 
-TV5 follow-up13/10: [kết quả/checklist](docs/TV5_THUC_HIEN_20261013.md), GUI87/focusedphone7, age birthday fresh QA, current offline257; Word61/55 và deck chung15 đã kiểm. Package nhậnTV2/TV4/TV5, chưa nghiệm thu ownerTV1/TV3/máy nhận/WindowsDPI thật/rehearsal.
+TV5 cập nhật 15/10: [tiến độ hiện tại](docs/TV5_THUC_HIEN_20261015.md), package đã nhận TV2/TV3/TV4/TV5, Word và deck 15 slide cập nhật notes/nguồn TV3. Còn TV1 ERD/log/plan/xác nhận slide 1–3, máy nhận, Windows DPI thật và rehearsal. SQL/GUI QA 13/10 giữ đúng phạm vi, không nhận là lượt chạy mới.
