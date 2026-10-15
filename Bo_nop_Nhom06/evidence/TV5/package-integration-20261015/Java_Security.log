@@ -1,0 +1,1 @@
+PASS offline Java regressions: 104 assertions. SQL behavior requires live SQL tests.

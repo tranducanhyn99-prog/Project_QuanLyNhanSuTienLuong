@@ -1,5 +1,7 @@
 # TV5 — Kết quả checklist 13/10/2026
 
+Cập nhật 15/10: phần bàn giao TV3 và kiểm package đã hoàn thành theo [biên bản mới](TV5_THUC_HIEN_20261015.md). Các mô tả đợt 13/10 bên dưới giữ mốc lịch sử; bảng nghiệm thu đã cập nhật phần tích hợp TV3.
+
 **Trần Đức Anh — 24110155 · Nhóm 06**
 
 Đã hoàn thiện phần sửa/QA TV5 có thể chạy độc lập, nhận evidence TV2, cập nhật Word và deck chung 15 slide. Bộ nhóm chưa nghiệm thu cuối: còn bàn giao/chốt ownership TV1/TV3, sửa handoff TV2, kiểm máy nhận, Windows DPI thật và rehearsal. Không đánh dấu các việc chưa chạy là PASS. [Checklist](TV5_TASKLIST_HOAN_THIEN.md).
@@ -38,8 +40,8 @@ QA lõi `PRJ_Fix_QA_20261013_followup_8e2bedb8` / `tv5f_d54a94da_*` và QA age �
 | TV5-05 | Core async/selection/session/repeat PASS | Windows DPI thật và dữ liệu lớn chưa kiểm |
 | TV5-06 | Fresh same-machine/package checks PASS | Máy nhận khác còn chờ |
 | TV5-07 | Các ca GUI tích hợp đã kiểm | TV2 xác nhận yêu cầu kế hoạch TRY…CATCH; caller Java giữ transaction, không thêm catch hình thức |
-| TV5-08 | Đã nhậnTV2/TV4 | TV1 ERD/logs và TV3 sửa baP2/bàn giao cuối; handoffTV2 sửa mộtP2 |
-| TV5-09 | Word/deck15 đã render/kiểm | Owner TV1/TV3 final acceptance, máy trình chiếu; PDF nộp nếu hình thức yêu cầu |
+| TV5-08 | Đã nhận TV2/TV3/TV4; tích hợp TV3 ngày 15/10 | TV1 ERD/log/plan cuối còn chờ; xem [tiến độ mới](TV5_THUC_HIEN_20261015.md) |
+| TV5-09 | Word/deck 15 slide đã cập nhật theo TV3 | TV1 xác nhận 1–3, máy trình chiếu, PDF nếu yêu cầu và rehearsal còn chờ |
 | TV5-10 | Package source/evidence/metadata/manifest được đồng bộ | Bộ nhóm chưa nghiệm thu máy nhận/owner; không commit/push/merge khi chưa yêu cầu |
 
 [PR43 review](PR43_TV3_REVIEW_20261013.md) và [PR44 review](PR44_TV2_REVIEW_20261013.md) giữ findings/scope riêng. Không public comment/approve/merge trong lượt này; không lấy evidence cũ làm proof code mới.

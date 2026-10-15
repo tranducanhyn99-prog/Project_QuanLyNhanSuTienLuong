@@ -1,13 +1,13 @@
 # TV5 — Rà soát và bàn giao báo cáo Word
 
-**Trần Đức Anh — 24110155 · Cập nhật 14/10/2026**
+**Trần Đức Anh — 24110155 · Cập nhật 15/10/2026**
 
-[Word nhóm](Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx) được đồng bộ nguyên byte với `docs/Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx`. Ba chỗ ghi trạng thái source/PR cũ ở lời mở đầu, bảng bàn giao và cuối báo cáo đã cập nhật sau khi PR #44–#46 merge; §8.5/§9.3 vốn đã có benchmark TV2 ngày 13/10 nên không sửa số liệu. Bản Word trước lượt này đối chiếu checkout `a7e1096` và các sửa local tại ngày 13/10.
+[Word nhóm](Nhom_06_Bao_Cao_Cuoi_Ky_DBMS330284.docx) đồng nhất byte với bản trong `docs/`. Lượt 15/10 cập nhật nguồn và phạm vi TV3 tại bảng SQL, benchmark, bàn giao và phụ lục theo PR #43/#48. TV2 giữ canonical v3 và các số Messages/XML đã phân biệt. Không thêm năm trang Word TV3 vào độ dài báo cáo nhóm.
 
 SHA-256 của cả hai bản Word:
 
 ```text
-173F4181F7925FB8792AC9FAD42BE51725AF438361B883CDF9EFD709E88AFF11
+534e5ab8cfa34879f54d118e9abc33ec6ff4c06ca864bbfdfdbba5a0d8409eb7
 ```
 
 ## Nội dung đã cập nhật
@@ -19,7 +19,11 @@ SHA-256 của cả hai bản Word:
 - Kiểm thử: Java offline hiện **257 assertions** (GuiQa 88, Security 104, LightTheme 45, LoginChip 20), tách **87 assertions GUI live**, bảy kiểm lại điện thoại và 21 layout bounds. Handler Swing/dialog tự động không thay tập dượt bằng tay. [GUI bổ sung](../evidence/TV5/gui-followup-20261013/) ghi phép đo, cleanup và giới hạn ảnh render.
 - Metadata source, danh mục minh chứng, số trang và trạng thái [deck chung 15 slide](../slides/Nhom06_ThuyetTrinh_15_Slides.pptx) đã cập nhật. Fixture demo 09/10 cho A 730.000đ/B 0đ giữ riêng với số QA bổ sung 1.230.000đ.
 
-## Kiểm bố cục cuối
+## Kiểm bố cục ngày 15 tháng 10
+
+Đã xuất trước/sau bằng Microsoft Word, đều 61 trang vật lý và 55 trang nội dung (trang 5–59). Chỉ sáu trang 2, 53, 55, 58, 60, 61 đổi; đã xem từng trang, bảng/text không tràn hoặc mất nội dung. 55 trang còn lại trùng pixel. [QA package](../evidence/TV5/package-integration-20261015/README.md) có phạm vi/log/hash; PDF QA ở `build/tv5-integrate-tv3/`, chưa dùng làm PDF nộp cuối.
+
+## Kiểm bố cục ngày 14 tháng 10
 
 Bản 14/10 đã xuất lại bằng Microsoft Word, vẫn có **61 trang vật lý**; nội dung nằm trang 5–59, tương đương **55 trang**, đáp ứng ngưỡng 50–100 của kế hoạch. So với PDF 13/10, text chỉ đổi ở trang vật lý 2, 58 và 60; đã xem ba trang này, không thấy tràn lề hay vỡ bảng. PDF QA nằm riêng trong `build/tv2-final-status-render/`, không đóng gói thay Word. Không cộng Word TV4 vào số trang nhóm.
 
@@ -29,6 +33,6 @@ PDF/ảnh và biên nhận QA nằm riêng trong `build/tv5-final-docs-20261013/
 
 ## Phần cần xác nhận thêm
 
-TV1/TV3 vẫn cần xác nhận bàn giao nội dung của mình. Biên bản v2 TV2 được giữ nguyên làm bản gốc; [biên nhận TV5](../evidence/TV2/README_TV5_RECEIPT.md) đã hiệu đính tham chiếu theo v3 mà không thay evidence của TV2. Deck tổng hợp do TV5 dựng từ guide/source đã rà, giữ ownership, không nhận đã nghiệm thu lời nói của các thành viên.
+TV3 đã nhận theo [biên nhận](../evidence/TV3/README_EVIDENCE.md); TV1 còn chờ ERD/log/plan và xác nhận nội dung, slide 1–3. Biên bản v2 TV2 được giữ nguyên; [hiệu đính TV5](../evidence/TV2/README_TV5_RECEIPT.md) dùng v3. Mọi thành viên vẫn cần tập dượt lời nói/demo, không suy ra đã rehearsal từ bộ bàn giao.
 
 Cần tập dượt chung và kiểm cài/chạy trên máy nhận. Kiểm Java scale không thay Windows DPI thật; cài QA sạch cùng máy không thay thử máy khác. Nếu yêu cầu nộp PDF, xuất từ Word cuối trên máy nộp và kiểm lại trang. Theo dõi [README bộ nộp](../README_BO_NOP.md) và checklist TV5.

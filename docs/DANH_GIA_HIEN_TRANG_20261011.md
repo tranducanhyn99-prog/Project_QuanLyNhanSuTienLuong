@@ -1,6 +1,6 @@
 # Đánh giá hiện trạng dự án — 11/10/2026
 
-Cập nhật 14/10/2026: PR #44–#46 đã merge; benchmark TV2 ngày 13/10, bốn actual plans và slide 4–6 đã nhận; Word §8.5/§9.3 và deck chung 15 slide đã tích hợp. Các nhận định chờ benchmark/deck bên dưới là trạng thái lịch sử của lượt đánh giá 11/10. Hiện còn xác nhận TV1/TV3, rehearsal và thử cài/chạy trên máy nhận. Xem [checklist hiện tại](HUONG_DAN_HOAN_THIEN_BO_NOP.md).
+Cập nhật 15/10/2026: PR #43/#48 đã merge; TV3 đã tích hợp vào package, Word và notes deck 15 slide. TV2/TV4/TV5 đã nhận. Hiện còn TV1 ERD/log/plan/xác nhận slide 1–3, rehearsal, Windows DPI thật và máy nhận. Các nhận định chờ TV2/TV3 hoặc deck bên dưới giữ mốc lịch sử 11/10; xem [tiến độ hiện tại](TV5_THUC_HIEN_20261015.md).
 
 Phạm vi: source `main f2a41f7` (logic SQL/Java sau PR #38 ở `0223f2f`), tasklist đã xử lý, rubric README, báo cáo GUI và bộ TV5 vừa đóng gói. Đọc lại luồng AuthService/DatabaseConnection, đối chiếu tài liệu quyền/chốt với SQL và kiểm package. Đây không phải lần audit độc lập mọi dòng source hoặc một lần chạy SQL/GUI mới.
 
