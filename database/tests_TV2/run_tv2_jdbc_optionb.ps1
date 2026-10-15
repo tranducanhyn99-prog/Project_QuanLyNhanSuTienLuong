@@ -96,10 +96,17 @@ function Resolve-SqlEndpoint([string]$InstanceInput, [string]$DatabaseName) {
     $resolvedPort = 1433
     $resolvedInstanceName = $null
 
-    if ($raw -eq '.' -or $raw -eq '(local)' -or $raw -eq 'localhost' -or $raw -eq 'MSSQLSERVER') {
+    if ($raw -eq 'MSSQLSERVER') {
         $resolvedHost = 'localhost'
         $resolvedPort = 1433
         $resolvedInstanceName = 'MSSQLSERVER'
+        $resolvedSqlcmd = 'localhost,1433'
+        $resolvedJdbcUrl = "jdbc:sqlserver://localhost:1433;databaseName=$DatabaseName;encrypt=true;trustServerCertificate=true"
+    }
+    elseif ($raw -eq '.' -or $raw -eq '(local)' -or $raw -eq 'localhost') {
+        $resolvedHost = 'localhost'
+        $resolvedPort = 1433
+        $resolvedInstanceName = $null
         $resolvedSqlcmd = 'localhost,1433'
         $resolvedJdbcUrl = "jdbc:sqlserver://localhost:1433;databaseName=$DatabaseName;encrypt=true;trustServerCertificate=true"
     }
@@ -111,7 +118,7 @@ function Resolve-SqlEndpoint([string]$InstanceInput, [string]$DatabaseName) {
         }
         $resolvedHost = if ($hostPart -eq '.' -or $hostPart -eq '(local)') { 'localhost' } else { $hostPart }
         $resolvedPort = $portPart
-        $resolvedInstanceName = 'MSSQLSERVER'
+        $resolvedInstanceName = $null
         $resolvedSqlcmd = "$resolvedHost,$resolvedPort"
         $resolvedJdbcUrl = "jdbc:sqlserver://${resolvedHost}:${resolvedPort};databaseName=$DatabaseName;encrypt=true;trustServerCertificate=true"
     }
@@ -134,7 +141,7 @@ function Resolve-SqlEndpoint([string]$InstanceInput, [string]$DatabaseName) {
     elseif ($raw -match '^[a-zA-Z0-9\.\-_]+$') {
         $resolvedHost = if ($raw -eq '.' -or $raw -eq '(local)') { 'localhost' } else { $raw }
         $resolvedPort = 1433
-        $resolvedInstanceName = 'MSSQLSERVER'
+        $resolvedInstanceName = $null
         $resolvedSqlcmd = "$resolvedHost,1433"
         $resolvedJdbcUrl = "jdbc:sqlserver://${resolvedHost}:1433;databaseName=$DatabaseName;encrypt=true;trustServerCertificate=true"
     }

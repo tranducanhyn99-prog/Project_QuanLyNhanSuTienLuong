@@ -150,22 +150,55 @@ Write-Host "`n--- TEST GROUP 3: Endpoint Resolution Matrix ---"
 $e1 = Resolve-SqlEndpoint -InstanceInput '.' -DatabaseName 'PRJ_Fix_QA_test'
 Assert-Condition ($e1.SqlcmdServer -eq 'localhost,1433') "Default '.' resolves to SQLCMD 'localhost,1433' (shared explicit TCP)"
 Assert-Condition ($e1.JdbcUrl -eq 'jdbc:sqlserver://localhost:1433;databaseName=PRJ_Fix_QA_test;encrypt=true;trustServerCertificate=true') "Default '.' resolves to JDBC localhost:1433"
+Assert-Condition ($null -eq $e1.InstanceName) "Default '.' does not invent expected instance (InstanceName is null)"
 
 $e2 = Resolve-SqlEndpoint -InstanceInput 'localhost:1433' -DatabaseName 'PRJ_Fix_QA_test'
 Assert-Condition ($e2.SqlcmdServer -eq 'localhost,1433') "localhost:1433 resolves to SQLCMD comma format"
 Assert-Condition ($e2.JdbcUrl -eq 'jdbc:sqlserver://localhost:1433;databaseName=PRJ_Fix_QA_test;encrypt=true;trustServerCertificate=true') "localhost:1433 resolves to JDBC colon format"
+Assert-Condition ($null -eq $e2.InstanceName) "localhost:1433 does not invent expected instance (InstanceName is null)"
 
 $e3 = Resolve-SqlEndpoint -InstanceInput '127.0.0.1,1433' -DatabaseName 'PRJ_Fix_QA_test'
 Assert-Condition ($e3.SqlcmdServer -eq '127.0.0.1,1433') "127.0.0.1,1433 preserves SQLCMD format"
 Assert-Condition ($e3.JdbcUrl -eq 'jdbc:sqlserver://127.0.0.1:1433;databaseName=PRJ_Fix_QA_test;encrypt=true;trustServerCertificate=true') "127.0.0.1,1433 formats JDBC correctly"
+Assert-Condition ($null -eq $e3.InstanceName) "127.0.0.1,1433 does not invent expected instance (InstanceName is null)"
 
 $e4 = Resolve-SqlEndpoint -InstanceInput 'customhost:14333' -DatabaseName 'PRJ_Fix_QA_test'
 Assert-Condition ($e4.SqlcmdServer -eq 'customhost,14333') "customhost:14333 preserves port for SQLCMD"
 Assert-Condition ($e4.JdbcUrl -eq 'jdbc:sqlserver://customhost:14333;databaseName=PRJ_Fix_QA_test;encrypt=true;trustServerCertificate=true') "customhost:14333 preserves port for JDBC"
+Assert-Condition ($null -eq $e4.InstanceName) "customhost:14333 does not invent expected instance (InstanceName is null)"
 
 $e5 = Resolve-SqlEndpoint -InstanceInput 'myhost\myinstance,1433' -DatabaseName 'PRJ_Fix_QA_test'
 Assert-Condition ($e5.SqlcmdServer -eq 'myhost\myinstance,1433') "Explicit port named instance formats SQLCMD correctly"
 Assert-Condition ($e5.JdbcUrl.Contains('myhost:1433;instanceName=myinstance')) "Explicit port named instance formats JDBC with explicit port and instanceName"
+Assert-Condition ($e5.InstanceName -eq 'myinstance') "Explicit port named instance sets expected InstanceName 'myinstance'"
+
+# PR52 TV5 follow-up: qa-host,14333 and qa-host:14333 must NOT invent MSSQLSERVER
+$eQaComma = Resolve-SqlEndpoint -InstanceInput 'qa-host,14333' -DatabaseName 'PRJ_Fix_QA_test'
+Assert-Condition ($eQaComma.SqlcmdServer -eq 'qa-host,14333') "qa-host,14333 formats SQLCMD without instance name"
+Assert-Condition ($eQaComma.JdbcUrl -eq 'jdbc:sqlserver://qa-host:14333;databaseName=PRJ_Fix_QA_test;encrypt=true;trustServerCertificate=true') "qa-host,14333 formats JDBC URL without instanceName property"
+Assert-Condition ($null -eq $eQaComma.InstanceName) "qa-host,14333 does not invent expected instance name (InstanceName is null)"
+
+$eQaColon = Resolve-SqlEndpoint -InstanceInput 'qa-host:14333' -DatabaseName 'PRJ_Fix_QA_test'
+Assert-Condition ($eQaColon.SqlcmdServer -eq 'qa-host,14333') "qa-host:14333 formats SQLCMD without instance name"
+Assert-Condition ($eQaColon.JdbcUrl -eq 'jdbc:sqlserver://qa-host:14333;databaseName=PRJ_Fix_QA_test;encrypt=true;trustServerCertificate=true') "qa-host:14333 formats JDBC URL without instanceName property"
+Assert-Condition ($null -eq $eQaColon.InstanceName) "qa-host:14333 does not invent expected instance name (InstanceName is null)"
+
+# PR52 TV5 follow-up: explicit qa-host\QA_INST,14333 must preserve expected instance QA_INST
+$eQaNamed = Resolve-SqlEndpoint -InstanceInput 'qa-host\QA_INST,14333' -DatabaseName 'PRJ_Fix_QA_test'
+Assert-Condition ($eQaNamed.SqlcmdServer -eq 'qa-host\QA_INST,14333') "qa-host\QA_INST,14333 formats SQLCMD with QA_INST"
+Assert-Condition ($eQaNamed.JdbcUrl -eq 'jdbc:sqlserver://qa-host:14333;instanceName=QA_INST;databaseName=PRJ_Fix_QA_test;encrypt=true;trustServerCertificate=true') "qa-host\QA_INST,14333 formats JDBC with instanceName=QA_INST"
+Assert-Condition ($eQaNamed.InstanceName -eq 'QA_INST') "qa-host\QA_INST,14333 preserves explicit expected instance QA_INST"
+
+# PR52 TV5 follow-up: explicit MSSQLSERVER must preserve expected instance MSSQLSERVER
+$eExplicitMssql = Resolve-SqlEndpoint -InstanceInput 'MSSQLSERVER' -DatabaseName 'PRJ_Fix_QA_test'
+Assert-Condition ($eExplicitMssql.SqlcmdServer -eq 'localhost,1433') "Explicit MSSQLSERVER formats SQLCMD localhost,1433"
+Assert-Condition ($eExplicitMssql.JdbcUrl -eq 'jdbc:sqlserver://localhost:1433;databaseName=PRJ_Fix_QA_test;encrypt=true;trustServerCertificate=true') "Explicit MSSQLSERVER formats JDBC localhost:1433"
+Assert-Condition ($eExplicitMssql.InstanceName -eq 'MSSQLSERVER') "Explicit MSSQLSERVER preserves expected instance MSSQLSERVER"
+
+# PR52 TV5 follow-up: bare hostname does not invent MSSQLSERVER
+$eBareHost = Resolve-SqlEndpoint -InstanceInput 'barehost' -DatabaseName 'PRJ_Fix_QA_test'
+Assert-Condition ($eBareHost.SqlcmdServer -eq 'barehost,1433') "Bare hostname 'barehost' resolves SQLCMD port 1433"
+Assert-Condition ($null -eq $eBareHost.InstanceName) "Bare hostname 'barehost' does not invent expected instance MSSQLSERVER"
 
 # Test deterministic unported named instance rejection (without checking SQL Browser)
 $e6Rejected = $false
@@ -567,6 +600,389 @@ TOTAL ASSERTIONS PASSED: 2
     Assert-Condition ($exit421 -eq 0) "Full passing pipeline returns exit code 0"
     Assert-Condition ($summary421 -match 'Overall Status.*PASS') "Persisted summary records Overall Status as PASS"
 
+    # Test 4.22 (Scenario A): qa-host,14333 with actual QA_INST passes pre-create identity check and executes pipeline
+    $dir422 = Join-Path $testOrchDir "run_422"
+    $global:createdDb422 = $false
+    $mock422 = [hashtable]$baseValidMock.Clone()
+    $mock422['identity'] = { "qa-host|QA_INST|qa-host|5555" }
+    $mock422['sqlcmd_text'] = { param($text, $cat) if ($text -match 'CREATE DATABASE') { $global:createdDb422 = $true } }
+    $res422 = & $runnerPath -ServerInstance "qa-host,14333" -EvidenceOutputDir $dir422 -MockInvocations $mock422 2>&1
+    $exit422 = $LASTEXITCODE
+    $summary422 = Get-Content -LiteralPath (Join-Path $dir422 'commands_hash_count_summary.md') -Raw -Encoding UTF8
+
+    Assert-Condition ($exit422 -eq 0) "qa-host,14333 with actual QA_INST succeeds with exit code 0"
+    Assert-Condition ($global:createdDb422 -eq $true) "qa-host,14333 succeeds at pre-create identity check and proceeds to CREATE DATABASE"
+    Assert-Condition ($summary422 -match 'Connected Instance Name.*QA_INST') "Summary records actual connected instance QA_INST"
+    Assert-Condition ($summary422 -match 'Resolved SQLCMD Endpoint.*qa-host,14333') "Summary records resolved SQLCMD endpoint qa-host,14333"
+    Assert-Condition ($summary422 -match 'Resolved JDBC URL.*jdbc:sqlserver://qa-host:14333') "Summary records resolved JDBC URL without instance parameter"
+    Assert-Condition ($summary422 -match 'Overall Status.*PASS') "Overall status is PASS for qa-host,14333"
+
+    # Test 4.23 (Scenario B): qa-host:14333 with actual QA_INST succeeds
+    $dir423 = Join-Path $testOrchDir "run_423"
+    $global:createdDb423 = $false
+    $mock423 = [hashtable]$baseValidMock.Clone()
+    $mock423['identity'] = { "qa-host|QA_INST|qa-host|5555" }
+    $mock423['sqlcmd_text'] = { param($text, $cat) if ($text -match 'CREATE DATABASE') { $global:createdDb423 = $true } }
+    $res423 = & $runnerPath -ServerInstance "qa-host:14333" -EvidenceOutputDir $dir423 -MockInvocations $mock423 2>&1
+    $exit423 = $LASTEXITCODE
+    $summary423 = Get-Content -LiteralPath (Join-Path $dir423 'commands_hash_count_summary.md') -Raw -Encoding UTF8
+
+    Assert-Condition ($exit423 -eq 0) "qa-host:14333 with actual QA_INST succeeds with exit code 0"
+    Assert-Condition ($global:createdDb423 -eq $true) "qa-host:14333 succeeds at pre-create identity check"
+    Assert-Condition ($summary423 -match 'Connected Instance Name.*QA_INST') "Summary records actual connected instance QA_INST"
+    Assert-Condition ($summary423 -match 'Overall Status.*PASS') "Overall status is PASS for qa-host:14333"
+
+    # Test 4.24 (Scenario C): qa-host\QA_INST,14333 with actual QA_INST succeeds
+    $dir424 = Join-Path $testOrchDir "run_424"
+    $global:createdDb424 = $false
+    $mock424 = [hashtable]$baseValidMock.Clone()
+    $mock424['identity'] = { "qa-host|QA_INST|qa-host|5555" }
+    $mock424['sqlcmd_text'] = { param($text, $cat) if ($text -match 'CREATE DATABASE') { $global:createdDb424 = $true } }
+    $res424 = & $runnerPath -ServerInstance "qa-host\QA_INST,14333" -EvidenceOutputDir $dir424 -MockInvocations $mock424 2>&1
+    $exit424 = $LASTEXITCODE
+    $summary424 = Get-Content -LiteralPath (Join-Path $dir424 'commands_hash_count_summary.md') -Raw -Encoding UTF8
+
+    Assert-Condition ($exit424 -eq 0) "qa-host\QA_INST,14333 with actual QA_INST succeeds with exit code 0"
+    Assert-Condition ($global:createdDb424 -eq $true) "Explicit instance match proceeds to database creation"
+    Assert-Condition ($summary424 -match 'Connected Instance Name.*QA_INST') "Summary records connected instance QA_INST"
+    Assert-Condition ($summary424 -match 'Overall Status.*PASS') "Explicit instance match results in Overall PASS"
+
+    # Test 4.25 (Scenario D): qa-host\QA_INST,14333 with actual WRONG_INST fails BEFORE database creation
+    $dir425 = Join-Path $testOrchDir "run_425"
+    $global:createdDb425 = $false
+    $mock425 = [hashtable]$baseValidMock.Clone()
+    $mock425['identity'] = { "qa-host|WRONG_INST|qa-host|5555" }
+    $mock425['sqlcmd_text'] = { param($text, $cat) if ($text -match 'CREATE DATABASE') { $global:createdDb425 = $true } }
+    $res425 = & $runnerPath -ServerInstance "qa-host\QA_INST,14333" -EvidenceOutputDir $dir425 -MockInvocations $mock425 2>&1
+    $exit425 = $LASTEXITCODE
+    $summary425 = Get-Content -LiteralPath (Join-Path $dir425 'commands_hash_count_summary.md') -Raw -Encoding UTF8
+
+    Assert-Condition ($exit425 -ne 0) "Explicit instance mismatch rejects with nonzero exit code ($exit425)"
+    Assert-Condition ($global:createdDb425 -eq $false) "Explicit instance mismatch rejected BEFORE database creation (CREATE DATABASE never called)"
+    Assert-Condition ($summary425 -match 'SQL Schema Installation.*\[FAIL\]') "Summary records SqlInstallation as [FAIL]"
+    Assert-Condition ($summary425 -match "Connected instance 'WRONG_INST' does not match expected instance 'QA_INST'") "Summary detail explains instance mismatch"
+    Assert-Condition ($summary425 -match 'Overall Status.*FAIL') "Overall status is FAIL on explicit instance mismatch"
+
+    # Test 4.26 (Scenario E): Explicit MSSQLSERVER expectation rejects different actual instance
+    $dir426 = Join-Path $testOrchDir "run_426"
+    $global:createdDb426 = $false
+    $mock426 = [hashtable]$baseValidMock.Clone()
+    $mock426['identity'] = { "laptop-cua-mq|QA_INST|laptop-cua-mq|4112" }
+    $mock426['sqlcmd_text'] = { param($text, $cat) if ($text -match 'CREATE DATABASE') { $global:createdDb426 = $true } }
+    $res426 = & $runnerPath -ServerInstance "MSSQLSERVER" -EvidenceOutputDir $dir426 -MockInvocations $mock426 2>&1
+    $exit426 = $LASTEXITCODE
+    $summary426 = Get-Content -LiteralPath (Join-Path $dir426 'commands_hash_count_summary.md') -Raw -Encoding UTF8
+
+    Assert-Condition ($exit426 -ne 0) "Explicit MSSQLSERVER expectation with actual QA_INST returns nonzero ($exit426)"
+    Assert-Condition ($global:createdDb426 -eq $false) "Explicit MSSQLSERVER expectation rejected BEFORE database creation"
+    Assert-Condition ($summary426 -match 'SQL Schema Installation.*\[FAIL\]') "Summary records SqlInstallation as [FAIL]"
+    Assert-Condition ($summary426 -match "Connected instance 'QA_INST' does not match expected instance 'MSSQLSERVER'") "Summary detail explains MSSQLSERVER expectation mismatch"
+    Assert-Condition ($summary426 -match 'Overall Status.*FAIL') "Overall status is FAIL on MSSQLSERVER mismatch"
+
+    # Test 4.27 (Scenario F): Default local SQL Server configuration continues to work
+    $dir427 = Join-Path $testOrchDir "run_427"
+    $mock427 = [hashtable]$baseValidMock.Clone()
+    $res427 = & $runnerPath -ServerInstance "." -EvidenceOutputDir $dir427 -MockInvocations $mock427 2>&1
+    $exit427 = $LASTEXITCODE
+    $summary427 = Get-Content -LiteralPath (Join-Path $dir427 'commands_hash_count_summary.md') -Raw -Encoding UTF8
+
+    Assert-Condition ($exit427 -eq 0) "Default '.' endpoint returns exit code 0"
+    Assert-Condition ($summary427 -match 'Resolved SQLCMD Endpoint.*localhost,1433') "Default '.' resolves to localhost,1433"
+    Assert-Condition ($summary427 -match 'Overall Status.*PASS') "Default '.' endpoint achieves Overall PASS"
+
+    # Compile a test-generated instrumented JDBC driver using standard dynamic proxies.
+    # The driver registers via JDBC SPI (META-INF/services/java.sql.Driver) ahead of mssql-jdbc,
+    # returning a no-DB instrumented Connection that simulates JDBC instance 'OTHER_INST'
+    # and tracks any fixture write attempts (INSERT, UPDATE, DELETE, CREATE, DROP, ALTER).
+    $probeBase = Join-Path $testOrchDir "probe_scenario_g"
+    $probePkgDir = Join-Path $probeBase "com\test\probe"
+    $probeServicesDir = Join-Path $probeBase "META-INF\services"
+    New-Item -ItemType Directory -Force -Path $probePkgDir | Out-Null
+    New-Item -ItemType Directory -Force -Path $probeServicesDir | Out-Null
+
+    $driverSrc = @"
+package com.test.probe;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.sql.*;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
+
+public class MockSqlDriver implements Driver {
+    public static final AtomicInteger FIXTURE_WRITES = new AtomicInteger(0);
+
+    static {
+        try {
+            DriverManager.registerDriver(new MockSqlDriver());
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                System.out.println("INSTRUMENTED_FIXTURE_WRITES: " + FIXTURE_WRITES.get());
+            }));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public Connection connect(String url, Properties info) throws SQLException {
+        if (!acceptsURL(url)) return null;
+
+        return (Connection) Proxy.newProxyInstance(
+            getClass().getClassLoader(),
+            new Class<?>[] { Connection.class },
+            new InvocationHandler() {
+                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                    String mName = method.getName();
+                    if ("createStatement".equals(mName)) {
+                        return createStatementProxy();
+                    } else if ("prepareCall".equals(mName)) {
+                        String sql = (args != null && args.length > 0) ? String.valueOf(args[0]) : "";
+                        return createCallableStatementProxy(sql);
+                    } else if ("prepareStatement".equals(mName)) {
+                        String sql = (args != null && args.length > 0) ? String.valueOf(args[0]) : "";
+                        return createPreparedStatementProxy(sql);
+                    } else if ("close".equals(mName) || "setAutoCommit".equals(mName) || "commit".equals(mName) || "rollback".equals(mName)) {
+                        return null;
+                    } else if ("isClosed".equals(mName)) {
+                        return false;
+                    } else if ("toString".equals(mName)) {
+                        return "MockInstrumentedConnection";
+                    }
+                    return null;
+                }
+            }
+        );
+    }
+
+    private Statement createStatementProxy() {
+        return (Statement) Proxy.newProxyInstance(
+            getClass().getClassLoader(),
+            new Class<?>[] { Statement.class },
+            new InvocationHandler() {
+                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                    String mName = method.getName();
+                    if ("executeQuery".equals(mName)) {
+                        String sql = (args != null && args.length > 0) ? String.valueOf(args[0]) : "";
+                        return createResultSetProxy(sql);
+                    } else if ("executeUpdate".equals(mName) || "execute".equals(mName)) {
+                        String sql = (args != null && args.length > 0) ? String.valueOf(args[0]) : "";
+                        if (sql.matches("(?i).*\\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\\b.*")) {
+                            FIXTURE_WRITES.incrementAndGet();
+                            System.err.println("FIXTURE_WRITE_RECORDED: " + sql);
+                        }
+                        if ("execute".equals(mName)) return false;
+                        return 1;
+                    } else if ("close".equals(mName) || "setQueryTimeout".equals(mName)) {
+                        return null;
+                    } else if ("isClosed".equals(mName)) {
+                        return false;
+                    }
+                    return null;
+                }
+            }
+        );
+    }
+
+    private CallableStatement createCallableStatementProxy(String querySql) {
+        return (CallableStatement) Proxy.newProxyInstance(
+            getClass().getClassLoader(),
+            new Class<?>[] { CallableStatement.class },
+            new InvocationHandler() {
+                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                    String mName = method.getName();
+                    if ("executeQuery".equals(mName)) {
+                        return createResultSetProxy(querySql);
+                    } else if ("close".equals(mName) || "setQueryTimeout".equals(mName) || mName.startsWith("registerOutParameter")) {
+                        return null;
+                    } else if ("isClosed".equals(mName)) {
+                        return false;
+                    }
+                    return null;
+                }
+            }
+        );
+    }
+
+    private PreparedStatement createPreparedStatementProxy(String querySql) {
+        return (PreparedStatement) Proxy.newProxyInstance(
+            getClass().getClassLoader(),
+            new Class<?>[] { PreparedStatement.class },
+            new InvocationHandler() {
+                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                    String mName = method.getName();
+                    if ("executeQuery".equals(mName)) {
+                        return createResultSetProxy(querySql);
+                    } else if ("executeUpdate".equals(mName) || "execute".equals(mName)) {
+                        if (querySql.matches("(?i).*\\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\\b.*")) {
+                            FIXTURE_WRITES.incrementAndGet();
+                            System.err.println("FIXTURE_WRITE_RECORDED: " + querySql);
+                        }
+                        if ("execute".equals(mName)) return false;
+                        return 1;
+                    } else if ("close".equals(mName) || "setQueryTimeout".equals(mName) || mName.startsWith("set")) {
+                        return null;
+                    } else if ("isClosed".equals(mName)) {
+                        return false;
+                    }
+                    return null;
+                }
+            }
+        );
+    }
+
+    private ResultSet createResultSetProxy(String sql) {
+        return (ResultSet) Proxy.newProxyInstance(
+            getClass().getClassLoader(),
+            new Class<?>[] { ResultSet.class },
+            new InvocationHandler() {
+                private int rowCursor = 0;
+
+                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                    String mName = method.getName();
+                    if ("next".equals(mName)) {
+                        rowCursor++;
+                        return rowCursor == 1;
+                    } else if ("close".equals(mName)) {
+                        return null;
+                    } else if ("isClosed".equals(mName)) {
+                        return false;
+                    } else if ("getString".equals(mName)) {
+                        String col = (args != null && args.length > 0) ? String.valueOf(args[0]) : "";
+                        if ("TrangThai".equalsIgnoreCase(col)) return "HOAT_DONG";
+                        if ("SrvName".equalsIgnoreCase(col)) {
+                            String srv = System.getProperty("qa.expected.server.name");
+                            return (srv != null && !srv.trim().isEmpty()) ? srv : "qa-host";
+                        }
+                        if ("InstName".equalsIgnoreCase(col)) return "OTHER_INST";
+                        if ("MachName".equalsIgnoreCase(col)) {
+                            String mach = System.getProperty("qa.expected.machine.name");
+                            return (mach != null && !mach.trim().isEmpty()) ? mach : "qa-host";
+                        }
+                        if ("Lg".equalsIgnoreCase(col)) return "login_HRManager";
+                        if ("Db".equalsIgnoreCase(col)) {
+                            String dbProp = System.getProperty("qa.database.name");
+                            return (dbProp != null) ? dbProp : "PRJ_Fix_QA_20261016_000000_12345678";
+                        }
+                        if ("Marker".equalsIgnoreCase(col)) {
+                            return System.getProperty("qa.ownership.marker");
+                        }
+                        return "MOCK_VAL";
+                    } else if ("getInt".equals(mName)) {
+                        String col = (args != null && args.length > 0) ? String.valueOf(args[0]) : "";
+                        if ("ProcId".equalsIgnoreCase(col)) {
+                            String proc = System.getProperty("qa.expected.process.id");
+                            return (proc != null && !proc.trim().isEmpty()) ? Integer.parseInt(proc.trim()) : 5555;
+                        }
+                        return 1;
+                    }
+                    return null;
+                }
+            }
+        );
+    }
+
+    public boolean acceptsURL(String url) {
+        return url != null && url.startsWith("jdbc:sqlserver:");
+    }
+    public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) { return new DriverPropertyInfo[0]; }
+    public int getMajorVersion() { return 1; }
+    public int getMinorVersion() { return 0; }
+    public boolean jdbcCompliant() { return false; }
+    public Logger getParentLogger() { return Logger.getLogger("global"); }
+}
+"@
+    $driverSrcPath = Join-Path $probePkgDir "MockSqlDriver.java"
+    [System.IO.File]::WriteAllText($driverSrcPath, $driverSrc, [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $probeServicesDir "java.sql.Driver"), "com.test.probe.MockSqlDriver`n", [System.Text.UTF8Encoding]::new($false))
+    & javac --release 11 -encoding UTF-8 -cp $classpath -d $probeBase $driverSrcPath
+    Assert-Condition ($LASTEXITCODE -eq 0) "Compiled instrumented MockSqlDriver with JDBC SPI registration"
+
+    # Test 4.28 (Scenario G): SQLCMD/JDBC identity mismatch rejected before JDBC fixture mutation
+    # Executes the REAL Tv2JdbcIntegrationTest.main path against the instrumented driver.
+    $dir428 = Join-Path $testOrchDir "run_428"
+    $mock428 = [hashtable]$baseValidMock.Clone()
+    $mock428['identity'] = { "qa-host|QA_INST|qa-host|5555" }
+    $global:capturedJavaArgs428 = $null
+
+    $mock428['jdbc'] = { param($javaProcessArgs, $log)
+        $global:capturedJavaArgs428 = $javaProcessArgs
+        $probeClasspath = "$probeBase;$classpath"
+        $probeArgs = @()
+        for ($i = 0; $i -lt $javaProcessArgs.Count; $i++) {
+            if ($javaProcessArgs[$i] -eq '-cp') {
+                $probeArgs += '-cp'
+                $probeArgs += $probeClasspath
+                $i++
+            } else {
+                $probeArgs += $javaProcessArgs[$i]
+            }
+        }
+        # Executes the REAL Tv2JdbcIntegrationTest.main without substituting an unrelated main class
+        Invoke-JavaProcess "java" $probeArgs $log
+    }
+
+    $res428 = & $runnerPath -ServerInstance "qa-host,14333" -EvidenceOutputDir $dir428 -MockInvocations $mock428 2>&1
+    $exit428 = $LASTEXITCODE
+    $summary428 = Get-Content -LiteralPath (Join-Path $dir428 'commands_hash_count_summary.md') -Raw -Encoding UTF8
+    $log428 = if (Test-Path -LiteralPath (Join-Path $dir428 'Tv2JdbcIntegrationTest.log')) {
+        Get-Content -LiteralPath (Join-Path $dir428 'Tv2JdbcIntegrationTest.log') -Raw -Encoding UTF8
+    } else { "" }
+
+    # 1. Proves runner forwards all SQLCMD-derived identity values (especially QA_INST for unspecified host/port)
+    Assert-Condition ($global:capturedJavaArgs428 -contains '-Dqa.expected.server.name=qa-host') "Runner forwards SQLCMD-derived expected ServerName 'qa-host' to Java"
+    Assert-Condition ($global:capturedJavaArgs428 -contains '-Dqa.expected.instance.name=QA_INST') "Runner forwards SQLCMD-derived expected InstanceName 'QA_INST' for unspecified qa-host,14333"
+    Assert-Condition ($global:capturedJavaArgs428 -contains '-Dqa.expected.machine.name=qa-host') "Runner forwards SQLCMD-derived expected MachineName 'qa-host' to Java"
+    Assert-Condition ($global:capturedJavaArgs428 -contains '-Dqa.expected.process.id=5555') "Runner forwards SQLCMD-derived expected ProcessID '5555' to Java"
+
+    # 2. Verifies execution of the REAL Tv2JdbcIntegrationTest.main path
+    Assert-Condition ($global:capturedJavaArgs428 -contains 'com.test.Tv2JdbcIntegrationTest') "Runner executes real Tv2JdbcIntegrationTest main class"
+    Assert-Condition ($log428 -match 'at com\.test\.Tv2JdbcIntegrationTest\.main') "Real Tv2JdbcIntegrationTest.main was executed and stack trace confirms rejection in main"
+
+    # 3. Exercises REAL Java identity validation from Tv2JdbcIntegrationTest.main and catches genuine SecurityException
+    Assert-Condition ($log428 -match 'TEST FAILURE: SQL Server identity mismatch: expected InstanceName ''QA_INST'' but connected to ''OTHER_INST''') "Real Tv2JdbcIntegrationTest.main threw SecurityException on instance mismatch"
+
+    # 4. Demonstrates rejection BEFORE JDBC fixture writes (captures actual fixture write attempts and requires zero)
+    Assert-Condition ($log428 -match 'INSTRUMENTED_FIXTURE_WRITES:\s*0') "Instrumented driver demonstrated zero fixture write attempts before rejection"
+
+    # 5. Verifies runner reports JDBC failure and overall pipeline failure
+    Assert-Condition ($exit428 -ne 0) "SQLCMD/JDBC identity mismatch returns nonzero exit code ($exit428)"
+    Assert-Condition ($summary428 -match 'Live JDBC Integration Test.*\[FAIL\]') "Summary records JdbcIntegration as [FAIL] on identity mismatch"
+    Assert-Condition ($summary428 -match 'Overall Status.*FAIL') "Overall status is FAIL on SQLCMD/JDBC identity mismatch"
+
+    # Test 4.29 (Scenario H): Invalid, unported, and ambiguous named-instance inputs remain safely rejected
+    # H.1: Unported named instance
+    $dir429a = Join-Path $testOrchDir "run_429a"
+    $res429a = & $runnerPath -ServerInstance "qa-host\QA_INST" -EvidenceOutputDir $dir429a -MockInvocations $baseValidMock 2>&1
+    $exit429a = $LASTEXITCODE
+    $summary429a = Get-Content -LiteralPath (Join-Path $dir429a 'commands_hash_count_summary.md') -Raw -Encoding UTF8
+    Assert-Condition ($exit429a -ne 0) "Unported named instance qa-host\QA_INST rejected by runner ($exit429a)"
+    Assert-Condition ($summary429a -match 'Unported named instance.*rejected') "Summary records unported named instance rejection"
+
+    # H.2: Delimiter injection
+    $dir429b = Join-Path $testOrchDir "run_429b"
+    $res429b = & $runnerPath -ServerInstance "qa-host;databaseName=evil;" -EvidenceOutputDir $dir429b -MockInvocations $baseValidMock 2>&1
+    $exit429b = $LASTEXITCODE
+    $summary429b = Get-Content -LiteralPath (Join-Path $dir429b 'commands_hash_count_summary.md') -Raw -Encoding UTF8
+    Assert-Condition ($exit429b -ne 0) "Delimiter injection rejected by runner ($exit429b)"
+    Assert-Condition ($summary429b -match 'contains disallowed delimiter') "Summary records delimiter rejection"
+
+    # H.3: Ambiguous endpoint syntax
+    $dir429c = Join-Path $testOrchDir "run_429c"
+    $res429c = & $runnerPath -ServerInstance "qa-host:::1433" -EvidenceOutputDir $dir429c -MockInvocations $baseValidMock 2>&1
+    $exit429c = $LASTEXITCODE
+    $summary429c = Get-Content -LiteralPath (Join-Path $dir429c 'commands_hash_count_summary.md') -Raw -Encoding UTF8
+    Assert-Condition ($exit429c -ne 0) "Ambiguous syntax rejected by runner ($exit429c)"
+    Assert-Condition ($summary429c -match 'Invalid or ambiguous SQL Server endpoint') "Summary records ambiguous syntax rejection"
+
+    # H.4: Port out of range
+    $dir429d = Join-Path $testOrchDir "run_429d"
+    $res429d = & $runnerPath -ServerInstance "qa-host,70000" -EvidenceOutputDir $dir429d -MockInvocations $baseValidMock 2>&1
+    $exit429d = $LASTEXITCODE
+    $summary429d = Get-Content -LiteralPath (Join-Path $dir429d 'commands_hash_count_summary.md') -Raw -Encoding UTF8
+    Assert-Condition ($exit429d -ne 0) "Port out of range rejected by runner ($exit429d)"
+    Assert-Condition ($summary429d -match 'Invalid TCP port in endpoint') "Summary records port out of range rejection"
+
 } finally {
     $env:TV2_QA_PASSWORD = $origTv2QaPwd
     Remove-Item -LiteralPath $testOrchDir -Recurse -Force -ErrorAction SilentlyContinue
@@ -575,3 +991,4 @@ TOTAL ASSERTIONS PASSED: 2
 Write-Host "`n========================================================"
 Write-Host "ALL $passedChecks / $totalChecks CONTROLLED NEGATIVE CHECKS PASSED!"
 Write-Host "========================================================"
+exit 0
