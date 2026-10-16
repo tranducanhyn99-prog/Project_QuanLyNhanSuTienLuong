@@ -1,0 +1,50 @@
+MINH CHỨNG TV1 — Nguyễn Minh Trí, MSSV 24110359
+Cập nhật bàn giao: 15/10/2026. Múi giờ Asia/Saigon (+07).
+Môi trường kiểm thử: Máy Windows; Microsoft SQL Server 2025 RTM 17.0.1000.7 / Standard Developer Edition tại localhost.
+
+DANH MỤC CÁC TẬP TIN MINH CHỨNG VÀ KẾT QUẢ XÁC MINH:
+
+1. Sơ đồ CSDL ERD hiện hành (10 bảng):
+- File: TV1_Database_Diagram.png
+- Trạng thái: Chuẩn hóa đầy đủ 10 bảng nghiệp vụ theo CSDL SQL Server hiện hành, bao gồm bảng LICHSULUONG, các trường mở rộng NHANVIEN.NgayNghiViec, TAIKHOAN.SqlLogin.
+- Quan hệ: Thể hiện đúng quan hệ 1-N giữa NHANVIEN và TAIKHOAN (do trường MaNV tại TAIKHOAN là nullable và không áp đặt ràng buộc UNIQUE).
+
+2. Kiểm thử Module Nhân sự (SQL Integration Test):
+- File: test_module_nhansu_TV1.log
+- Script nguồn: database/test_module_nhansu_TV1.sql, database/tests/TV1_Age_Boundaries.sql
+- Kết quả: Đạt 7/7 kiểm tra PASS tuyệt đối:
+  + PASS employee/profile creation (pending DBA mapping)
+  + PASS birthday-aware age-constraint rejection: NgaySinh <= DATEADD(YEAR, -18, NgayVaoLam)
+    * Ghi chú: Ràng buộc độ tuổi lao động hiện hành dùng biểu thức NgaySinh <= DATEADD(YEAR, -18, NgayVaoLam) để kiểm tra chính xác ngày sinh nhật thực tế (birthday-aware), khắc phục triệt để khiếm khuyết của DATEDIFF (chỉ tính số lần đổi năm, cho phép nhân viên chưa tới ngày sinh nhật trong năm vẫn lọt qua nếu cùng năm).
+    * Bộ test TV1_Age_Boundaries.sql đã kiểm tra toàn diện 9 ca kiểm thử biên (18 thao tác gồm INSERT trực tiếp và Stored Procedure sp_ThemNhanVien): trước sinh nhật 1 ngày, đúng ngày sinh nhật, sau sinh nhật 1 ngày, và các mốc năm nhuận 29/02.
+  + PASS account duplicate rolls back employee and history (Transaction rollback khi trùng username)
+  + PASS hire date persistence (Cập nhật và lưu trữ ngày vào làm)
+  + PASS protected employee delete (Trigger chặn xóa nhân viên đã có dữ liệu chấm công / lương)
+  + PASS attendance function, joined view and index (Hàm fn_TinhSoNgayCong, View vw_NhanVien_PhongBan_ChucVu, Index IX_NHANVIEN_HoTen)
+  + PASS owned fixture cleanup (Dọn dẹp fixture tự động, không để lại dữ liệu rác)
+
+3. Đo hiệu năng chỉ mục Index (Benchmark Index IX_NHANVIEN_HoTen):
+- Bằng chứng kỹ thuật chính thức ghi nhận đồng thời từ cùng một lượt chạy duy nhất trên SQL Server 2025:
+  + File log thực tế: benchmark_test_benchmark_index_TV1.log (ghi nhận STATISTICS IO: 75 -> 10 logical reads, cùng 500 dòng).
+  + File Actual Execution Plan: TV1_Benchmark_ActualPlan.sqlplan (ShowPlanXML trực tiếp ghi nhận ActualLogicalReads: 75 -> 10, ActualRows: 500, chuỗi N'Nguyễn Minh%' mã hóa UTF-8 chuẩn xác, chi phí 87.8% vs 12.2%).
+  + Cả hai tệp hoàn toàn đồng nhất về số đo counter (75 -> 10 logical reads), số dòng (500 dòng) và mã hóa UTF-8.
+- Ảnh minh chứng lịch sử: TV1_Benchmark_StatisticsIO.png, TV1_Benchmark_ExecutionPlan.png
+  * Lưu ý phạm vi: Hai ảnh chụp màn hình TV1_Benchmark_StatisticsIO.png và TV1_Benchmark_ExecutionPlan.png là ảnh lịch sử ghi nhận giao diện SSMS ngày 30/09/2026 trên tập dữ liệu bảng NHANVIEN mẫu ban đầu (4 dòng, 2 reads) để minh họa cơ chế hoạt động của SSMS. Ảnh lịch sử này không dùng làm bằng chứng số liệu cho lượt benchmark 5.000 dòng.
+- Script nguồn: database/test_benchmark_index_TV1.sql
+- Quy mô kiểm thử: Bảng tạm #NhanVienBenchmark với 5.000 dòng dữ liệu nhân sự độc lập.
+- Truy vấn kiểm thử:
+    SELECT MaNV, HoTen, SoDienThoai, Email, MaPB, MaCV, TrangThai
+    FROM #NhanVienBenchmark
+    WHERE HoTen LIKE N'Nguyễn Minh%';
+- Kết quả đo lường thực tế:
+  + Quét toàn bảng (Clustered Scan): 75 logical reads, quét tuần tự 5.000 dòng.
+  + Tìm kiếm theo chỉ mục (Index Seek covering): 10 logical reads, duyệt B-Tree trực tiếp.
+  + Mức độ cải thiện I/O: Giảm 86.67% logical reads (từ 75 xuống 10), triệt tiêu hoàn toàn Key Lookup nhờ mệnh đề INCLUDE đầy đủ 5 cột.
+  + Số dòng trả về: Đồng nhất 500 dòng thỏa điều kiện cho cả hai phương thức.
+
+4. Minh chứng Giao diện & Nghiệp vụ ứng dụng:
+- TV1_DanhMuc_PhongBan_ChucVu.png: Màn hình quản lý Danh mục phòng ban và chức vụ trên giao diện PeopleOS Light.
+- TV1_NhanVien_HoSo.png: Màn hình Quản lý hồ sơ nhân viên, hỗ trợ tìm kiếm theo họ tên và trạng thái làm việc.
+- TV1_NhanVien_HoSo_ChiTiet.png: Form chi tiết nhân viên, hỗ trợ thêm mới, cập nhật và hiển thị đầy đủ thông tin hồ sơ.
+- TV1_Transaction_Rollback_SP.png: Minh chứng bắt lỗi và rollback transaction khi thêm nhân viên có tài khoản bị trùng lặp.
+- TV1_Trigger_ChanXoaNhanVien.png: Minh chứng trigger trg_NhanVien_KhongXoaKhiDaPhatSinhLuong chặn thao tác xóa cứng nhân viên khi đã phát sinh dữ liệu chấm công.

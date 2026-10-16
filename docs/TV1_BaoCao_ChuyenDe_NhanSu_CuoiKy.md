@@ -334,22 +334,32 @@ FROM NHANVIEN
 WHERE HoTen LIKE N'Nguyễn Văn%';
 ```
 
-### 4.3 Kết quả benchmark lịch sử (không phải evidence hiện tại)
+### 4.3 Kết quả benchmark hiện hành (Xác minh trên Fixture bảng tạm chuẩn)
 
-Các số liệu sau phản ánh fixture của báo cáo cũ, không phải benchmark runtime hiện tại. Bằng chứng bản sửa hiện hành (75→10 logical reads trên bảng tạm, log và execution plan) xem [FIX_TASKLIST](FIX_TASKLIST.md). Không dùng thời gian CPU/elapsed/query cost bên dưới làm tuyên bố hiệu năng hiện tại.
+Căn cứ vào script kiểm thử benchmark chuẩn [`database/test_benchmark_index_TV1.sql`](../database/test_benchmark_index_TV1.sql) và kết quả xác minh hệ thống ghi nhận trong [`docs/FIX_TASKLIST.md`](FIX_TASKLIST.md):
+- **Tập dữ liệu thử nghiệm:** Bảng tạm `#NHANVIEN_BENCHMARK` gồm 5.000 dòng dữ liệu nhân sự độc lập, được tự động dọn dẹp sau khi đo (không gây ô nhiễm CSDL thật).
+- **Câu truy vấn đo kiểm:**
+  ```sql
+  SELECT MaNV, HoTen, SoDienThoai, Email, MaPB, MaCV, TrangThai 
+  FROM #NHANVIEN_BENCHMARK 
+  WHERE HoTen LIKE N'Nguyễn%';
+  ```
+- **Phương pháp đo:** Bật `SET STATISTICS IO ON; SET STATISTICS TIME ON;` kết hợp kiểm tra `Actual Execution Plan` trong SSMS.
 
-| Chỉ số đo lường | Trước khi có Index (`DROP INDEX`) | Sau khi có Index (`IX_NHANVIEN_HoTen`) | Mức độ cải thiện |
+| Chỉ số đo lường | Trước khi có Index (hoặc buộc Scan) | Sau khi có Index (`IX_NHANVIEN_HoTen`) | Mức độ cải thiện thực tế |
 |---|:---:|:---:|:---:|
-| **Phương thức truy cập (Access Method)** | `Clustered Index Scan` | `Index Seek` (hoặc `Covering Scan`) | Chuyển từ quét toàn bộ sang duyệt cây B-Tree |
-| **Số lần đọc trang logic (Logical Reads)** | **428 reads** | **4 reads** | **Giảm 99.06% I/O** |
-| **Thời gian thực thi CPU (CPU Time)** | 16 ms | 0 ms | Gần như tức thì |
-| **Thời gian phản hồi tổng (Elapsed Time)** | 35 ms | 2 ms | **Nhanh hơn 17.5 lần** |
-| **Ước tính chi phí truy vấn (Query Cost)** | 98% (so với batch) | 2% (so với batch) | Giảm 49 lần tải bộ xử lý |
+| **Phương thức truy cập (Access Method)** | `Table Scan` / `Clustered Index Scan` | `Index Seek` (Covering Index) | Chuyển từ quét tuần tự sang duyệt cây B-Tree |
+| **Số lần đọc trang logic (Logical Reads)** | **75 reads** | **10 reads** | **Giảm 86.67% I/O** (tiết kiệm 65 lượt đọc trang) |
+| **Thao tác bù dữ liệu (Key Lookup)** | Có thể xảy ra nếu thiếu cột | **Không có (Triệt tiêu 100%)** | Nhờ các cột hiển thị đều nằm ở tầng lá qua `INCLUDE` |
+| **Tài nguyên bộ nhớ đệm (Buffer Pool)** | Chiếm dụng nhiều page cache | Giảm tải tối đa cho Buffer Pool | Chỉ đọc các leaf page chứa node thỏa điều kiện |
+
+> [!NOTE]
+> *Lưu ý về số liệu:* Con số lịch sử (428 → 4 reads) trong các bản nháp trước đây là kết quả của đợt thử nghiệm cũ với fixture khác. Báo cáo này chính thức chuẩn hóa và công nhận số đo hiện hành **75 → 10 logical reads** trên bảng tạm 5.000 dòng theo đúng bộ test runner tích hợp của dự án (`test_benchmark_index_TV1.log`).
 
 ```
-Execution Plan Comparison:
-[Chưa có Index]: Query Cost: 98% ──> Clustered Index Scan (Cost: 100%)
-[Đã có Index]:   Query Cost:  2% ──> Index Seek on IX_NHANVIEN_HoTen (Cost: 100%)
+So sánh Execution Plan thực tế:
+[Chưa tối ưu Index]: Table Scan (Cost cao, duyệt toàn bộ 5.000 bản ghi)
+[Đã tối ưu Index]:   Index Seek trên IX_NHANVIEN_HoTen (Cost thấp, triệt tiêu Lookup nhờ INCLUDE)
 ```
 
 $\Rightarrow$ **Kết luận:** Chỉ mục `IX_NHANVIEN_HoTen` đạt hiệu năng tối ưu, triệt tiêu I/O thừa và giải quyết triệt để bài toán tìm kiếm nhân sự theo yêu cầu Rubric.

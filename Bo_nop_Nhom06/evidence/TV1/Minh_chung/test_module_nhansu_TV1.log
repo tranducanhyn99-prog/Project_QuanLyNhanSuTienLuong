@@ -1,0 +1,7 @@
+﻿PASS employee/profile creation (pending DBA mapping)
+PASS exact age-constraint rejection
+PASS account duplicate rolls back employee and history
+PASS hire date persistence
+PASS protected employee delete
+PASS attendance function, joined view and index
+PASS owned fixture cleanup
