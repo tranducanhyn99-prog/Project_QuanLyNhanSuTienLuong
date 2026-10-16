@@ -1,0 +1,13 @@
+{
+  "baseline": "codex_historical_sha256.json",
+  "algorithm": "SHA256",
+  "historicalFilesChecked": 161,
+  "missingOrChangedFiles": [],
+  "head": "fd3db422556d3a703bc51b6671acb01d03405ebc",
+  "branch": "fix/tv2-sp-try-catch",
+  "trackedModifiedFiles": [
+    "database/tests_TV2/run_tv2_jdbc_optionb.ps1",
+    "database/tests_TV2/test_tv5_findings.ps1"
+  ],
+  "gitDiffCheckExitCode": 0
+}

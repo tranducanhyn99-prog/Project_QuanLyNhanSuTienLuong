@@ -2,10 +2,10 @@
 
 **Người trình bày:** Phạm Minh Quân — MSSV 24110311
 
-**Cập nhật:** 10/10/2026
+**Cập nhật:** 15/10/2026 (Căn cứ `main` @ `e00da71` và branch `fix/tv2-sp-try-catch`)
 **Phạm vi:** Slide 4–6; lời nói mẫu khoảng 02:00 phút; phần demo TV2 khoảng 00:45 phút nếu nhóm chọn cách phân bổ này.
 
-Đã đối chiếu phân công và SQL/Java trên `main` commit `0223f2f`, sau [PR #38](https://github.com/tranducanhyn99-prog/Project_QuanLyNhanSuTienLuong/pull/38). Combo hiển thị tiếng Việt, còn mã nghiệp vụ trong model/SQL giữ nguyên: **Có mặt** = `CO_MAT`, **Đi trễ** = `DI_TRE`, **Về sớm** = `VE_SOM`, **Vắng mặt** = `VANG`.
+Đã đối chiếu phân công và SQL/Java trên `main` commit `e00da71` sau [PR #49](https://github.com/tranducanhyn99-prog/Project_QuanLyNhanSuTienLuong/pull/49) và hoàn thiện Option B trong `fix/tv2-sp-try-catch`. Combo hiển thị tiếng Việt, còn mã nghiệp vụ trong model/SQL giữ nguyên: **Có mặt** = `CO_MAT`, **Đi trễ** = `DI_TRE`, **Về sớm** = `VE_SOM`, **Vắng mặt** = `VANG`.
 
 Demo nối tiếp thống nhất dùng **10/2026**, theo [báo cáo GUI 09/10](GUI_TEST_REPORT_20261009.md): A có lương 26.000.000đ, 26 công chuẩn, một công ngày 09/10/2026 (08:00–17:00), phụ cấp 730.000đ và khấu trừ 1.000.000đ; thực nhận **730.000đ**, B **0đ**. Đã có 20 ca thao tác và ba ca kiểm tra lại sau sửa. Trước demo, kiểm tra fixture hiện có theo [GUI_TEST_GUIDE](GUI_TEST_GUIDE.md); dùng lại dòng công/khoản, không thêm trùng hoặc xóa nguồn để ép số. Kết thúc bằng mở lại kỳ, xác nhận `CHUA_CHOT` và `NgayChot IS NULL`.
 
@@ -26,10 +26,10 @@ Các mục dưới đây là ngưỡng dự án ghi trong kế hoạch/rubric, k
 | Hạng mục rubric | Đối tượng / phần TV2 | Bằng chứng để mở | Điều cần nói |
 |---|---|---|---|
 | Constraint có ý nghĩa (dự án ≥5) | `UQ_CHAMCONG_MaNV_Ngay`, `CHK_CHAMCONG_Ngay`, FK và check trạng thái | `database/02_Module_ChamCong_TV2.sql`; có thể đọc metadata | Một nhân viên chỉ có một dòng mỗi ngày; ngày tương lai bị chặn. |
-| Stored Procedure (dự án ≥5) | `dbo.sp_GhiNhanChamCong` | Cùng SQL, phần procedure; `ChamCongDAO.insertSingle` | SP kiểm tra đầu vào, ngày, trạng thái, nhân viên đang làm và trùng ngày trước khi ghi. |
+| Stored Procedure (dự án ≥5 + TRY...CATCH) | `dbo.sp_GhiNhanChamCong` | Cùng SQL, phần procedure; `ChamCongDAO.insertSingle` | SP có `TRY...CATCH + bare THROW` (Option B), kiểm tra đầu vào, ngày, trạng thái, nhân viên đang làm và trùng ngày trước khi ghi; ném lỗi về caller mà không mở transaction riêng để Java Service quản lý lô. |
 | Trigger (dự án ≥5) | `trg_ChamCong_KiemTraGio`, `trg_ChamCong_KiemTraNhanVien` | Cùng SQL, hai trigger; module 05 cho trigger kỳ chốt | Trigger kiểm soát cả thao tác SQL trực tiếp; module 05 khóa cả insert/update/delete nếu kỳ đã chốt. |
 | View (dự án ≥5) | `vw_TongHopChamCongThang` | Cùng SQL; `ChamCongDAO.getTongHopTheoThang` | Tổng ngày làm, đi trễ, về sớm, vắng và giờ làm theo nhân viên/kỳ. |
-| Index (dự án ≥5 + minh chứng hiệu năng) | `IX_CHAMCONG_MaNV_Ngay`, INCLUDE giờ vào/ra và trạng thái | Cùng SQL; thiết kế benchmark `database/test_benchmark_index_TV2.sql`; trạng thái thực tế tại [FIX_TASKLIST](FIX_TASKLIST.md) | Index phục vụ lọc theo nhân viên/ngày; khi trình bày số đo cần có log IO/TIME và execution plan cùng lần chạy. |
+| Index (dự án ≥5 + minh chứng hiệu năng) | `IX_CHAMCONG_MaNV_Ngay`, INCLUDE giờ vào/ra và trạng thái | Cùng SQL; benchmark canonical v3 `run_20261013_140800` (Messages 574→5 / 99.1289%, XML 522→5 / 99.0421%); trạng thái thực tế tại [FIX_TASKLIST](FIX_TASKLIST.md) | Index phục vụ lọc theo nhân viên/ngày; loại bỏ 100% Key Lookup. Phân biệt rõ hai nguồn đo Messages và XML; nguyên nhân chênh 52 reads là chưa giải thích. |
 | Transaction (dự án ≥5 nghiệp vụ) | Nhập lô ở `ChamCongService.nhapChamCongTheoLo` | `src/main/java/com/service/ChamCongService.java`; `ChamCongDAO.insertInTransaction` | Một dòng lỗi thì rollback toàn bộ lô; DAO nhận cùng connection của transaction. |
 | Ứng dụng và xử lý lỗi | `ChamCongPanel` → Service → DAO/JDBC → SQL Server | `src/main/java/com/ui/chamcong/ChamCongPanel.java`, `src/main/java/com/dao/ChamCongDAO.java` | UI lấy tổng hợp qua view, ghi đơn qua callable SP; lỗi được báo cho người dùng. |
 
@@ -47,15 +47,15 @@ Rubric toàn dự án còn gồm ≥8 bảng/3NF, concurrency hoặc recovery, �
 
 ### Slide 5 — SQL và toàn vẹn dữ liệu (khoảng 40 giây)
 
-**Trên slide:** `sp_GhiNhanChamCong`; trigger kiểm tra giờ/nhân viên; transaction lô all-or-nothing; trigger module 05 khóa kỳ đã chốt.
+**Trên slide:** `sp_GhiNhanChamCong` với `TRY...CATCH + THROW` (Option B); trigger kiểm tra giờ/nhân viên; transaction lô all-or-nothing tại Service; trigger module 05 khóa kỳ đã chốt.
 
-**Lời nói:** “Khi ghi một dòng, DAO gọi `sp_GhiNhanChamCong`. Với điểm danh theo lô, service mở một connection, tắt auto-commit, gọi DAO cho từng dòng rồi commit; nếu có lỗi thì rollback cả lô. Hai trigger kiểm tra giờ và trạng thái nhân viên cũng áp dụng với cập nhật. Khi kỳ lương đã chốt, trigger ở module 05 kiểm tra kỳ cũ và kỳ đích, nên thêm, sửa, xóa hoặc chuyển ngày sang kỳ đã chốt đều bị chặn ở cơ sở dữ liệu.”
+**Lời nói:** “Khi ghi một dòng, DAO gọi `sp_GhiNhanChamCong`. Nhóm đã hoàn thiện thủ tục với cấu trúc TRY...CATCH kết hợp bare THROW theo Option B để đáp ứng đúng tiêu chí rubric, trong khi cố ý không mở transaction nội bộ để nhường toàn quyền quản lý tính nguyên tử cho Java Service. Với điểm danh theo lô, Service mở một connection, tắt auto-commit, gọi DAO cho từng dòng rồi commit; nếu bất kỳ dòng nào lỗi thì rollback cả lô. Hai trigger kiểm tra giờ và trạng thái nhân viên cũng áp dụng với cập nhật. Khi kỳ lương đã chốt, trigger ở module 05 kiểm tra kỳ cũ và kỳ đích, chặn mọi thao tác thêm, sửa, xóa hoặc chuyển ngày vào kỳ đã chốt.”
 
 ### Slide 6 — Tổng hợp và nối sang lương (khoảng 40 giây, kết thúc gần phút 04:00)
 
-**Trên slide:** `vw_TongHopChamCongThang`; `IX_CHAMCONG_MaNV_Ngay`; `fn_TongPhuCap` phối hợp TV2–TV3. Payroll đếm trực tiếp CHAMCONG để tính ngày công.
+**Trên slide:** `vw_TongHopChamCongThang`; `IX_CHAMCONG_MaNV_Ngay` (Benchmark canonical v3: Messages 574→5 / 99.1289%, XML 522→5 / 99.0421%); `fn_TongPhuCap` phối hợp TV2–TV3. Payroll đếm trực tiếp CHAMCONG để tính ngày công.
 
-**Lời nói:** “Tab Tổng hợp theo tháng đọc `vw_TongHopChamCongThang`, cho biết ngày làm, ngày vắng, đi trễ, về sớm và giờ làm. Để tổng phụ cấp theo nhân viên và kỳ, `fn_TongPhuCap` cộng `SoTien` trong tháng, năm được truyền vào và trả 0 nếu chưa có khoản; em phối hợp TV3, và thủ tục tính lương gọi function này khi có trong schema. Riêng số ngày công, TV4 đếm trực tiếp CHAMCONG trong transaction, không gọi `fn_TinhSoNgayCong` của TV1. Em xin chuyển phần nói tiếp theo cho TV3.”
+**Lời nói:** “Tab Tổng hợp theo tháng đọc `vw_TongHopChamCongThang`, cho biết ngày làm, ngày vắng, đi trễ, về sớm và giờ làm. Chỉ mục covering `IX_CHAMCONG_MaNV_Ngay` giúp loại bỏ 100% Key Lookup, giảm từ 574 xuống 5 logical reads theo Messages (99.13%) và 522 xuống 5 theo XML plan (99.04%) trên fixture chuẩn 30.000 dòng. Để tổng phụ cấp theo nhân viên và kỳ, `fn_TongPhuCap` trong module 03 thuộc trách nhiệm TV2 tính tổng tiền phụ cấp; và thủ tục tính lương gọi function này. Riêng số ngày công, TV4 đếm trực tiếp CHAMCONG trong transaction, không gọi `fn_TinhSoNgayCong` của TV1. Em xin chuyển phần nói tiếp theo cho TV3.”
 
 **Câu bàn giao ở demo:** Sau đoạn demo TV2 khoảng 45 giây, nói: “Phần công có sẵn đã được đối chiếu và tổng hợp; em xin chuyển màn hình cho bạn Trần Tiến Đạt trình bày phụ cấp và khấu trừ.” Đây là bàn giao trong demo sau 10 phút nói, tách biệt với câu chuyển cho TV3 ở cuối slide 6.
 
@@ -111,7 +111,12 @@ Nếu cần mở source Java, vào `ChamCongService.nhapChamCongTheoLo` để ch
 
 Nếu cần mở giao diện, vào `ChamCongPanel` phần tải nhật ký và phần tải tổng hợp; truy vấn tổng hợp đi tiếp qua `ChamCongService.layTongHopChamCongThang` tới DAO đọc view.
 
-Không diễn đạt bằng chứng fixture hoặc test tự động thành “đã demo tay”. [FIX_TASKLIST](FIX_TASKLIST.md) ghi log runtime: suite TV2 strict PASS trong runner tích hợp; các race khóa kỳ và cleanup PASS; ảnh tracked cũ không phải bằng chứng runtime hiện tại. [Báo cáo GUI 09/10](GUI_TEST_REPORT_20261009.md), G06/G07/G12, xác nhận HR ghi A ngày 09/10/2026, tổng hợp 10/2026 có 1 ngày làm/9 giờ và Payroll chỉ đọc công, các nút ghi bị vô hiệu hóa. Hồi quy sau sửa có **224 assertions PASS** (GuiQa 55, Security 104, LightTheme 45, LoginChip 20). Nhập lô GUI và kiểm thử thủ công đầy đủ UI với database chậm vẫn chưa có minh chứng trong đợt này.
+Không diễn đạt bằng chứng fixture hoặc test tự động thành “đã demo tay”. [FIX_TASKLIST](FIX_TASKLIST.md) và [TV2_TASKLIST_HOAN_THIEN_20261015](TV2_TASKLIST_HOAN_THIEN_20261015.md) ghi log runtime:
+- Trình biên dịch Java: quan sát `javac 21.0.8 (với cờ --release 11)`, hoàn tất 55 mã nguồn (bao gồm `src/test/java/com/test/Tv2JdbcIntegrationTest.java`; không phải native JDK 11).
+- Kiểm thử offline Java: `.\run_verification.ps1 -TestClass SecurityRegressionTest` (104 assertions PASS, log [build/test-results/Java_Verification_20261015_174231_883.log](../build/test-results/Java_Verification_20261015_174231_883.log)) và `.\run_verification.ps1 -TestClass GuiQaRegressionTest` (88 assertions PASS, log [build/test-results/Java_Verification_20261015_174248_559.log](../build/test-results/Java_Verification_20261015_174248_559.log)).
+- Kiểm thử runtime SQL/JDBC: Đã chạy trên Database QA dùng một lần có kiểm soát quyền sở hữu `PRJ_Fix_QA_20261015_175527_ea6da333`; suite `database/tests_TV2/test_module_chamcong_TV2.sql` đạt 21/21 PASS (log [docs/evidence/TV2/optionb-20261015/20261015_175527_ea6da333/test_module_chamcong_TV2.log](evidence/TV2/optionb-20261015/20261015_175527_ea6da333/test_module_chamcong_TV2.log)); test tương tranh Closed_Source_Concurrency PASS. Live JDBC Integration Test (`src/test/java/com/test/Tv2JdbcIntegrationTest.java` qua `database/tests_TV2/run_tv2_jdbc_optionb.ps1`) thay thế hoàn toàn các bộ minh chứng trước đây (34, 59 assertions và đợt trung gian 174112), đạt **87/87 assertions PASS (100%)** qua 8 negative guards, 6 kịch bản bắt buộc + chẩn đoán transaction cùng connection, kiểm tra typed SQLServerError (log [docs/evidence/TV2/optionb-20261015/20261015_175527_ea6da333/Tv2JdbcIntegrationTest.log](evidence/TV2/optionb-20261015/20261015_175527_ea6da333/Tv2JdbcIntegrationTest.log)). QA database đã được DROP sạch sẽ sau kiểm thử.
+- Đồng bộ package và manifest: Đã đồng bộ `Bo_nop_Nhom06/database/02_Module_ChamCong_TV2.sql` (10,064 bytes, SHA-256 `4DBB78FC0B3946D4048FB779EB5111F10748BB81D7F608B6DDF1F69ACACFD471`) và cập nhật dòng 3 của `Bo_nop_Nhom06/SHA256_MANIFEST.csv`, xác thực thành công 537/537 file trong manifest. Word nhóm (đoạn 193, 824) và Slide 5 notes đang chờ TV5 cập nhật theo đề xuất của TV2.
+- *Hiện trạng bàn giao:* Đã hoàn tất kiểm thử nội bộ đạt 100% PASS, hiện ở trạng thái **Awaiting Independent Review** (chờ reviewer độc lập nghiệm thu trước khi Git delivery; chưa tuyên bố PR được merge hay giảng viên đã nghiệm thu).
 
 ## 6. Câu hỏi vấn đáp gợi ý
 
@@ -125,11 +130,11 @@ Không diễn đạt bằng chứng fixture hoặc test tự động thành “�
 8. **`fn_TongPhuCap` làm gì và thuộc ai?** Nhận MaNV/tháng/năm, SUM SoTien phụ cấp đúng nhân viên/kỳ, trả 0 khi không có khoản. TV2 phối hợp TV3; function ở module 03 và được payroll gọi để tính tổng phụ cấp.
 9. **Payroll có thể sửa công không?** Role Payroll chỉ được SELECT CHAMCONG; INSERT/UPDATE/DELETE và execute SP ghi công bị DENY. TV5 phụ trách quyền DB.
 10. **Sau chốt, điều gì bảo vệ nguồn chấm công?** Trigger ở module 05 kiểm tra trạng thái kỳ bằng khóa `UPDLOCK, HOLDLOCK` và từ chối insert/update/delete có ngày thuộc kỳ đã chốt.
-11. **Trạng thái kiểm thử hiện tại được xác nhận ở đâu?** Mở FIX_TASKLIST cho suite SQL/race và báo cáo GUI 09/10 cho ca thao tác trực tiếp. GUI đã kiểm tra công 10/2026; lần tập tiếp theo dùng lại fixture này. Ảnh cũ và hướng dẫn GUI không thay cho kết quả chạy thực tế.
+11. **Trạng thái kiểm thử hiện tại được xác nhận ở đâu?** Mở `TV2_TASKLIST_HOAN_THIEN_20261015.md` và `FIX_TASKLIST.md`: offline Java regressions (Security 104 assertions PASS, GuiQa 88 assertions PASS); live SQL QA 21/21 PASS; live JDBC transaction 87/87 assertions PASS (thay thế các bộ thử nghiệm 34 và 59 assertions cũ); package SQL và manifest SHA-256 đã đồng bộ 537/537 files verified. Trạng thái hiện tại là Awaiting Independent Review trước khi chuyển giao Git.
 
 ## 7. Checklist trước khi lên trình bày
 
-- [ ] Slide 4–6 khớp tên đối tượng SQL và ownership; không ghi điểm rubric chưa có.
+- [ ] Slide 4–6 khớp tên đối tượng SQL và ownership; không ghi điểm rubric chưa có. Ghi chú Slide 5 và Word nhóm đoạn 193/824 đang chờ TV5 cập nhật theo đề xuất của TV2; buổi rehearsal chung đang chờ tiến hành.
 - [ ] Nếu nhóm chọn phân bổ này, phần nói TV2 khoảng 02:00 và demo khoảng 00:45; thời lượng được thống nhất khi rehearsal.
 - [ ] Launcher trỏ database QA; đăng nhập đúng `gui_hr`; không hiển thị/copy mật khẩu.
 - [ ] Chỉ đọc dòng A–2026-10-09; nếu trình diễn trùng ngày, gọi rõ đây là ca lỗi riêng.

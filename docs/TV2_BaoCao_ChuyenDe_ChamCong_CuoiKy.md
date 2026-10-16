@@ -6,8 +6,8 @@
 - **Đề tài:** Hệ Thống Quản Lý Nhân Sự và Tiền Lương
 - **Nhóm thực hiện:** Nhóm 06
 - **Thành viên chịu trách nhiệm:** TV2 – Phạm Minh Quân (MSSV: 24110311)
-- **Branch làm việc:** `feature/tv2-week3-evidence`
-- **Rà soát tài liệu:** 08/10/2026. Benchmark và ảnh lưu từ lần làm trước là tư liệu lịch sử; evidence runtime hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md).
+- **Branch làm việc:** `fix/tv2-sp-try-catch` (tạo từ live updated `main` @ `e00da71`)
+- **Rà soát tài liệu:** 15/10/2026. Đã phê duyệt và áp dụng **Phương án B (Option B)**: bao bọc validation + INSERT + SCOPE_IDENTITY trong `TRY...CATCH` với bare `THROW;` trong `sp_GhiNhanChamCong`. Benchmark canonical v3 ngày 13/10/2026 (Messages 574→5 / 99.1289%, XML 522→5 / 99.0421%, unexplained 52 reads). Bằng chứng lịch sử xem `screenshots/TV2/`; evidence runtime hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md).
 
 ---
 
@@ -70,15 +70,19 @@ ON dbo.CHAMCONG (MaNV, NgayChamCong)
 INCLUDE (GioVao, GioRa, TrangThai);
 ```
 
-### 2.3 Stored Procedure `sp_GhiNhanChamCong`
+### 2.3 Stored Procedure `sp_GhiNhanChamCong` (Cập nhật Option B)
 Thủ tục tiếp nhận 7 tham số đầu vào/ra, thực hiện validate toàn diện:
+- Tiếp nhận: `@MaNV`, `@NgayChamCong`, `@GioVao`, `@GioRa = NULL`, `@TrangThai`, `@GhiChu = NULL`, `@MaChamCong INT OUTPUT`.
 - Kiểm tra mã nhân viên, ngày công, giờ vào không được NULL.
 - Kiểm tra ngày không vượt quá ngày hiện tại.
 - Kiểm tra miền giá trị trạng thái (`CO_MAT`, `DI_TRE`, `VE_SOM`, `VANG`).
+- Kiểm tra độ dài ghi chú ≤ 255 ký tự.
 - Kiểm tra logic giờ ra phải lớn hơn giờ vào.
 - Kiểm tra trạng thái nhân viên trong `dbo.NHANVIEN` phải là `DANG_LAM_VIEC`.
 - Kiểm tra trước trùng lặp cặp `(MaNV, NgayChamCong)`.
-- Ghi nhận an toàn và trả về mã chấm công vừa sinh qua tham số `@MaChamCong OUTPUT`.
+- Ghi nhận an toàn và gán `@MaChamCong = SCOPE_IDENTITY()`.
+- **Cấu trúc TRY...CATCH (Option B):** Toàn bộ validation, lệnh INSERT và gán OUTPUT được bao bọc trong khối `BEGIN TRY ... END TRY`. Khi phát sinh lỗi (do `RAISERROR 16` ở bước tiền kiểm tra hoặc do vi phạm ràng buộc/trigger hệ thống), luồng điều khiển chuyển sang `BEGIN CATCH`, tại đây lệnh bare `THROW;` tái ném ngoại lệ nguyên trạng về phía caller.
+- **Bảo toàn Transaction Ownership:** Thủ tục cố ý không chứa `BEGIN TRANSACTION`, `COMMIT` hay `ROLLBACK` nội bộ. Toàn quyền quản trị tính nguyên tử (atomicity) của giao dịch điểm danh theo lô thuộc về tầng Java Service (`ChamCongService.nhapChamCongTheoLo`), bảo đảm luồng rollback sạch sẽ của caller.
 
 ### 2.4 Các Trigger kiểm soát toàn vẹn
 - **`trg_ChamCong_KiemTraGio` (AFTER INSERT, UPDATE):** Kiểm tra set-based trên bảng giả `inserted`. Nếu phát hiện `GioRa IS NOT NULL AND GioRa <= GioVao`, lập tức tung `RAISERROR` và thực thi `ROLLBACK TRANSACTION`.
@@ -91,7 +95,13 @@ View thực hiện tính toán tự động cho từng nhân viên theo từng t
 - Số lần đi trễ (`SoLanDiTre`), số lần về sớm (`SoLanVeSom`), số ngày vắng (`SoNgayVang`).
 - Tổng số giờ làm việc thực tế (`TongSoGioLam`): Tính toán dựa trên chênh lệch số phút giữa `GioVao` và `GioRa`, quy đổi ra giờ thập phân.
 
-*(Lưu ý về phạm vi sở hữu: TV2 chỉ sở hữu các đối tượng chấm công nêu trên. Các đối tượng phụ cấp và khấu trừ như `sp_XoaKyLuongChuaChot`, `fn_TongKhauTru`, `vw_TongPhuCapThang`, `IX_PHUCAP_MaNV_ThangNam` thuộc quyền sở hữu của TV3 theo đúng kế hoạch phân công).*
+### 2.6 Hàm vô hướng `fn_TongPhuCap` (Phân công TV2 phối hợp TV3)
+Theo kế hoạch phân công và ma trận rubric (≥5 Function), TV2 phụ trách hàm `dbo.fn_TongPhuCap(@MaNV INT, @Thang INT, @Nam INT)` được cài đặt tại `database/03_phucap_khautru_TV3.sql`:
+- Tính tổng tiền phụ cấp của nhân viên theo tháng và năm từ bảng `PHUCAPNHANVIEN`.
+- Trả về `ISNULL(SUM(SoTien), 0)` dưới dạng `DECIMAL(18,2)`.
+- Được thủ tục tính lương `sp_TinhBangLuongThang` (TV4) liên kết sử dụng khi tổng hợp lương.
+
+*(Lưu ý về phạm vi sở hữu: Ngoài `fn_TongPhuCap` được giao, các đối tượng phụ cấp/khấu trừ khác như `sp_XoaKyLuongChuaChot`, `fn_TongKhauTru`, `vw_TongPhuCapThang`, `IX_PHUCAP_MaNV_ThangNam` thuộc quyền sở hữu của TV3).*
 
 ---
 
@@ -112,20 +122,23 @@ Kịch bản benchmark cũ được lưu tại `database/test_benchmark_index_TV
    - Tuyệt đối không can thiệp, xóa sửa bảng sản xuất `dbo.CHAMCONG`.
    - Kết thúc script, bảng tạm được tự động giải phóng sạch sẽ.
 
-### 3.2 Bảng số đo lịch sử (fixture cũ)
+### 3.2 Bảng số đo benchmark canonical v3 (Run ID: run_20261013_140800)
 
-| Chỉ Số Đánh Giá | Giai Đoạn BEFORE (UQ Seek + Key Lookup) | Giai Đoạn AFTER (Covering Index Seek) | Mức Độ Cải Thiện |
-|---|:---:|:---:|:---:|
-| **Toán tử vật lý (Operator)** | Index Seek trên `UQ_Bench_MaNV_Ngay` + **Key Lookup (Clustered)** | **Index Seek thuần túy** trên `IX_Bench_CHAMCONG_MaNV_Ngay` | Loại bỏ 100% Key Lookup (zero Key Lookup) |
-| **Số trang đọc logic (Logical Reads)** | **574 pages** | **5 pages** | **Giảm 99.13% I/O** |
-| **Số lần truy cập Clustered Index** | 1 lần cho mỗi dòng tìm thấy (Lookup) | **0 lần** | Triệt tiêu I/O thứ cấp |
-| **Scan Count** | 1 | 1 | Quét theo khoảng khóa xác định |
-| **Bảo toàn CSDL sản xuất** | Bảng `dbo.CHAMCONG` nguyên vẹn | Bảng `dbo.CHAMCONG` nguyên vẹn | Cách ly hoàn toàn bằng `#CHAMCONG_BENCHMARK` |
+Thực nghiệm chính thức ngày 13/10/2026 trên database QA ủy quyền `PRJ_Fix_QA_20261013_001534_ae185d81` với fixture chuẩn 30.000 bản ghi trên bảng tạm `#CHAMCONG_BENCHMARK`:
 
-*(Ghi chú kỹ thuật: Báo cáo tuân thủ nguyên tắc không sử dụng thời gian đồng hồ wall-clock time để so sánh vì biến thiên theo tài nguyên nền của máy chủ).*
+| STT | Kịch bản truy vấn | Baseline (`#CHAMCONG_BENCHMARK`) | Đo lường Covering Index | Logical Reads Before (Messages / XML) | Logical Reads After (Messages / XML) | Tỷ lệ giảm Logical Reads (Messages / XML) | Thời gian CPU / Elapsed (Messages `SET STATISTICS TIME`) | Thời gian CPU / Elapsed (XML Plan `QueryTimeStats`) |
+|:---:|---|---|---|:---:|:---:|:---:|:---:|:---:|
+| 1 | **Truy vấn chi tiết (1.1 ➔ 3.1):** Tra cứu công 9 tháng nhân viên 25 (273 bản ghi) | `UQ_Bench_MaNV_Ngay` (Index Seek + Key Lookup) | `IX_Bench_CHAMCONG_MaNV_Ngay` (Pure Index Seek, 0 Key Lookup) | **574 / 522** | **5 / 5** | **99.1289% / 99.0421%** | **15ms / 31ms ➔ 0ms / 2ms** | **0ms / 0ms ➔ 0ms / 0ms** |
+| 2 | **Truy vấn tổng hợp (1.2 ➔ 3.2):** Tổng hợp công & giờ làm theo tháng (9 bản ghi) | `UQ_Bench_MaNV_Ngay` (Seek + Lookup + Stream Aggregate) | `IX_Bench_CHAMCONG_MaNV_Ngay` (Seek + Stream Aggregate, 0 Lookup) | **574 / 522** | **5 / 5** | **99.1289% / 99.0421%** | *Không xuất dòng kết thúc trong Messages* | **1ms / 1ms ➔ 0ms / 0ms** *(không tuyên bố tốc độ <1ms)* |
 
-### 3.3 Ảnh benchmark lịch sử
-Năm ảnh trong `screenshots/TV2/` là artefact lịch sử; chúng không xác nhận số đo/runtime của source hiện tại:
+**Phân tích kỹ thuật chuyên sâu:**
+1. Khi chưa có covering index, truy vấn chi tiết 273 ngày công buộc SQL Server phải thực hiện 273 lần Key Lookup về Clustered Index, tiêu tốn **574 logical reads** theo `SET STATISTICS IO` (tầng buffer pool) và **522 logical reads** theo bộ đếm per-operator runtime trong XML Execution Plan. Các bộ đếm quan sát được có sự chênh lệch (574 trang theo Messages `SET STATISTICS IO` so với 522 trang theo bộ đếm per-operator runtime trong XML Execution Plan), và nguyên nhân chi tiết của 52 trang chênh lệch này là UNKNOWN (không đưa ra giả định chưa kiểm chứng).
+2. Khi tạo covering index `IX_Bench_CHAMCONG_MaNV_Ngay` với mệnh đề `INCLUDE (GioVao, GioRa, TrangThai)`, toàn bộ dữ liệu cần thiết nằm trọn vẹn trên trang lá của index phụ. Kế hoạch loại bỏ hoàn toàn 273 lần Key Lookup. Số lượt đọc logic giảm mạnh còn đúng **5 trang** ở cả hai công cụ đo — đạt hiệu suất cắt giảm **99.1289% logical reads** (theo Messages `SET STATISTICS IO`) và **99.0421%** (theo XML Execution Plan). Đây là số liệu đo lường logical reads / giảm truy xuất bộ đệm buffer pool trên warm cache, không đưa ra tuyên bố về cắt giảm đọc đĩa vật lý.
+3. Về thời gian thực thi: Truy vấn chi tiết ghi nhận thời gian chạy theo Messages giảm từ 31ms xuống 2ms (CPU 15ms xuống 0ms); trong khi bộ đếm `QueryTimeStats` của XML Plan ghi nhận 0ms CPU / 0ms Elapsed cho cả trước và sau do độ phân giải lấy mẫu. Truy vấn tổng hợp ghi nhận `QueryTimeStats` giảm từ 1ms/1ms xuống 0ms/0ms (Messages không xuất dòng kết thúc cho câu aggregate). Nhóm minh bạch không tuyên bố kết luận về độ tăng tốc ở cấp độ thời gian dưới 1ms.
+4. Cảnh báo *'Null value is eliminated by an aggregate or other SET operation'* phát sinh từ phép toán `COUNT(CASE WHEN TrangThai IN (...) THEN 1 END)` không có mệnh đề `ELSE`, theo đúng chuẩn xử lý giá trị NULL của ANSI SQL.
+
+### 3.3 Ảnh benchmark lịch sử (tư liệu tham khảo)
+Năm ảnh trong `screenshots/TV2/` là artefact lịch sử từ giai đoạn thiết kế ban đầu; chúng phản ánh trực quan sự chuyển đổi plan nhưng tách biệt với số liệu đo canonical v3 ngày 13/10/2026:
 - `screenshots/TV2/TV2_Benchmark_ExecutionPlan_BEFORE.png`: Kế hoạch thực thi BEFORE xuất hiện toán tử Index Seek trên `UQ_Bench_MaNV_Ngay` kèm theo Key Lookup (Clustered).
 - `screenshots/TV2/TV2_Benchmark_ExecutionPlan_AFTER.png`: Kế hoạch thực thi AFTER chuyển sang Index Seek thuần túy trên `IX_Bench_CHAMCONG_MaNV_Ngay`, 0 Key Lookup.
 - `screenshots/TV2/TV2_Benchmark_StatisticsIO_BEFORE.png`: Thống kê I/O giai đoạn BEFORE ghi nhận **574 logical reads**.
@@ -197,3 +210,10 @@ Danh sách dưới đây mô tả thiết kế test. Log và kết quả runtime
 1. **Ảnh UI:** Ảnh lưu trữ là tư liệu lịch sử, không được xem là minh chứng runtime hiện tại. Trạng thái kiểm thử UI hiện hành xem [FIX_TASKLIST](FIX_TASKLIST.md).
 2. **Dữ liệu `dbo.CHAMCONG`:** Không suy luận số lượng/baseline từ tài liệu cũ. QA fixtures được tạo riêng và dọn bởi runner; database dự án gốc không bị mutate trong xác minh nêu tại [FIX_TASKLIST](FIX_TASKLIST.md).
 3. **Mở rộng nguồn thu thập dữ liệu chấm công:** Hệ thống hiện hoạt động trên cơ chế nhập liệu từ giao diện và điểm danh hàng loạt (Batch Transaction). Hướng mở rộng tiếp theo là xây dựng Service lắng nghe sự kiện từ máy chấm công vân tay / khuôn mặt (ZKTeco/Hikvision API) để tự động đẩy dữ liệu vào CSDL.
+4. **Tình trạng kiểm thử và xác minh hiện hành (15/10/2026):**
+   - Trình biên dịch: quan sát được `javac 21.0.8` (với cờ `--release 11`), biên dịch thành công 55 mã nguồn Java (bao gồm `src/test/java/com/test/Tv2JdbcIntegrationTest.java`; không phải môi trường native JDK 11).
+   - Kiểm thử offline Java: Lệnh thực thi `.\run_verification.ps1 -TestClass SecurityRegressionTest` ghi nhận **104 assertions PASS** tại log [build/test-results/Java_Verification_20261015_174231_883.log](../build/test-results/Java_Verification_20261015_174231_883.log); lệnh `.\run_verification.ps1 -TestClass GuiQaRegressionTest` ghi nhận **88 assertions PASS** tại log [build/test-results/Java_Verification_20261015_174248_559.log](../build/test-results/Java_Verification_20261015_174248_559.log).
+   - Kiểm thử runtime live SQL: Thực thi trên Database QA dùng một lần có ownership marker `PRJ_Fix_QA_20261015_175527_ea6da333`, cài đặt đầy đủ schema 5 modules (gồm TV2 Option B hash `4DBB78FC0B3946D4048FB779EB5111F10748BB81D7F608B6DDF1F69ACACFD471`), kiểm tra định nghĩa thủ tục có TRY/CATCH + bare THROW và OUTPUT. Bộ test suite `database/tests_TV2/test_module_chamcong_TV2.sql` đạt **21 / 21 PASS (100%)** (log [docs/evidence/TV2/optionb-20261015/20261015_175527_ea6da333/test_module_chamcong_TV2.log](evidence/TV2/optionb-20261015/20261015_175527_ea6da333/test_module_chamcong_TV2.log)), test tương tranh `database/tests/Closed_Source_Concurrency.ps1` **PASS** (log [docs/evidence/TV2/optionb-20261015/20261015_175527_ea6da333/Closed_Source_Concurrency.log](evidence/TV2/optionb-20261015/20261015_175527_ea6da333/Closed_Source_Concurrency.log)).
+   - Kiểm thử live JDBC Transaction Integration Test (`src/test/java/com/test/Tv2JdbcIntegrationTest.java` qua `database/tests_TV2/run_tv2_jdbc_optionb.ps1`): Các minh chứng trước đây (34, 59 assertions và đợt trung gian 174112) đã được lưu lịch sử superseded. Thực hiện kiểm thử đầu cuối qua `ChamCongService.nhapChamCongTheoLo` -> `ChamCongDAO.insertInTransaction` -> `dbo.sp_GhiNhanChamCong` -> `SQLException` -> `rollback`. Đạt **87 / 87 assertions PASS (100%)** qua 8 negative guards (từ chối null/prod/protected DB/missing credentials trước khi mutate), 6 kịch bản bắt buộc + chẩn đoán transaction cùng connection, chứng minh 2 INSERTs có ID > 0 trước rollback, bắt đúng causal `SQLServerException` với `SQLServerError` (Number=50000, Severity=16, State=1) tiếng Việt chuẩn, kiểm tra @@TRANCOUNT/XACT_STATE. Log: [docs/evidence/TV2/optionb-20261015/20261015_175527_ea6da333/Tv2JdbcIntegrationTest.log](evidence/TV2/optionb-20261015/20261015_175527_ea6da333/Tv2JdbcIntegrationTest.log). QA database có marker đã được DROP sạch sẽ sau kiểm thử.
+   - Đồng bộ package và manifest: Đã đồng bộ `Bo_nop_Nhom06/database/02_Module_ChamCong_TV2.sql` (10,064 bytes, SHA-256 `4DBB78FC0B3946D4048FB779EB5111F10748BB81D7F608B6DDF1F69ACACFD471`) và cập nhật dòng 3 của `Bo_nop_Nhom06/SHA256_MANIFEST.csv`, xác thực thành công 537/537 file trong manifest. Word nhóm (đoạn 193, 824) và Slide 5 notes đang chờ TV5 cập nhật theo đề xuất của TV2.
+   - *Hiện trạng bàn giao:* Đã hoàn tất kiểm thử nội bộ đạt 100% PASS, hiện ở trạng thái **Awaiting Independent Review** (chờ reviewer độc lập nghiệm thu trước khi Git delivery; chưa tuyên bố PR được merge hay giảng viên đã nghiệm thu).

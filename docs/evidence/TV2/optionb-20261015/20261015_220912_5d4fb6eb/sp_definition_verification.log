@@ -1,0 +1,3 @@
+﻿TryCatchStatus         OutputStatus              ParamCount 
+---------------------- ------------------------- -----------
+PASS: HasTryCatchThrow PASS: HasMaChamCongOutput           7
