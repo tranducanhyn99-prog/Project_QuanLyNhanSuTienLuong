@@ -1,0 +1,5 @@
+﻿PASS close versus attendance: waited 1060 ms, rejected, source unchanged.
+PASS close versus allowance: waited 1010 ms, rejected, source unchanged.
+PASS close versus deduction: waited 1004 ms, rejected, source unchanged.
+PASS close versus payroll detail: waited 1013 ms, rejected, source unchanged.
+PASS closing-race fixture cleanup.

@@ -1,0 +1,122 @@
+﻿========================================================
+TV2 OPTION B JDBC INTEGRATION TEST SUITE
+========================================================
+
+--- STEP 1: Negative Guard Verification ---
+  [PASS] Negative guard rejected null DB name
+  [PASS] Negative guard rejected production DB name (QuanLyNhanSuTienLuong)
+  [PASS] Negative guard rejected protected baseline QA DB (PRJ_Fix_QA_20261013_001534_ae185d81)
+  [PASS] Negative guard rejected superseded dropped QA DB (PRJ_Fix_QA_20261015_163041_72cc2228)
+  [PASS] Negative guard rejected superseded dropped QA DB (PRJ_Fix_QA_20261015_171103_706b5479)
+  [PASS] Negative guard rejected non-conforming QA DB name pattern
+  [PASS] Negative guard rejected null ownership marker
+  [PASS] Negative guard rejected missing environment credentials (no SQL mutation)
+
+--- STEP 2: Target Resolution and Secure Authentication ---
+  [PASS] Target database name and marker syntax validated: PRJ_Fix_QA_20261015_175527_ea6da333
+
+--- STEP 3: Database Ownership Marker and Identity Verification ---
+  [PASS] Connected via DatabaseConnection as login_HRManager
+  [PASS] Verified ORIGINAL_LOGIN is login_HRManager
+  [PASS] Verified connected DB is PRJ_Fix_QA_20261015_175527_ea6da333
+  [PASS] Negative guard confirmed: mismatched ownership marker rejected before writes
+  [PASS] Verified database-scoped ownership marker matches current run token
+  [PASS] Verified open payroll period Month 9/2026 is CHUA_CHOT
+  [PASS] Verified closed payroll period Month 8/2026 is DA_CHOT
+  [PASS] Test employees initialized (Active=5, Inactive=6)
+
+--- SCENARIO 1: Valid batch commit ---
+  [PASS] Scenario 1: All 3 records successfully committed in SQL Server
+  [PASS] Scenario 1: Generated MaChamCong OUTPUT assigned to all 3 model objects (IDs: 18, 19, 20)
+
+--- SCENARIO 2: Failure after successful INSERTs (Rollback Validation) ---
+  [PASS] Scenario 2: Pre-existing attendance created (ID=21)
+  [PASS] Scenario 2: Service caught duplicate insertion failure and rolled back
+  [PASS] Scenario 2 Duplicate Batch: Exception is non-null
+  [PASS] Scenario 2 Duplicate Batch: Causal exception is SQLServerException
+  [PASS] Scenario 2 Duplicate Batch: SQLServerError packet is available
+    [Scenario 2 Duplicate Batch ServerError] Number=50000, Severity=16, State=1, Procedure=dbo.sp_GhiNhanChamCong, Message=Nhân viên đã có bản ghi chấm công trong ngày này!
+  [PASS] Scenario 2 Duplicate Batch: getErrorNumber() == 50000 (got 50000)
+  [PASS] Scenario 2 Duplicate Batch: getErrorSeverity() == 16 (got 16)
+  [PASS] Scenario 2 Duplicate Batch: getErrorState() == 1 (got 1)
+  [PASS] Scenario 2 Duplicate Batch: getErrorMessage() contains exact text: 'Nhân viên đã có bản ghi chấm công trong ngày này!' (actual: 'Nhân viên đã có bản ghi chấm công trong ngày này!')
+  [PASS] Scenario 2: Row 1 model received generated ID (22) before failure
+  [PASS] Scenario 2: Row 2 model received generated ID (23) before failure
+  [PASS] Scenario 2: Row 3 model ID remained 0 (failed before OUTPUT assignment)
+  [PASS] Scenario 2: Rows 1 and 2 were ROLLED BACK by Service (count=0 in DB)
+  [PASS] Scenario 2: Pre-existing record still exists
+  [PASS] Scenario 2: Pre-existing ID unchanged (21)
+  [PASS] Scenario 2: Pre-existing content EXACTLY unchanged
+  [DIAGNOSTIC] Checking @@TRANCOUNT and XACT_STATE() in failing JDBC context:
+  [PASS] Diagnostic: Prior insert in transaction succeeded (ID=24)
+  [PASS] Diagnostic: @@TRANCOUNT = 1 in failing connection context before rollback
+  [PASS] Diagnostic: XACT_STATE() = 1 (committable/open, caller owns rollback decision)
+  [PASS] Diagnostic: @@TRANCOUNT = 0 after conn.rollback()
+  [PASS] Diagnostic: XACT_STATE() = 0 after conn.rollback()
+
+--- SCENARIO 3: Java-side validation failure writes zero ---
+  [PASS] Scenario 3: Java prevalidation rejected future date before SQL call: Ngày chấm công không được vượt quá ngày hiện tại.
+  [PASS] Scenario 3: IllegalArgumentException caught
+  [PASS] Scenario 3: Zero rows written to DB after Java prevalidation rejection
+
+--- SCENARIO 4A: Inactive employee batch rejection with prior valid INSERT ---
+  [PASS] Scenario 4A: Inactive employee batch rejected by SQL Server
+  [PASS] Scenario 4A Inactive Employee: Exception is non-null
+  [PASS] Scenario 4A Inactive Employee: Causal exception is SQLServerException
+  [PASS] Scenario 4A Inactive Employee: SQLServerError packet is available
+    [Scenario 4A Inactive Employee ServerError] Number=50000, Severity=16, State=1, Procedure=dbo.sp_GhiNhanChamCong, Message=Không thể ghi nhận chấm công cho nhân viên đã nghỉ việc hoặc không hoạt động!
+  [PASS] Scenario 4A Inactive Employee: getErrorNumber() == 50000 (got 50000)
+  [PASS] Scenario 4A Inactive Employee: getErrorSeverity() == 16 (got 16)
+  [PASS] Scenario 4A Inactive Employee: getErrorState() == 1 (got 1)
+  [PASS] Scenario 4A Inactive Employee: getErrorMessage() contains exact text: 'Không thể ghi nhận chấm công cho nhân viên đã nghỉ việc hoặc không hoạt động!' (actual: 'Không thể ghi nhận chấm công cho nhân viên đã nghỉ việc hoặc không hoạt động!')
+  [PASS] Scenario 4A: Prior valid row received generated ID (25) before failure
+  [PASS] Scenario 4A: Inactive row ID remained 0 (unset)
+  [PASS] Scenario 4A: Zero rows written to DB (prior valid row rolled back, inactive row rejected)
+
+--- SCENARIO 4B: Closed payroll period batch rejection with prior valid INSERT ---
+  [PASS] Scenario 4B: Closed payroll period batch rejected by SQL trigger
+  [PASS] Scenario 4B Closed Period: Exception is non-null
+  [PASS] Scenario 4B Closed Period: Causal exception is SQLServerException
+  [PASS] Scenario 4B Closed Period: SQLServerError packet is available
+    [Scenario 4B Closed Period ServerError] Number=50000, Severity=16, State=1, Procedure=trg_ChamCong_KhongSuaKhiDaChotLuong, Message=Kỳ lương đã chốt: không được thay đổi chấm công.
+  [PASS] Scenario 4B Closed Period: getErrorNumber() == 50000 (got 50000)
+  [PASS] Scenario 4B Closed Period: getErrorSeverity() == 16 (got 16)
+  [PASS] Scenario 4B Closed Period: getErrorState() == 1 (got 1)
+  [PASS] Scenario 4B Closed Period: getErrorMessage() contains exact text: 'Kỳ lương đã chốt: không được thay đổi chấm công.' (actual: 'Kỳ lương đã chốt: không được thay đổi chấm công.')
+  [PASS] Scenario 4B: Prior valid row received generated ID (26) before failure
+  [PASS] Scenario 4B: Closed period row ID remained 0 (unset)
+  [PASS] Scenario 4B: Zero rows written to DB (prior open-period row rolled back, closed-period row rejected)
+
+--- SCENARIO 5: DAO insertSingle ---
+  [PASS] Scenario 5: insertSingle returned true
+  [PASS] Scenario 5: MaChamCong OUTPUT returned valid ID=28
+  [PASS] Scenario 5: Duplicate insertSingle threw SQLException
+  [PASS] Scenario 5 Duplicate Single: Exception is non-null
+  [PASS] Scenario 5 Duplicate Single: Causal exception is SQLServerException
+  [PASS] Scenario 5 Duplicate Single: SQLServerError packet is available
+    [Scenario 5 Duplicate Single ServerError] Number=50000, Severity=16, State=1, Procedure=dbo.sp_GhiNhanChamCong, Message=Nhân viên đã có bản ghi chấm công trong ngày này!
+  [PASS] Scenario 5 Duplicate Single: getErrorNumber() == 50000 (got 50000)
+  [PASS] Scenario 5 Duplicate Single: getErrorSeverity() == 16 (got 16)
+  [PASS] Scenario 5 Duplicate Single: getErrorState() == 1 (got 1)
+  [PASS] Scenario 5 Duplicate Single: getErrorMessage() contains exact text: 'Nhân viên đã có bản ghi chấm công trong ngày này!' (actual: 'Nhân viên đã có bản ghi chấm công trong ngày này!')
+
+--- SCENARIO 6: Attendance adjustment and monthly aggregation ---
+  [PASS] Scenario 6: Attendance adjusted via updateChamCong
+  [PASS] Scenario 6: Monthly aggregate view returned result
+  [PASS] Scenario 6: SoNgayDiLam = 2 (expected 2, got 2)
+  [PASS] Scenario 6: TongSoGioLam = 18.0 (expected 18.0, got 18.0)
+  [PASS] Scenario 6: Moving attendance into closed period rejected by trigger
+  [PASS] Scenario 6 Move to Closed Period: Exception is non-null
+  [PASS] Scenario 6 Move to Closed Period: Causal exception is SQLServerException
+  [PASS] Scenario 6 Move to Closed Period: SQLServerError packet is available
+    [Scenario 6 Move to Closed Period ServerError] Number=50000, Severity=16, State=1, Procedure=trg_ChamCong_KhongSuaKhiDaChotLuong, Message=Kỳ lương đã chốt: không được thay đổi chấm công.
+  [PASS] Scenario 6 Move to Closed Period: getErrorNumber() == 50000 (got 50000)
+  [PASS] Scenario 6 Move to Closed Period: getErrorSeverity() == 16 (got 16)
+  [PASS] Scenario 6 Move to Closed Period: getErrorState() == 1 (got 1)
+  [PASS] Scenario 6 Move to Closed Period: getErrorMessage() contains exact text: 'Kỳ lương đã chốt: không được thay đổi chấm công.' (actual: 'Kỳ lương đã chốt: không được thay đổi chấm công.')
+
+========================================================
+ALL 6 JDBC SCENARIOS COMPLETED SUCCESSFULLY!
+TOTAL ASSERTIONS PASSED: 87
+========================================================
+Cleaned up isolated JDBC test fixtures.
