@@ -19,3 +19,9 @@ Chọn [bảng v3 để tổng hợp Word](presentation/reviewed_v2/TV5_Proposed
 Đây là hiệu đính của **TV5 cho bước tích hợp**, không phải bản sửa được TV2 ký xác nhận. Các phép đo, raw evidence, 52 file gốc và hai manifest TV2 không đổi. TV5 không cần chờ TV2 sửa biên bản v2 để dùng các đầu vào v3 đã được TV2 công bố trong `README_FINAL.md`.
 
 Log 21 SQL testcase PASS/0 FAIL là bằng chứng CSDL; testcase INSERT/transaction không thay runtime chấm công lô Java/GUI. TRY…CATCH trong `sp_GhiNhanChamCong` và GUI điều chỉnh tháng còn thuộc phối hợp TV5-07. Source TV5 mới về miền tiền/thông báo lỗi không được chứng minh bởi artifacts lịch sử TV2.
+
+## Cập nhật TV5 sau PR #52 — 16/10/2026
+
+PR #52 đã được merge vào `main`. Giữ nguyên 52 file bàn giao gốc và các hiệu đính TV5 trước đó; đã bổ sung riêng [bộ evidence Option B cuối](optionb-20261016/), gồm báo cáo hoàn tất, kết quả vòng rà soát và các log QA. Bằng chứng mới ghi nhận 55 nguồn Java compile, controlled suite 179/179, SQL 21/21, concurrency 4/4, JDBC 105 assertions và cleanup QA thành công. Không suy rộng các kết quả này thành rehearsal GUI hoặc kiểm cài trên máy khác.
+
+TV5 đã cập nhật hai đoạn Word và notes slide 5 theo TRY…CATCH + bare THROW; transaction batch vẫn do Java Service quản lý. Hai bản Word nhóm trong `docs/` và `Bo_nop_Nhom06/report/` hiện giống byte. Deck chung giữ hình ảnh slide, cập nhật notes và dẫn đến evidence trong package. Manifest toàn package gồm 573 file đã được tính lại và xác minh. Bản package của `codex_final_report.md` có ghi chú đóng gói TV5: bốn companion file được báo cáo tham chiếu nhưng không có trong nguồn bàn giao; tên được giữ dạng chữ để không tạo liên kết hỏng.

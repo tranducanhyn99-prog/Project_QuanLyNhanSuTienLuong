@@ -1,19 +1,19 @@
 # TV5 — Checklist hoàn thiện dự án theo rubric
 
-**Trần Đức Anh — 24110155 · Nhóm 06 · Cập nhật 15/10/2026**
+**Trần Đức Anh — 24110155 · Nhóm 06 · Cập nhật 16/10/2026**
 
 Phạm vi: phần SQL/Java của TV5, kiểm thử tích hợp và tổng hợp bộ nộp. Chưa tính luyện nói, vấn đáp hoặc chấm điểm thuyết trình; slide vẫn được theo dõi như một sản phẩm cần bàn giao. Trạng thái hoàn tất được đánh dấu theo minh chứng; các mục còn lại vẫn chờ kiểm/nghiệm thu.
 
 Căn cứ: [phân công](Ke_hoach_phan_cong_Project_DBMS_Nhom06.md), [hướng dẫn hoàn thiện bộ nộp](HUONG_DAN_HOAN_THIEN_BO_NOP.md), [GUI QA](GUI_TEST_REPORT_20261009.md), [evidence TV5](../Bo_nop_Nhom06/evidence/TV5/README_EVIDENCE.md) và [trạng thái bộ nộp](../Bo_nop_Nhom06/README_BO_NOP.md). Tích hợp 15/10 dựa trên `a98371d`; SQL/Java giữ nguyên. Trọng số áp dụng cho cả nhóm; checklist không quy định mức trừ điểm từng việc.
 
-**Tiến độ 15/10:** đã tích hợp TV2/TV3/TV4/TV5, cập nhật Word/deck và kiểm package theo [biên bản hiện tại](TV5_THUC_HIEN_20261015.md). Các kiểm SQL/GUI 13/10 giữ nguyên phạm vi; còn TV1, máy nhận, Windows DPI thật, rehearsal và PDF cuối nếu yêu cầu.
+**Tiến độ 16/10:** đã tích hợp TV1–TV5, cập nhật Word/deck và evidence package; TV1 PR #51 và TV2 PR #52 đã merge. Còn máy nhận, Windows DPI thật, rehearsal và PDF cuối nếu yêu cầu.
 
 ## 1. Đã có — giữ lại, chỉ kiểm lại phần bị ảnh hưởng khi sửa
 
 - [x] SP chốt, function thực nhận, trigger khóa chi tiết, view báo cáo và index phòng ban/chức vụ đã có trong module 05.
 - [x] Có log quyền object, danh tính SQL thật, Employee A/B, concurrency A/B và bốn race nguồn. Phạm vi/ngày chạy được ghi trong evidence TV5.
 - [x] Có Word 55 trang nội dung, ba slide TV5 13–15, source/JDBC/script/README và bản package từng phần.
-- [x] Có regression Java offline 224 assertions; đã nhận bộ TV4 gồm Word, slide 10–12 và evidence.
+- [x] Có regression Java offline 257 assertions; đã nhận bộ TV4 gồm Word, slide 10–12 và evidence.
 
 Các sản phẩm trên không thay cho kiểm thử mới sau thay đổi logic hoặc xác nhận bộ nộp toàn nhóm hoàn tất.
 
@@ -73,7 +73,7 @@ Các sản phẩm trên không thay cho kiểm thử mới sau thay đổi logic
 
 ### TV5-07 — Hoàn tất các ca GUI tích hợp còn thiếu
 
-Các case dưới được chạy bằng Swing/handler/JDBC thật, dialog tự động; không phải demo tay. CHECK tuổi được sửa create-only/kiểm fresh QA. SP TV2 không sở hữu transaction; Java caller giữ rollback lô (đã proof hai INSERT rollback), yêu cầu kế hoạch TRY…CATCH chờ TV2 xác nhận, không thêm catch hình thức.
+Các case dưới được chạy bằng Swing/handler/JDBC thật, dialog tự động; không phải demo tay. CHECK tuổi được sửa create-only/kiểm fresh QA. TV2 Option B hiện dùng TRY…CATCH + bare THROW; Java Service quản lý transaction lô. Kết quả cuối và giới hạn được ghi trong evidence ngày 16/10.
 
 - [x] TV1: CRUD phòng ban/chức vụ, thêm/xóa nhân viên và dữ liệu sai; phối hợp sửa CHECK tuổi SQL đang dùng `DATEDIFF(YEAR, ...)` để kiểm đủ 18 tuổi theo ngày.
 - [x] TV2: chấm công theo lô, rollback khi một dòng sai, điều chỉnh công tháng; đối chiếu xử lý lỗi `sp_GhiNhanChamCong` với yêu cầu TRY…CATCH trong kế hoạch nhóm.
@@ -86,19 +86,19 @@ Các case dưới được chạy bằng Swing/handler/JDBC thật, dialog tự 
 
 ### TV5-08 — Nhận và kiểm evidence TV1–TV3
 
-- [ ] TV1: xác nhận ERD 10 bảng đang có trong Word, chọn/bàn giao hình cuối và log/plan nhân sự; không dùng ảnh ERD cũ 9 bảng.
+- [x] TV1: nhận ERD 10 bảng, log test 7/7, benchmark/plan 75→10 và deck riêng theo PR #51; kiểm nguồn/evidence.
 - [x] TV2: nhận benchmark CHAMCONG mới gồm Messages, Results, bốn actual plans và summary; không dùng số lịch sử 574→5 làm kết quả mới.
 - [x] TV3: nhận 13 file PR #43/#48 vào package; kiểm byte/hash, log/plan, Word và notes; giữ giới hạn provenance theo [biên nhận](../Bo_nop_Nhom06/evidence/TV3/README_EVIDENCE.md).
-- [ ] Hoàn tất kiểm file/ngày/môi trường/query/giới hạn cho toàn nhóm. TV2/TV3/TV4/TV5 đã có biên nhận, marker TV3 đã thay; TV1 còn chờ.
+- [x] Hoàn tất kiểm file/ngày/môi trường/query/giới hạn cho toàn nhóm; TV1/TV2 đã có cập nhật PR #51/#52 và evidence nhận riêng.
 
 **Hoàn tất khi:** evidence TV1–TV3 mở được trong bộ nộp, có nguồn rõ ràng; không bắt chạy lại log đã hợp lệ chỉ để đổi ngày.
 
 ### TV5-09 — Chốt Word và deck chung
 
-Đã có deck 15 slide, nhận đầu vào TV2/TV3/TV4/TV5; notes TV3 được tích hợp 15/10, đã kiểm native render/notes/font. TV1 còn chờ xác nhận phần 1–3; việc tập nói của mọi thành viên thuộc rehearsal chung.
+Đã có deck 15 slide; notes TV1/TV2/TV3 đã cập nhật. Slide nhóm 1–3 được đối chiếu với handoff TV1 và giữ dạng tóm tắt trong giới hạn 15 slide; việc tập nói thuộc rehearsal chung.
 
 - [x] Nhận TV2 slide 4–6, TV3 slide 7–9, TV4 slide 10–12 và phần TV5; deck chung đúng 15 slide, theme/notes/link và render đã kiểm.
-- [ ] TV1 xác nhận slide 1–3/ERD hoặc bàn giao bản chỉnh; kiểm lại đúng phần bị ảnh hưởng sau khi nhận.
+- [x] Đối chiếu slide nhóm 1–3 với TV1 handoff PR #51; nhóm giữ bản tóm tắt, TV1 deck chi tiết vẫn được đóng gói riêng.
 - [x] Cập nhật Word theo source/số đo đã xác minh; giữ đúng ownership, giải thích 3NF và snapshot, phân biệt minh chứng hiện hành với ảnh/số lịch sử.
 - [x] Kiểm mục lục, số trang, bảng/hình/link và độ dài 50–100 trang nội dung trên bản cuối. Không tự cộng bốn trang báo cáo TV4 vào Word nhóm.
 - [ ] Xuất và kiểm PDF nếu hình thức nộp yêu cầu; năm guide Markdown không thay deck chung.
@@ -122,3 +122,12 @@ Các case dưới được chạy bằng Swing/handler/JDBC thật, dialog tự 
 4. Nhận đủ đầu ra TV5-08, hoàn thiện TV5-09 và nghiệm thu TV5-10.
 
 Đánh dấu từng việc sau khi có đầu ra thực tế. Xem [tiến độ tích hợp 15/10](TV5_THUC_HIEN_20261015.md) cho Word/deck, package và các việc còn chờ.
+
+## Cập nhật sau PR #51/#52 — 16/10/2026
+
+TV1 PR #51 và TV2 PR #52 đã merge. TV5 đã kiểm bộ TV1 (ERD 10 bảng, test 7/7, benchmark 75→10, slide riêng) và đối chiếu nội dung slide nhóm 1–3; đã cập nhật báo cáo, notes slide 2/3/5, đồng bộ hai Word và chép evidence Option B TV2 cuối vào package. Word giữ 69 trang tổng/56 nội dung; chỉ trang 11 và 33 đổi so với bản render trước. Deck vẫn 15 slide, render 2/3/5 không đổi, checks cấu trúc/layout/import đạt.
+
+- TV5-08: hoàn tất kiểm evidence các thành viên; raw evidence TV1/TV2 gốc giữ nguyên.
+- TV5-09: Word và nội dung deck đã đồng bộ. Slide nhóm 1–3 là bản tóm tắt đã đối chiếu với handoff TV1; bản chi tiết của TV1 vẫn nằm riêng trong package. PDF chỉ phát sinh nếu hình thức nộp yêu cầu.
+- TV5-10: manifest toàn package và kiểm link/hash được cập nhật sau khi hoàn tất các file này. Chưa mở package trên máy nhận.
+- Còn mở: TV5-05 Windows DPI thật; TV5-06 cài/chạy trên máy khác; rehearsal tay cả nhóm; PDF cuối nếu được yêu cầu. Các việc này cần phần cứng/máy nhận/người tham gia hoặc điều kiện nộp xác nhận.

@@ -1,0 +1,61 @@
+{
+    "Version":  "5.1.26100.7920",
+    "SourceSha256":  "60AB7EC6C6CFD10849B5BC60A636D49B83E18789A97D03FCA3A6E53776EF9111",
+    "Checks":  9,
+    "Rows":  [
+                 {
+                     "Input":  ".",
+                     "Sqlcmd":  "localhost,1433",
+                     "Jdbc":  "jdbc:sqlserver://localhost:1433;databaseName=PRJ_Fix_QA_probe;encrypt=true;trustServerCertificate=true",
+                     "InstanceName":  null
+                 },
+                 {
+                     "Input":  "localhost",
+                     "Sqlcmd":  "localhost,1433",
+                     "Jdbc":  "jdbc:sqlserver://localhost:1433;databaseName=PRJ_Fix_QA_probe;encrypt=true;trustServerCertificate=true",
+                     "InstanceName":  null
+                 },
+                 {
+                     "Input":  "(local)",
+                     "Sqlcmd":  "localhost,1433",
+                     "Jdbc":  "jdbc:sqlserver://localhost:1433;databaseName=PRJ_Fix_QA_probe;encrypt=true;trustServerCertificate=true",
+                     "InstanceName":  null
+                 },
+                 {
+                     "Input":  "qa-host",
+                     "Sqlcmd":  "qa-host,1433",
+                     "Jdbc":  "jdbc:sqlserver://qa-host:1433;databaseName=PRJ_Fix_QA_probe;encrypt=true;trustServerCertificate=true",
+                     "InstanceName":  null
+                 },
+                 {
+                     "Input":  "qa-host,14333",
+                     "Sqlcmd":  "qa-host,14333",
+                     "Jdbc":  "jdbc:sqlserver://qa-host:14333;databaseName=PRJ_Fix_QA_probe;encrypt=true;trustServerCertificate=true",
+                     "InstanceName":  null
+                 },
+                 {
+                     "Input":  "qa-host:14333",
+                     "Sqlcmd":  "qa-host,14333",
+                     "Jdbc":  "jdbc:sqlserver://qa-host:14333;databaseName=PRJ_Fix_QA_probe;encrypt=true;trustServerCertificate=true",
+                     "InstanceName":  null
+                 },
+                 {
+                     "Input":  "qa-host\\QA_INST,14333",
+                     "Sqlcmd":  "qa-host\\QA_INST,14333",
+                     "Jdbc":  "jdbc:sqlserver://qa-host:14333;instanceName=QA_INST;databaseName=PRJ_Fix_QA_probe;encrypt=true;trustServerCertificate=true",
+                     "InstanceName":  "QA_INST"
+                 },
+                 {
+                     "Input":  "MSSQLSERVER",
+                     "Sqlcmd":  "localhost,1433",
+                     "Jdbc":  "jdbc:sqlserver://localhost:1433;databaseName=PRJ_Fix_QA_probe;encrypt=true;trustServerCertificate=true",
+                     "InstanceName":  "MSSQLSERVER"
+                 },
+                 {
+                     "Input":  "qa-host\\MSSQLSERVER,14333",
+                     "Sqlcmd":  "qa-host\\MSSQLSERVER,14333",
+                     "Jdbc":  "jdbc:sqlserver://qa-host:14333;instanceName=MSSQLSERVER;databaseName=PRJ_Fix_QA_probe;encrypt=true;trustServerCertificate=true",
+                     "InstanceName":  "MSSQLSERVER"
+                 }
+             ]
+}

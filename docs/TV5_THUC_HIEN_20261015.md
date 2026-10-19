@@ -26,3 +26,9 @@ Số TV3 642→2 thuộc log/plan ngày 13/10; Messages elapsed 37/27 ms và XML
 | TV5 | PDF nộp nếu hình thức yêu cầu | Chốt Word sau TV1, xuất PDF và kiểm lại; PDF QA hiện tại chưa được gọi là bản cuối |
 
 Không đổi SQL/Java và không chạy lại SQL/live GUI trong lượt này. Những checkbox còn mở trong [tasklist](TV5_TASKLIST_HOAN_THIEN.md) không được tự đánh dấu PASS từ các kiểm offline.
+
+## Cập nhật sau PR #51/#52 — 16/10/2026
+
+TV1 PR #51 và TV2 PR #52 đã merge. TV5 nhận và đối chiếu ERD 10 bảng, test nhân sự 7/7, benchmark 75→10 cùng deck riêng TV1; slide nhóm 1–3 vẫn là tóm tắt và notes dẫn tới bộ chi tiết. TV2 Option B cuối đạt 55 nguồn compile, controlled 179/179, SQL 21/21, concurrency 4/4, JDBC 105; evidence đã chép vào package. Hai bản Word đã đồng bộ byte, cập nhật TRY…CATCH + bare THROW và transaction Java; 69 trang tổng/56 nội dung, chỉ trang 11/33 đổi, đã rà. Notes 2/3/5 trong deck cập nhật; render trước/sau không đổi và Artifact Tool checks đạt.
+
+Còn chờ Windows DPI thật, cài trên máy khác, rehearsal nhóm và PDF nếu được yêu cầu. Package chưa được kiểm trên máy nhận.
