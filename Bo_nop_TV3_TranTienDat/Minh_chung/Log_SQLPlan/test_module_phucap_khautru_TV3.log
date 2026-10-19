@@ -1,7 +1,0 @@
-PASS sum/empty functions and both aggregate views
-PASS exact money/month constraint errors
-Đã xóa hoàn tất kỳ lương chưa chốt tháng 5/2020
-PASS draft delete and closed delete rejection
-PASS owned fixture cleanup
-
-Completion time: 2026-10-13T00:45:21.5394825+07:00
