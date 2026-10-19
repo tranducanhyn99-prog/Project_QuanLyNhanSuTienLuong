@@ -40,7 +40,7 @@ TV2 đã bàn giao source, benchmark canonical v3 ngày 13/10/2026, bốn actual
 - [x] Rà [tiến độ TV2](TV2_Tien_Do_Thuc_Hien.md), [báo cáo chuyên đề](TV2_BaoCao_ChuyenDe_ChamCong_CuoiKy.md) và [hướng dẫn thuyết trình](TV2_Huong_Dan_Thuyet_Trinh.md). Thêm cập nhật hiện tại tại những chỗ còn ghi benchmark mới chưa được nhận; giữ ngày và nhãn của phần lịch sử.
 - [x] Ghi phương án transaction đã thống nhất ở mục 1, phân biệt kiểm SQL với đường nhập lô Java/GUI.
 - [x] Dùng [biên nhận TV2](../Bo_nop_Nhom06/evidence/TV2/README_TV5_RECEIPT.md) và [bảng hiệu đính v3](../Bo_nop_Nhom06/evidence/TV2/presentation/reviewed_v2/TV5_Proposed_Corrections_v3.md) làm nguồn khi xác nhận Word/slide cuối.
-- [ ] Xác nhận slide 4–6 và phần chấm công trong Word nhóm đúng số liệu, ownership và giới hạn; báo TV5 nếu cần chỉnh bản tổng hợp (Chưa hoàn thành: Word nhóm tại đoạn 193/824 và ghi chú Slide 5 vẫn ghi SP chưa có TRY...CATCH; cần TV5 cập nhật theo Ghi chú tích hợp tại mục 5).
+- [x] Xác nhận slide 4–6 và phần chấm công trong Word nhóm đúng số liệu, ownership và giới hạn; TV5 đã cập nhật Word đoạn 193/824 và notes Slide 5 sau PR #52 (16/10).
 
 Số liệu cần giữ đúng nguồn: fixture 30.000 dòng, 273 dòng chi tiết và 9 dòng tổng hợp; **Messages 574→5 reads**, **XML operator 522→5 reads** là hai nguồn đo khác nhau; nguyên nhân chênh lệch 52 reads ở baseline là chưa xác định (UNKNOWN). Không dùng việc ảnh cũ cũng có số 574→5 để coi ảnh đó là lượt đo 13/10. Không lấy ngày checkout hoặc ngày sửa tài liệu làm ngày chạy.
 
@@ -162,3 +162,7 @@ Trong deck chung (`ppt/notesSlides/notesSlide5.xml`), phần text hiển thị c
 ## Tiêu chí đóng task TV2
 
 TV5 chỉ đóng phần còn mở khi đã nhận xác nhận thiết kế/rubric, tài liệu hiện tại nhất quán và bằng chứng cho mọi code sửa thêm nếu có. Rehearsal là đầu việc phối hợp riêng, chỉ đánh dấu sau khi tập thật. Thử máy nhận, DPI Windows, ghép package và PDF cuối do TV5 điều phối, không chuyển thành yêu cầu TV2 làm lại benchmark.
+
+## Cập nhật trạng thái sau PR #52 — 16/10/2026
+
+PR #52 đã merge; TV5 đã tiếp nhận evidence cuối vào package, cập nhật hai đoạn Word (đoạn 193/824) và notes slide 5. Bản Word trong `docs/` và package hiện byte-identical. Kết quả cuối là controlled suite 179/179, SQL 21/21, concurrency 4/4, JDBC 105 assertions; evidence tại `Bo_nop_Nhom06/evidence/TV2/optionb-20261016/`. Do đó checkbox nội dung Word/slide đã hoàn tất ở phía TV5. Phần TV2 còn lại là tập nói slide 4–6 và rehearsal chung, chỉ đánh dấu sau khi thực hiện thật.

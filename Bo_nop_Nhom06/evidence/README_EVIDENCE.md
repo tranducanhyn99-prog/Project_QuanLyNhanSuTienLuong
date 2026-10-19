@@ -11,3 +11,5 @@ TV5 và TV1 cập nhật 15/10/2026: Cả 5 thành viên [TV1](TV1/README_EVIDEN
 | [TV5](TV5/README_EVIDENCE.md) — Trần Đức Anh, 24110155 | Có object security, identity thật, A/B, bốn race, plan benchmark 4/5 và regression offline của bản package |
 
 Chỉ file thật đã đọc/đối chiếu mới được ghi PASS. Không lấy ảnh tracked cũ làm bằng chứng runtime hiện hành. Rehearsal chung và mở package trên máy khác còn chờ.
+
+**Cập nhật TV5 ngày 16/10:** PR #51 TV1 đã cung cấp bộ ERD/log/benchmark/deck và được đối chiếu; PR #52 TV2 đã cung cấp kết quả Option B cuối trong [thư mục evidence](TV2/optionb-20261016/). Word hai bản đã đồng bộ byte; notes slide 2/3/5 ghi nguồn TV1 và kết quả TV2. Chưa có xác nhận rehearsal hoặc cài đặt trên máy nhận.
