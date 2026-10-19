@@ -7,13 +7,13 @@
 SHA-256 của bản Word trong bộ nộp:
 
 ```text
-c107a3d4c634da5a6ca42574d56a3b7d1b8ed6dc5cc38768c9f050127b3ad877
+f354ba05a348f39b67d61eafd6a3ee7dc20a3c307ace0bc2243ef7f6903010b9
 ```
 
 SHA-256 của bản Word trong `docs/`:
 
 ```text
-c107a3d4c634da5a6ca42574d56a3b7d1b8ed6dc5cc38768c9f050127b3ad877
+f354ba05a348f39b67d61eafd6a3ee7dc20a3c307ace0bc2243ef7f6903010b9
 ```
 
 **Đối chiếu hai bản:** package Word và bản trong `docs/` có cùng nội dung, bytes và SHA-256. Cả hai đã được xuất QA bằng Microsoft Word; tổng số trang là 69, trong đó 56 trang nội dung.
