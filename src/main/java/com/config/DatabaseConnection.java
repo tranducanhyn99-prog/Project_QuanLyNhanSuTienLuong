@@ -18,7 +18,7 @@ public final class DatabaseConnection {
         } catch (java.io.IOException ex) { throw new ExceptionInInitializerError(ex); }
         String configured = System.getProperty("db.url", System.getenv("DB_URL"));
         URL = configured != null && !configured.trim().isEmpty() ? configured : config.getProperty("db.url",
-                "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhanSuTienLuong;encrypt=true;trustServerCertificate=false");
+                "jdbc:sqlserver://localhost:1433;databaseName=PRJ_Fix_QA_20261007_01;encrypt=true;trustServerCertificate=true");
         if (URL.matches("(?is).*;\\s*(user|username|password|integratedSecurity|authentication|accessToken|accessTokenCallbackClass)\\s*=.*")) {
             throw new ExceptionInInitializerError("db.url không được chứa thông tin xác thực.");
         }
