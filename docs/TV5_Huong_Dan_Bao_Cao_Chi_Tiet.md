@@ -1,261 +1,384 @@
-# SỔ TAY HƯỚNG DẪN BÁO CÁO & TRA CỨU ĐƯỜNG DẪN MÃ NGUỒN (TV5)
-# ĐỀ TÀI: HỆ THỐNG QUẢN LÝ NHÂN SỰ VÀ TIỀN LƯƠNG (PeopleOS)
-### Học phần: Hệ Quản Trị Cơ Sở Dữ Liệu (DBMS330284) — GVHD: TS. Phan Thị Thể
-### Người thực hiện: TRẦN ĐỨC ANH — MSSV: 24110155 (Thành viên 5)
+# TV5 — Sổ tay báo cáo & tra cứu mã nguồn
 
----
+**Trần Đức Anh · MSSV 24110155 · Nhóm 06 · DBMS330284 · GVHD: TS. Phan Thị Thể**
+Đối chiếu với source trên `main` ngày 22/10/2026. Mọi số dòng trong file này đã kiểm trực tiếp trên code.
 
 > [!IMPORTANT]
-> **Mục đích tài liệu:** Giúp bạn tự tin báo cáo trước Giảng viên và Hội đồng phản biện. Mỗi chức năng đều ghi rõ **Đường dẫn tệp (File Path)**, **Dòng mã nguồn (Line Number)**, **Vị trí trên Giao diện (UI)**, **Slide trình chiếu tương ứng**, kèm theo **Kịch bản nói mẫu** và **Câu trả lời phản biện**.
+> **Cách dùng:** Phần 1 là lời mở đầu 30 giây. Phần 2 là bảng tra cứu khi giảng viên hỏi "code ở đâu". Phần 3 đi qua từng chức năng theo cùng một khung: **Ở đâu → Mở trên giao diện → Nói gì → Bằng chứng → Giới hạn cần nói thật**. Phần 4 là kịch bản demo, Phần 5 là câu hỏi vấn đáp.
 
 ---
 
-# PHẦN 1. BẢNG TRA CỨU NHANH ĐƯỜNG DẪN TOÀN BỘ CHỨC NĂNG (CHEAT SHEET)
+## 0. Những chỗ bản cũ ghi sai — KHÔNG được nói khi bảo vệ
 
-Khi Thầy/Cô hỏi: *"Chức năng này em viết ở đâu? Mở code lên cho Thầy/Cô xem!"*, hãy tra cứu ngay bảng sau:
+Bản trước của file này có một số tên đối tượng và số liệu không khớp với code. Nếu nói theo bản cũ và giảng viên mở code ra, bạn sẽ bị bắt lỗi ngay.
 
-| STT | Tên Chức năng / Đối tượng | Đường dẫn Tệp Mã Nguồn (Clickable) | Vị trí Dòng Code | Slide PPTX |
-|:---:|---|---|:---:|:---:|
-| **1** | **Giao diện PeopleOS & Quick Login** | [`src/main/java/com/ui/auth/LoginFrame.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/auth/LoginFrame.java) | Dòng 145 – 240 | **Slide 2, 15** |
-| **2** | **Bộ bảng màu, Font, Bo góc UI** | [`src/main/java/com/ui/theme/UITheme.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/theme/UITheme.java) | Dòng 15 – 120 | **Slide 2** |
-| **3** | **Tác vụ nền bất đồng bộ (SwingWorker)** | [`src/main/java/com/ui/theme/DatabaseTask.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/theme/DatabaseTask.java) | Dòng 20 – 85 | **Slide 2** |
-| **4** | **Băm mật khẩu PBKDF2 600.000 vòng** | [`src/main/java/com/util/PasswordUtil.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/util/PasswordUtil.java) | Dòng 11 – 40 | **Slide 15** |
-| **5** | **Cấu hình JDBC SSL & Database** | [`src/main/java/com/config/DatabaseConnection.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/config/DatabaseConnection.java) | Dòng 18 – 25 | **Slide 2** |
-| **6** | **Tạo 4 Database Roles & Phân quyền** | [`database/05_Security_Payroll_TV5.sql`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql) | Dòng 276 – 360 | **Slide 15** |
-| **7** | **Bảo vệ dòng (Row-Level Security)** | [`database/05_Security_Payroll_TV5.sql`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql) | Dòng 523 – 535 | **Slide 15** |
-| **8** | **Màn hình Quản trị Tài khoản (Java)** | [`src/main/java/com/ui/admin/TaiKhoanPanel.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/admin/TaiKhoanPanel.java) | Dòng 50 – 290 | **Slide 15** |
-| **9** | **Thủ tục Chốt lương (`sp_ChotBangLuong`)** | [`database/05_Security_Payroll_TV5.sql`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql) | Dòng 195 – 250 | **Slide 16** |
-| **10** | **Thủ tục Hủy chốt (`sp_HuyChotBangLuong`)** | [`database/05_Security_Payroll_TV5.sql`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql) | Dòng 255 – 275 | **Slide 16** |
-| **11** | **Gọi Stored Procedure từ DAO** | [`src/main/java/com/dao/BangLuongDAO.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/dao/BangLuongDAO.java) | Dòng 137 – 155 | **Slide 16** |
-| **12** | **Nút Chốt & Mở lại bảng lương (Java)** | [`src/main/java/com/ui/baocao/BaoCaoPanel.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/baocao/BaoCaoPanel.java) | Dòng 120 – 125, 375 – 420 | **Slide 16** |
-| **13** | **Bộ 3 Trigger chặn sửa kỳ đã chốt** | [`database/05_Security_Payroll_TV5.sql`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql) | Dòng 380 – 450 | **Slide 16** |
-| **14** | **Thực nghiệm Concurrency SSMS (2 Session)** | [`database/test_concurrency_demo_TV5.sql`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/test_concurrency_demo_TV5.sql) | Dòng 1 – 50 | **Slide 16, 17** |
-| **15** | **Benchmark Index & Đo lường I/O** | [`database/test_benchmark_index_TV5.sql`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/test_benchmark_index_TV5.sql) | Dòng 20 – 55 | **Slide 17** |
-| **16** | **Dữ liệu mẫu 20 nhân sự thực tế** | [`database/07_Real_Enterprise_Seed.sql`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/07_Real_Enterprise_Seed.sql) | Dòng 1 – 1500 | Toàn bộ Demo |
-| **17** | **Bộ Test hồi quy bảo mật (104 tests)** | [`src/test/java/com/test/SecurityRegressionTest.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/test/java/com/test/SecurityRegressionTest.java) | Dòng 1 – 200 | **Slide 17** |
-| **18** | **Bộ Test hồi quy giao diện (88 tests)** | [`src/test/java/com/test/GuiQaRegressionTest.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/test/java/com/test/GuiQaRegressionTest.java) | Dòng 1 – 180 | **Slide 17** |
+| Bản cũ ghi | Thực tế trong code | Nguồn |
+|---|---|---|
+| `sp_MoLaiKyLuong` | **Không tồn tại.** Mở lại kỳ dùng `sp_HuyChotBangLuong` (do TV4 viết, TV5 cấp quyền) | [04_Module_TinhLuong_TV4.sql#L561](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/04_Module_TinhLuong_TV4.sql#L561) |
+| Trigger `trg_ChamCong_ChanSuaKyDaChot`... | Tên đúng: `trg_ChamCong_KhongSuaKhiDaChotLuong`, `trg_PhuCap_...`, `trg_KhauTru_...`, cộng `trg_ChiTietLuong_KhongSuaKhiDaChot` → **4 trigger**, không phải 3 | [05#L164](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L164), [05#L432-L487](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L432-L487) |
+| `sp_ChotBangLuong` có `@NguoiChot`, dùng `UPDLOCK, ROWLOCK`, `THROW` | Chỉ có `@MaBangLuong`; dùng **`UPDLOCK, HOLDLOCK`**; báo lỗi bằng **`RAISERROR`** | [05#L197-L262](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L197-L262) |
+| `vw_PhieuLuongCaNhan` dùng `IS_MEMBER(...)`, Admin/Payroll "xem tất cả" qua view này | View chỉ lọc `tk.SqlLogin = ORIGINAL_LOGIN()` và chỉ **GRANT cho `role_Employee`**. HR/Payroll/Admin xem bảng tổng qua `vw_BangLuongChiTiet` | [05#L523-L532](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L523-L532) |
+| HR bị `DENY` tính lương | HR chỉ bị **DENY tường minh `sp_ChotBangLuong`** và bảng `TAIKHOAN`. Tính lương thì HR **không được GRANT** (không có quyền), không phải DENY | [05#L332-L336](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L332-L336) |
+| `PasswordUtil` dùng `char[]` + `Arrays.fill` | `Arrays.fill` nằm ở **`LoginFrame`**; `PasswordUtil` nhận `String` và xóa key spec bằng `spec.clearPassword()` | [LoginFrame.java#L286-L288](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/auth/LoginFrame.java#L286-L288), [PasswordUtil.java#L36-L41](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/util/PasswordUtil.java#L36-L41) |
+| Benchmark "142 → 15" là số duy nhất | Có **hai lượt đo thật**: 07/10 (actual plan) **142 → 15** và 13/10 (chạy lại) **126 → 13**. Cả hai đều giảm ≈ 89,5–89,7% | [README_EVIDENCE.md#L43-L48](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/README_EVIDENCE.md#L43-L48), [summary.txt](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/verification-20261013/summary.txt) |
+| Concurrency chờ "1.10s, 1.04s..." là tính lương 2 phiên | Đó là **4 race chốt kỳ đối đầu sửa nguồn** (1101/1046/1042/1033 ms). Hai phiên **cùng tính lương** chờ **20631 ms** | [README_EVIDENCE.md#L30-L35](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/README_EVIDENCE.md#L30-L35) |
+
+> [!NOTE]
+> Slide 17 hiện dùng số **142 → 15** (lượt 07/10). Số này đúng với actual plan, khớp ảnh Execution Plan bạn đang có. Khi nói, hãy ghi rõ "lượt đo ngày 07/10", và nếu được hỏi thì nhắc thêm lượt chạy lại ngày 13/10 ra 126 → 13.
 
 ---
 
-# PHẦN 2. HƯỚNG DẪN CHI TIẾT TỪNG CHỨC NĂNG CỦA TV5
+## 1. Mở đầu 30 giây
+
+> "Em là Trần Đức Anh, phụ trách **tích hợp kiến trúc, đăng nhập và phân quyền, chốt kỳ lương, kiểm soát đồng thời và tối ưu index** cho bảng nhân viên. Em sẽ trình bày bốn ý: **thứ nhất**, mỗi người dùng đăng nhập bằng SQL login riêng và quyền được SQL Server kiểm tra qua 4 database role. **Thứ hai**, nhân viên chỉ xem được phiếu lương của chính mình nhờ view lọc theo `ORIGINAL_LOGIN()`. **Thứ ba**, sau khi chốt kỳ, một procedure có khóa và 4 trigger đảm bảo số liệu không bị sửa, kể cả khi hai phiên chạy cùng lúc. **Thứ tư**, covering index giúp truy vấn lọc theo phòng ban và chức vụ giảm khoảng 90% số trang đọc."
+
+**Ranh giới phần việc (nói đúng để không nhận công của bạn khác):**
+
+| Của TV5 | Của thành viên khác, TV5 chỉ tích hợp hoặc cấp quyền |
+|---|---|
+| `sp_ChotBangLuong`, `fn_TinhThucNhan`, `vw_BangLuongChiTiet`, `vw_PhieuLuongCaNhan`, `trg_ChiTietLuong_KhongSuaKhiDaChot`, 3 trigger khóa nguồn, `IX_NHANVIEN_MaPB_MaCV`, 4 role và toàn bộ GRANT/DENY, các SP quản trị tài khoản | `sp_TinhBangLuongThang`, `sp_HuyChotBangLuong`, `sp_XoaBangLuongChuaChot` (TV4) · `sp_XoaKyLuongChuaChot` (TV3) · `sp_GhiNhanChamCong` (TV2) · `sp_ThemNhanVien` (TV1) |
 
 ---
 
-### Chức năng 1: Kiến trúc 3 tầng, Giao diện PeopleOS & Đăng nhập nhanh
-- **Vị trí trên Slide:** **Slide 2** (Kiến trúc tổng thể) và **Slide 15** (Bảo mật).
-- **Đường dẫn mã nguồn chính xác:**
-  - Form Đăng nhập & Quick Login: [`src/main/java/com/ui/auth/LoginFrame.java#L145-L240`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/auth/LoginFrame.java)
-  - Hệ thống Design System & Bo góc: [`src/main/java/com/ui/theme/UITheme.java#L15-L120`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/theme/UITheme.java)
-  - Tác vụ bất đồng bộ SwingWorker: [`src/main/java/com/ui/theme/DatabaseTask.java#L20-L85`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/theme/DatabaseTask.java)
-  - Cấu hình JDBC Driver & SSL: [`src/main/java/com/config/DatabaseConnection.java#L18-L25`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/config/DatabaseConnection.java)
-- **Thao tác Demo thực tế:**
-  1. Mở màn hình đăng nhập.
-  2. Chỉ vào thanh **"ĐĂNG NHẬP NHANH (DEMO)"** có 5 chip: `Admin`, `HR Manager`, `Kế toán`, `Nhân viên A (730k)`, `Nhân viên B (0đ)`.
-  3. Bấm 1 lần: Tự động điền user/password.
-  4. Nhấp đúp (Double-click): Tự động đăng nhập vào thẳng hệ thống trong 0.5s.
-- **Kịch bản nói mẫu:**
-  > *"Kính thưa Thầy/Cô, em là Trần Đức Anh, phụ trách phân hệ Kiến trúc, Bảo mật và Xử lý đồng thời. Về mặt kiến trúc, hệ thống tuân thủ mô hình 3 tầng chuẩn mực: Tầng UI sử dụng Java Swing Light Theme hiện đại, xử lý bất đồng bộ qua `SwingWorker` trong `DatabaseTask.java` để giao diện không bị giật lag khi truy vấn SQL nặng. Để phục vụ việc bảo vệ đồ án trực quan, em đã thiết kế thanh Đăng nhập nhanh cho 5 tài khoản tương ứng 4 Database Roles của hệ thống."*
+## 2. Bảng tra cứu nhanh
+
+Viết tắt: **05** = [`database/05_Security_Payroll_TV5.sql`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql)
+
+| # | Chức năng | File · dòng | Slide |
+|:-:|---|---|:-:|
+| 1 | Covering index thật trên `NHANVIEN` | [05#L92-L100](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L92-L100) | 17 |
+| 2 | Function `fn_TinhThucNhan` | [05#L108-L119](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L108-L119) | 16 |
+| 3 | View tổng `vw_BangLuongChiTiet` | [05#L129-L155](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L129-L155) | 16 |
+| 4 | Trigger khóa chi tiết lương | [05#L164-L182](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L164-L182) | 16 |
+| 5 | SP chốt lương `sp_ChotBangLuong` | [05#L197-L262](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L197-L262) | 16 |
+| 6 | Tạo 4 role + DBAdmin vào `db_owner` | [05#L275-L299](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L275-L299) | 15 |
+| 7 | Quyền `role_HRManager` | [05#L306-L336](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L306-L336), [L415-L419](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L415-L419) | 15 |
+| 8 | Quyền `role_PayrollOfficer` | [05#L346-L376](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L346-L376), [L420-L428](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L420-L428) | 15 |
+| 9 | Quyền `role_Employee` (REVOKE + DENY) | [05#L386-L400](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L386-L400) | 15 |
+| 10 | 3 trigger khóa nguồn (phụ cấp, khấu trừ, chấm công) | [05#L432-L487](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L432-L487) | 16 |
+| 11 | Đọc danh tính theo login `sp_LayTaiKhoanHienTai` | [05#L499-L511](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L499-L511) | 15 |
+| 12 | View phiếu lương cá nhân (lọc theo dòng) | [05#L523-L532](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L523-L532) | 15 |
+| 13 | SP quản trị: reset mật khẩu / đổi role / khóa | [05#L534-L622](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L534-L622) | 15 |
+| 14 | DBA cấp login + user + role `sp_DBAProvisionIdentity` | [05#L626-L665](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L626-L665) | 15 |
+| 15 | Mở lại kỳ `sp_HuyChotBangLuong` (TV4) | [04#L561](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/04_Module_TinhLuong_TV4.sql#L561) | 16 |
+| 16 | Băm mật khẩu PBKDF2 | [PasswordUtil.java#L11-L41](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/util/PasswordUtil.java#L11-L41) | 15 |
+| 17 | Luồng đăng nhập | [AuthService.java#L32-L60](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/service/AuthService.java#L32-L60) | 15 |
+| 18 | Kết nối bằng login cá nhân, chặn URL chứa mật khẩu | [DatabaseConnection.java#L19-L58](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/config/DatabaseConnection.java#L19-L58) | 2 |
+| 19 | Nút đăng nhập + SwingWorker + xóa `char[]` | [LoginFrame.java#L283-L307](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/auth/LoginFrame.java#L283-L307) | 2 |
+| 20 | Thanh đăng nhập nhanh (demo) | [LoginFrame.java#L150-L232](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/auth/LoginFrame.java#L150-L232) | — |
+| 21 | Chạy JDBC ngoài EDT (`DatabaseTask`) | [DatabaseTask.java#L18-L60](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/theme/DatabaseTask.java#L18-L60) | 2 |
+| 22 | Ẩn menu theo vai trò (lớp UI) | [MainFrame.java#L106-L128](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/main/MainFrame.java#L106-L128) | 15 |
+| 23 | Kiểm quyền ở Service (lớp giữa) | [PayrollService.java#L117-L204](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/service/PayrollService.java#L117-L204) | 15 |
+| 24 | DAO gọi SP chốt / mở lại, đọc phiếu cá nhân | [BangLuongDAO.java#L140-L162](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/dao/BangLuongDAO.java#L140-L162), [L239-L241](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/dao/BangLuongDAO.java#L239-L241) | 16 |
+| 25 | Nút Chốt / Mở lại / Xóa kỳ nháp | [BaoCaoPanel.java#L120-L133](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/baocao/BaoCaoPanel.java#L120-L133), [L351-L454](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/baocao/BaoCaoPanel.java#L351-L454) | 16 |
+| 26 | Màn hình quản lý tài khoản | [TaiKhoanPanel.java](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/admin/TaiKhoanPanel.java) | 15 |
+| 27 | Script benchmark index | [test_benchmark_index_TV5.sql#L10-L72](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/test_benchmark_index_TV5.sql#L10-L72) | 17 |
+| 28 | Script concurrency 2 phiên | [SessionA](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/tests/TV4_Payroll_Concurrency_SessionA.sql) · [SessionB](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/tests/TV4_Payroll_Concurrency_SessionB.sql) · [race nguồn](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/tests/Closed_Source_Concurrency.ps1) | 16–17 |
+| 29 | Test phân quyền SQL (22 kiểm tra + 3 bị từ chối) | [test_security_roles_TV5.sql](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/test_security_roles_TV5.sql) | 17 |
+| 30 | Bằng chứng tổng hợp TV5 | [README_EVIDENCE.md](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/README_EVIDENCE.md) | 15–17 |
 
 ---
 
-### Chức năng 2: Xác thực 2 Lớp & Băm mật khẩu PBKDF2-HMAC-SHA256
-- **Vị trí trên Slide:** **Slide 15** (Thẻ "Cơ chế Xác thực 2 Lớp").
-- **Đường dẫn mã nguồn chính xác:**
-  - Thuật toán băm PBKDF2: [`src/main/java/com/util/PasswordUtil.java#L11-L40`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/util/PasswordUtil.java)
-  - Dịch vụ xác thực tài khoản: [`src/main/java/com/service/AuthService.java#L30-L75`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/service/AuthService.java)
-  - Cấu trúc bảng tài khoản lưu Salt/Hash: [`database/05_Security_Payroll_TV5.sql#L270-L310`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql)
-- **Điểm kỹ thuật mấu chốt để trả lời giảng viên:**
-  - Thuật toán: `PBKDF2WithHmacSHA256` chuẩn NIST SP 800-132.
-  - Số vòng lặp: **600.000 vòng** (`ITERATIONS = 600000`).
-  - Muối (Salt): **16 bytes ngẫu nhiên** sinh bằng `SecureRandom`.
-  - So sánh mật khẩu bằng `MessageDigest.isEqual()` để chống tấn công **Timing Attack**.
-  - Xóa mảng ký tự `char[]` bằng `Arrays.fill(..., '\0')` ngay sau khi xác thực để chống soi trộm bộ nhớ RAM.
-- **Kịch bản nói mẫu:**
-  > *"Hệ thống áp dụng cơ chế bảo mật 2 lớp: Lớp 1 tại ứng dụng Java sử dụng thuật toán băm PBKDF2-HMAC-SHA256 với 600.000 vòng lặp và muối 16 bytes ngẫu nhiên, loại bỏ hoàn toàn nguy cơ tấn công Rainbow Table. Lớp 2 tại SQL Server kết nối bằng SQL Login riêng biệt được DBA ánh xạ qua `TAIKHOAN.SqlLogin`."*
+## 3. Chi tiết từng chức năng
+
+### 3.1 Kiến trúc 3 tầng và tác vụ nền
+
+**Ở đâu**
+- Luồng: `LoginFrame` / các Panel → `AuthService`, `PayrollService` → `BangLuongDAO`, `TaiKhoanDAO` → SQL Server.
+- Truy vấn chạy ngoài luồng giao diện: [DatabaseTask.java#L18-L60](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/theme/DatabaseTask.java#L18-L60) (`run`, `runExclusive` bọc `SwingWorker`). Ví dụ sử dụng ở [BaoCaoPanel.java#L241](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/baocao/BaoCaoPanel.java#L241).
+
+**Nói gì**
+> "Giao diện không gọi SQL trực tiếp. Mọi truy vấn đi qua Service rồi DAO. Truy vấn chạy trong `SwingWorker` qua lớp `DatabaseTask`, nên khi SQL chậm cửa sổ không bị treo. Kết quả được đưa lại luồng giao diện để cập nhật bảng. `runExclusive` chặn bấm lặp một nút ghi trong lúc thao tác cũ chưa xong."
+
+**Giới hạn:** `SwingWorker` không tự hủy câu SQL đang chạy. Có kiểm timeout ở mức JDBC (`query-timeout-probe.log`, `SQLTimeoutException`), chưa kiểm hủy câu lệnh từ giao diện.
 
 ---
 
-### Chức năng 3: Phân quyền 4 Database Roles & Ma trận Phân quyền (RBAC)
-- **Vị trí trên Slide:** **Slide 15** (Bảng Ma trận Phân quyền RBAC Table 5x5).
-- **Đường dẫn mã nguồn chính xác:**
-  - Lệnh tạo 4 Roles và phân quyền: [`database/05_Security_Payroll_TV5.sql#L276-L360`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql)
-  - Màn hình Quản trị Tài khoản trên Java: [`src/main/java/com/ui/admin/TaiKhoanPanel.java#L50-L290`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/admin/TaiKhoanPanel.java)
-- **Ma trận quyền cần nhớ khi giảng viên hỏi:**
-  - `role_DBAdmin`: Toàn quyền quản trị, mở lại kỳ lương (`sp_MoLaiKyLuong`).
-  - `role_HRManager`: CRUD hồ sơ nhân viên (`NHANVIEN`) và chấm công (`CHAMCONG`); **BỊ TỪ CHỐI (DENY)** quyền tính hoặc chốt lương.
-  - `role_PayrollOfficer`: CRUD phụ cấp/khấu trừ; EXECUTE `sp_TinhLuongThang` và `sp_ChotBangLuong`; **BỊ TỪ CHỐI (DENY)** quyền sửa nhân sự/chấm công.
-  - `role_Employee`: **BỊ TỪ CHỐI (DENY)** toàn bộ bảng gốc; chỉ được xem qua View cá nhân.
-- **Kịch bản nói mẫu:**
-  > *"Để đảm bảo nguyên tắc phân định trách nhiệm (Separation of Duties), nhóm không dùng tài khoản 'sa' mà thiết lập 4 Database Roles chuyên trách. Khi đăng nhập vào vai trò nào, JDBC Connection chỉ sở hữu đúng quyền hạn của Role đó. Nếu một HR Manager cố tình can thiệp thủ tục chốt lương, SQL Server Engine sẽ từ chối ngay lập tức ở tầng cơ sở dữ liệu."*
+### 3.2 Đăng nhập: SQL login cá nhân + PBKDF2
 
----
+**Ở đâu**
+- Nút đăng nhập: [LoginFrame.java#L283-L307](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/auth/LoginFrame.java#L283-L307). Lấy `char[]` rồi xóa bằng `Arrays.fill` ở L286–288; gọi `authService.login` trong `SwingWorker` ở L303–307.
+- Xác thực: [AuthService.java#L32-L60](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/service/AuthService.java#L32-L60).
+- Đọc hồ sơ theo login thật: [05#L499-L511](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L499-L511).
+- Băm: [PasswordUtil.java#L11-L41](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/util/PasswordUtil.java#L11-L41).
+- Chặn chuỗi kết nối chứa mật khẩu: [DatabaseConnection.java#L22](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/config/DatabaseConnection.java#L22).
 
-### Chức năng 4: Bảo vệ Dữ liệu mức Dòng (Row-Level Security)
-- **Vị trí trên Slide:** **Slide 15** (Card "Row-Level Security với ORIGINAL_LOGIN()").
-- **Đường dẫn mã nguồn chính xác:**
-  - View bảo vệ mức dòng: [`database/05_Security_Payroll_TV5.sql#L523-L535`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql)
-  - Xử lý nạp dữ liệu trên Java: [`src/main/java/com/ui/baocao/BaoCaoPanel.java#L287`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/baocao/BaoCaoPanel.java)
-- **Thao tác Demo thực tế:**
-  1. Nhấp đúp vào nút **Nhân viên A (730k)** $\rightarrow$ Mở menu **Báo cáo & Phiếu lương**.
-  2. Chỉ thấy duy nhất 1 dòng của Nguyễn Tuấn Anh (Thực nhận 730.000đ).
-  3. Đăng xuất $\rightarrow$ Nhấp đúp vào nút **Nhân viên B (0đ)** $\rightarrow$ Chỉ thấy đúng 1 dòng của Trần Thị Bảo Bình (Thực nhận 0đ).
-- **Điểm kỹ thuật mấu chốt để trả lời giảng viên:**
-  - Sử dụng hàm **`ORIGINAL_LOGIN()`** trong mệnh đề `WHERE` của View `vw_PhieuLuongCaNhan`.
-  - **Vì sao dùng `ORIGINAL_LOGIN()` mà không dùng `SUSER_SNAME()`?** Vì `ORIGINAL_LOGIN()` luôn trả về SQL Login ban đầu tạo ra kết nối, không thể bị giả mạo hay leo thang đặc quyền kể cả khi ai đó gọi lệnh chuyển ngữ cảnh `EXECUTE AS`.
-- **Kịch bản nói mẫu:**
-  > *"Đối với nhân viên thông thường, nhóm áp dụng Row-Level Security qua View `vw_PhieuLuongCaNhan`. Nhờ điều kiện lọc `tk.SqlLogin = ORIGINAL_LOGIN()`, SQL Server tự động giới hạn chỉ trả về dòng phiếu lương của chính nhân viên đó. Nhân viên tuyệt đối không thể thấy mức lương của đồng nghiệp hay cấp quản lý."*
+**Luồng thật (AuthService L42–54)**
 
----
-
-### Chức năng 5: Quy trình Chốt kỳ lương & Mở lại kỳ lương có điều kiện
-- **Vị trí trên Slide:** **Slide 16** (Sơ đồ Vòng đời Chốt kỳ lương Workflow).
-- **Đường dẫn mã nguồn chính xác:**
-  - Thủ tục Chốt lương: [`database/05_Security_Payroll_TV5.sql#L195-L250`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql)
-  - Thủ tục Mở lại kỳ lương: [`database/05_Security_Payroll_TV5.sql#L255-L275`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql)
-  - Gọi Stored Procedure từ DAO: [`src/main/java/com/dao/BangLuongDAO.java#L137-L155`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/dao/BangLuongDAO.java)
-  - Nút bấm và xử lý giao diện Java: [`src/main/java/com/ui/baocao/BaoCaoPanel.java#L120-L125, L375-L420`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/baocao/BaoCaoPanel.java)
-- **Thao tác Demo thực tế:**
-  1. Đăng nhập bằng **Kế toán (`gui_payroll`)**.
-  2. Mở màn hình **Báo cáo & Phiếu lương**, chọn Tháng **10/2026**.
-  3. Bấm nút **"Chốt bảng lương"** $\rightarrow$ Xác nhận $\rightarrow$ Nhãn trạng thái đổi sang **"ĐÃ CHỐT SỔ"** màu xanh, hiển thị ngày giờ chốt.
-- **Kịch bản nói mẫu:**
-  > *"Quy trình chốt kỳ lương được kiểm soát chặt chẽ qua thủ tục `sp_ChotBangLuong`. Trong thủ tục này, em sử dụng gợi ý khóa `WITH (UPDLOCK, ROWLOCK)` để khóa độc quyền bản ghi bảng lương, kiểm tra nếu kỳ đã chốt thì cấm chốt lại, sau đó chuyển trạng thái sang `DA_CHOT` và lưu dấu mốc thời gian `NgayChot = GETDATE()`. Khi cần mở lại kỳ lương do sai sót, chỉ Admin hoặc Kế toán có lý do chính đáng mới được gọi `sp_HuyChotBangLuong`."*
-
----
-
-### Chức năng 6: Bộ 3 Trigger bảo vệ kỳ lương đã chốt chống can thiệp
-- **Vị trí trên Slide:** **Slide 16** (Khối "Kích hoạt 3 Triggers tự động chặn sửa").
-- **Đường dẫn mã nguồn chính xác:**
-  - Trigger Chấm công: [`database/05_Security_Payroll_TV5.sql#L380-L405`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql) (`trg_ChamCong_ChanSuaKyDaChot`)
-  - Trigger Phụ cấp: [`database/05_Security_Payroll_TV5.sql#L410-L430`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql) (`trg_PhuCap_ChanSuaKyDaChot`)
-  - Trigger Khấu trừ: [`database/05_Security_Payroll_TV5.sql#L435-L450`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql) (`trg_KhauTru_ChanSuaKyDaChot`)
-- **Thao tác Demo thực tế:**
-  1. Sau khi chốt kỳ Tháng 10/2026 ở Bước trên, Đăng xuất.
-  2. Đăng nhập vào vai trò **HR Manager (`gui_hr`)**.
-  3. Vào menu **Nhật ký Chấm công**, bấm **Ghi nhận chấm công** cho bất kỳ nhân viên nào vào ngày thuộc Tháng 10/2026 (ví dụ: 2026-10-15).
-  4. Hệ thống lập tức bật hộp thoại lỗi đỏ: *"Kỳ lương Tháng 10/2026 đã được chốt sổ. Không thể thêm/sửa/xóa chấm công!"*
-- **Kịch bản nói mẫu:**
-  > *"Để ngăn chặn triệt để hành vi gian lận dữ liệu sau khi chốt sổ tài chính, em cài đặt 3 Triggers ở tầng SQL Server. Ngay khi phát hiện kỳ lương tương ứng đã `DA_CHOT`, Trigger lập tức ném lỗi và Rollback Transaction. Dù người dùng thao tác trên giao diện Java hay cố tình viết lệnh UPDATE/INSERT trực tiếp trong SSMS, dữ liệu của kỳ đã chốt vẫn được bảo vệ tuyệt đối."*
-
----
-
-### Chức năng 7: Kiểm soát Xung đột Đồng thời (Concurrency Control)
-- **Vị trí trên Slide:** **Slide 16** (Card "Xử lý Tranh chấp Đồng thời") và **Slide 17** (Ảnh chụp 2 Sessions SSMS).
-- **Đường dẫn mã nguồn chính xác:**
-  - Logic khóa UPDLOCK trong Stored Procedure: [`database/05_Security_Payroll_TV5.sql#L205-L215`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql)
-  - Script kiểm thử Concurrency 2 Sessions SSMS: [`database/test_concurrency_demo_TV5.sql#L1-L50`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/test_concurrency_demo_TV5.sql)
-  - Ảnh chụp minh chứng kiểm thử SSMS: [`Bo_nop_Nhom06/slides/preview/TV5_Slide_15.png`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/slides/preview/TV5_Slide_15.png)
-- **Hai kịch bản Concurrency đã giải quyết:**
-  1. **Hai phiên cùng tính lương đồng thời:** Phiên B tự động chờ khóa của Phiên A nhả ra. Kết quả: duy nhất 1 bảng lương được tạo, 0 header trùng, 0 dòng chi tiết trùng.
-  2. **Một phiên chốt lương đối đầu phiên sửa công:** Thao tác sửa công bị giữ lại (Lock Wait) và lập tức bị từ chối an toàn ngay khi phiên chốt hoàn tất Commit.
-- **Kịch bản nói mẫu:**
-  > *"Về kiểm soát đồng thời, em đã giải quyết 2 bài toán lớn: Thứ nhất, khi 2 phiên cùng tính lương cho một kỳ, nhờ gợi ý khóa `WITH (UPDLOCK, HOLDLOCK)`, phiên thứ hai sẽ chờ an toàn và không sinh ra dữ liệu trùng lặp. Thứ hai, khi chốt lương diễn ra đồng thời với sửa công, giao dịch chốt lương giữ khóa độc quyền, khiến thao tác sửa công bị trì hoãn và ném lỗi từ chối ngay khi kỳ chuyển sang Đã chốt."*
-
----
-
-### Chức năng 8: Tối ưu hóa Chỉ mục & Kế hoạch Thực thi (Execution Plan)
-- **Vị trí trên Slide:** **Slide 17** (Thẻ so sánh Before/After và 2 ảnh Execution Plan).
-- **Đường dẫn mã nguồn chính xác:**
-  - Script Benchmark 10.000 dòng: [`database/test_benchmark_index_TV5.sql#L20-L55`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/test_benchmark_index_TV5.sql)
-  - Lệnh tạo Covering Index tối ưu:
-    ```sql
-    CREATE NONCLUSTERED INDEX IX_Bench_MaPB_MaCV
-    ON dbo.#BenchmarkNhanVien (MaPB, MaCV)
-    INCLUDE (HoTen, LuongCoBan, TrangThai);
-    ```
-- **Số liệu đối chiếu Before / After từ Execution Plan:**
-  - **Trước tối ưu (Clustered Index Scan):**
-    - Đọc tuần tự toàn bộ **10.000 dòng** (`Actual Rows Read = 10000`).
-    - Số trang đĩa đọc: **142 Logical Reads**.
-    - Chi phí I/O: `0.106829`.
-    - Phải dùng `Predicate` để lọc bỏ 9.167 dòng sau khi đọc.
-  - **Sau tối ưu (Index Seek Nonclustered với Covering Index):**
-    - Định vị B-Tree, chỉ đọc đúng **833 dòng** thỏa mãn (`Actual Rows Read = 833`).
-    - Số trang đĩa đọc: **15 Logical Reads** (**Giảm 89.7%**).
-    - Chi phí I/O: `0.0109645` (**Giảm 89.7%**).
-    - Chi phí CPU: Giảm **90.4%** (từ `0.0111` xuống `0.0010`).
-    - **Hoàn toàn không có `Key Lookup`** nhờ mệnh đề `INCLUDE`.
-- **Kịch bản nói mẫu:**
-  > *"Thưa Thầy/Cô, về tối ưu chỉ mục, em đã thực nghiệm trên tập dữ liệu 10.000 dòng. Trước khi tối ưu, SQL Server phải Scan toàn bộ 10.000 dòng tốn 142 logical reads. Sau khi em thiết kế Covering Index `IX_Bench_MaPB_MaCV` bao phủ các cột cần hiển thị, hệ thống chuyển sang toán tử Index Seek, chỉ đọc đúng 833 dòng cần thiết, giảm tới 89.7% lượng I/O reads và triệt tiêu hoàn toàn toán tử Key Lookup."*
-
----
-
-### Chức năng 9: Bộ Kiểm thử Tự động Toàn diện (257 Assertions Pass)
-- **Vị trí trên Slide:** **Slide 17** (Card "Bộ Kiểm thử Tự động Toàn diện (257 Assertions PASS)").
-- **Đường dẫn mã nguồn chính xác:**
-  - Kiểm thử Phân quyền & RLS (104 tests): [`src/test/java/com/test/SecurityRegressionTest.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/test/java/com/test/SecurityRegressionTest.java)
-  - Kiểm thử Giao diện PeopleOS (88 tests): [`src/test/java/com/test/GuiQaRegressionTest.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/test/java/com/test/GuiQaRegressionTest.java)
-  - Kiểm thử Theme & Login Chip (65 tests): [`src/test/java/com/test/LightThemeRegressionTest.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/test/java/com/test/LightThemeRegressionTest.java) & [`LoginChipRegressionTest.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/test/java/com/test/LoginChipRegressionTest.java)
-  - Script chạy tự động toàn bộ: [`run_tv5_verification.ps1`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/run_tv5_verification.ps1)
-- **Kịch bản nói mẫu:**
-  > *"Để đảm bảo tính đúng đắn và độ bền vững của mã nguồn, em đã xây dựng bộ kiểm thử tự động gồm 257 assertions đạt tỷ lệ 100% Pass. Trong đó có 104 test hồi quy bảo mật kiểm tra đủ 22 quyền cấp phép và bẫy lỗi 3 trường hợp bị từ chối; 88 test giao diện kiểm tra vòng đời ứng dụng và xử lý timeout mạng."*
-
----
-
-# PHẦN 3. THỨ TỰ BẤM NÚT TRÊN PHẦN MỀM KHI LÊN DEMO (120 GIÂY)
-
-Khi đến lượt bạn demo (hoặc khi nhóm demo đến phần bảo mật & chốt lương), hãy thao tác chuẩn xác theo 5 bước sau:
-
-```
-[BƯỚC 1] Khởi chạy ứng dụng:
-         Chạy script: .\start_app.ps1
-         --> Màn hình LoginFrame hiện lên với bảng màu phẳng Light Theme.
-
-[BƯỚC 2] Demo Đăng nhập nhanh & Dashboard Admin:
-         Nhấp đúp vào nút: "Admin"
-         --> Tự động vào Dashboard quản trị hệ thống trong 0.5s.
-         --> Mở "Quản trị Tài khoản" để chứng minh bảng phân quyền 4 Roles.
-
-[BƯỚC 3] Demo Chốt kỳ lương an toàn:
-         Đăng xuất --> Nhấp đúp vào nút: "Kế toán" (gui_payroll)
-         --> Vào menu "Báo cáo & Chốt lương", chọn Tháng 10/2026.
-         --> Bấm nút "Chốt bảng lương" --> Xác nhận.
-         --> Trạng thái đổi thành "ĐÃ CHỐT SỔ" màu xanh.
-
-[BƯỚC 4] Demo Bẫy lỗi Trigger khóa dữ liệu:
-         Đăng xuất --> Nhấp đúp vào nút: "HR Manager" (gui_hr)
-         --> Vào menu "Nhật ký Chấm công", thử thêm công ngày 2026-10-15 cho nhân viên.
-         --> HỘP THOẠI LỖI BẬT LÊN: Trigger từ chối vì kỳ đã chốt!
-
-[BƯỚC 5] Demo Row-Level Security:
-         Đăng xuất --> Nhấp đúp vào nút: "Nhân viên A (730k)" (gui_a)
-         --> Vào menu "Báo cáo & Phiếu lương".
-         --> Chứng minh: Chỉ thấy duy nhất phiếu lương của mình (730.000đ), không thấy của ai khác!
+```mermaid
+flowchart LR
+  A["Nhập user + mật khẩu"] --> B["Mở kết nối bằng chính SQL login đó (L42)"]
+  B -->|"sai mật khẩu SQL"| X["SQL Server từ chối"]
+  B --> C["sp_LayTaiKhoanHienTai: tìm TAIKHOAN theo ORIGINAL_LOGIN() và kiểm role khớp"]
+  C --> D["So PBKDF2 với hash trong TAIKHOAN (L44)"]
+  D --> E["Kiểm tài khoản đang hoạt động (L47)"]
+  E --> F["Tạo Session, xóa hash khỏi đối tượng (L52-54)"]
 ```
 
----
+**Nói gì**
+> "Đăng nhập có hai lớp. Lớp một: ứng dụng mở kết nối bằng chính SQL login của người dùng, nên sai mật khẩu thì SQL Server từ chối luôn. Lớp hai: procedure `sp_LayTaiKhoanHienTai` tìm hồ sơ theo `ORIGINAL_LOGIN()` và yêu cầu vai trò trong bảng `TAIKHOAN` phải khớp role SQL thật. Sau đó Java so mật khẩu với hash PBKDF2-HMAC-SHA256 600.000 vòng, salt 16 byte ngẫu nhiên, so sánh bằng `MessageDigest.isEqual` để tránh lộ thông tin qua thời gian so sánh. Tài khoản bị khóa thì không vào được. Hash cũ dạng SHA-256 tự được nâng cấp lên PBKDF2 ở lần đăng nhập đúng đầu tiên (L48–50)."
 
-# PHẦN 4. BỘ CÂU HỎI VẤN ĐÁP KÈM MINH CHỨNG SOURCE CODE
-
-Dưới đây là 4 câu hỏi "tủ" mà giảng viên bộ môn Hệ Quản Trị CSDL (TS. Phan Thị Thể) rất hay hỏi khi thẩm định bài làm của TV5:
-
-#### Câu hỏi 1: *"Cơ chế bảo mật mật khẩu của em có điểm gì khác biệt so với các đồ án thông thường?"*
-- **Trả lời:**
-  > *"Dạ thưa Cô, các đồ án thông thường hay lưu mật khẩu dạng bản rõ hoặc dùng hàm băm nhanh MD5/SHA-256. Những cách này rất dễ bị giải mã bằng GPU qua bảng Rainbow Table. Đồ án của em áp dụng tiêu chuẩn NIST SP 800-132: dùng thuật toán `PBKDF2WithHmacSHA256` với muối ngẫu nhiên 16 bytes và lặp lại 600.000 vòng tính toán. Ngoài ra, tại tầng Java em không dùng kiểu `String` mà dùng mảng `char[]` và xóa trắng bộ nhớ ngay sau khi xác thực để chống soi trộm dump RAM."*
-- **Chỉ code:** Mở [`src/main/java/com/util/PasswordUtil.java`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/util/PasswordUtil.java), chỉ vào **dòng 11 – 38**.
+**Giới hạn cần nói thật:** `PasswordUtil` nhận mật khẩu dạng `String` (L14, L19), nên việc xóa `char[]` chỉ giảm thời gian mật khẩu nằm trong bộ nhớ, không loại bỏ hoàn toàn.
 
 ---
 
-#### Câu hỏi 2: *"View cá nhân của em bảo vệ mức dòng ra sao? Tại sao em chọn `ORIGINAL_LOGIN()`?"*
-- **Trả lời:**
-  > *"Dạ thưa Cô, em cài đặt Row-Level Security trong View `vw_PhieuLuongCaNhan`. Trong mệnh đề WHERE, em kiểm tra `tk.SqlLogin = ORIGINAL_LOGIN()`. Em chọn `ORIGINAL_LOGIN()` vì hàm này trả về chính xác SQL Login kết nối ban đầu từ client, không thể bị thay đổi hay giả mạo ngay cả khi trong phiên có lệnh `EXECUTE AS` chuyển ngữ cảnh. Nhờ đó, nhân viên kết nối bằng tài khoản nào thì chỉ xem được đúng dòng của nhân viên đó, bảo vệ tính riêng tư tuyệt đối."*
-- **Chỉ code:** Mở [`database/05_Security_Payroll_TV5.sql`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql), chỉ vào **dòng 523 – 535**.
+### 3.3 Bốn database role và GRANT / REVOKE / DENY
+
+**Ở đâu:** [05#L275-L428](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L275-L428)
+
+**Ma trận quyền đúng theo code**
+
+| Đối tượng | `role_DBAdmin` | `role_HRManager` | `role_PayrollOfficer` | `role_Employee` |
+|---|:-:|:-:|:-:|:-:|
+| `PHONGBAN`, `CHUCVU`, `NHANVIEN` | db_owner | SELECT/INSERT/UPDATE/DELETE | SELECT · **DENY** ghi | **DENY** |
+| `CHAMCONG`, `sp_GhiNhanChamCong` | db_owner | CRUD + EXECUTE | SELECT · **DENY** ghi và EXECUTE | **DENY** |
+| `PHUCAPNHANVIEN`, `KHAUTRUNHANVIEN` | db_owner | CRUD | CRUD | **DENY** |
+| `sp_TinhBangLuongThang` | db_owner | *không được cấp* | EXECUTE | *không được cấp* |
+| `sp_ChotBangLuong` | db_owner | **DENY** | EXECUTE | *không được cấp* |
+| `sp_HuyChotBangLuong`, xóa kỳ nháp | db_owner | *không được cấp* | EXECUTE | *không được cấp* |
+| `BANGLUONG`, `CHITIETBANGLUONG` | db_owner | SELECT | SELECT, INSERT | **DENY** |
+| `vw_BangLuongChiTiet` (bảng tổng) | db_owner | SELECT | SELECT | **REVOKE** |
+| `vw_PhieuLuongCaNhan` (chỉ dòng của mình) | db_owner | — | — | SELECT |
+| `TAIKHOAN` | db_owner | **DENY** | **DENY** | **DENY** |
+| SP quản trị tài khoản | EXECUTE | — | — | — |
+
+**Bảo vệ ba lớp, mỗi lớp có code riêng**
+
+| Lớp | Ví dụ code | Vai trò |
+|---|---|---|
+| Giao diện | [MainFrame.java#L106-L128](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/main/MainFrame.java#L106-L128) ẩn menu; [BaoCaoPanel.java#L454](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/baocao/BaoCaoPanel.java#L454) tắt nút chốt | Cho người dùng thấy đúng chức năng của mình |
+| Service | [PayrollService.java#L118](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/service/PayrollService.java#L118) `requireRoles("DB_Admin","Payroll_Officer")` | Chặn sớm, báo lỗi dễ hiểu |
+| **SQL Server** | GRANT/DENY ở file 05 | **Lớp quyết định.** Dù client bị sửa, SQL vẫn từ chối |
+
+**Nói gì**
+> "Nhóm không dùng tài khoản `sa`. Mỗi người có SQL login riêng, được gán vào một trong 4 role. Ẩn menu chỉ là giao diện. Quyền thật nằm ở SQL Server: nếu ai đó sửa client để gọi thẳng `sp_ChotBangLuong` bằng tài khoản HR thì SQL Server vẫn báo *EXECUTE permission denied*."
+
+**Bằng chứng:** [test_security_roles_TV5.log](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/sql-verification/test_security_roles_TV5.log): **22 kiểm tra quyền, 3 thao tác bị từ chối, dọn dẹp PASS** (08/10, dùng `EXECUTE AS USER`).
+
+**Giới hạn:** `role_DBAdmin` là thành viên `db_owner` của database, không phải quản trị server. Tạo SQL login mới cần `sysadmin` (`sp_DBAProvisionIdentity` L632).
 
 ---
 
-#### Câu hỏi 3: *"Tại sao trong Execution Plan sau tối ưu lại không xuất hiện toán tử Key Lookup?"*
-- **Trả lời:**
-  > *"Dạ thưa Cô, đó là vì em đã áp dụng kỹ thuật **Covering Index**. Khi tạo chỉ mục `IX_Bench_MaPB_MaCV`, ngoài 2 cột khóa tìm kiếm là `(MaPB, MaCV)`, em đưa toàn bộ các cột cần hiển thị trong câu lệnh SELECT (`HoTen, LuongCoBan, TrangThai`) vào mệnh đề `INCLUDE (...)`. Do đó, dữ liệu của các cột này nằm sẵn ở các trang lá của chỉ mục Nonclustered. Database Engine chỉ cần đọc ở chỉ mục là có đủ thông tin, không cần phải thực hiện Bookmark Lookup ngược về Clustered Index, giúp triệt tiêu hoàn toàn chi phí Key Lookup và giảm gần 90% thao tác đọc I/O."*
-- **Chỉ code:** Mở [`database/test_benchmark_index_TV5.sql`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/test_benchmark_index_TV5.sql), chỉ vào **dòng 20 – 25**.
+### 3.4 Nhân viên chỉ xem phiếu lương của mình
+
+**Ở đâu**
+- View: [05#L523-L532](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L523-L532)
+- DAO đọc view: [BangLuongDAO.java#L239-L241](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/dao/BangLuongDAO.java#L239-L241)
+- Giao diện: menu **Báo cáo & Phiếu lương**, tiêu đề đổi thành **"Phiếu lương của tôi"** ([BaoCaoPanel.java#L167](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/baocao/BaoCaoPanel.java#L167))
+
+```sql
+CREATE OR ALTER VIEW dbo.vw_PhieuLuongCaNhan AS
+SELECT bl.* FROM dbo.vw_BangLuongChiTiet bl
+JOIN dbo.TAIKHOAN tk ON tk.MaNV = bl.MaNV
+WHERE tk.SqlLogin = ORIGINAL_LOGIN() AND tk.TrangThai = 'HOAT_DONG';
+```
+
+**Nói gì**
+> "Employee bị DENY toàn bộ bảng gốc và bị REVOKE view tổng. Chỉ còn view cá nhân, lọc theo `ORIGINAL_LOGIN()` là login SQL Server đã xác thực. DAO có truyền `MaNV`, nhưng đó chỉ là lọc phụ. Nếu client giả mạo `MaNV` của người khác thì view vẫn trả **0 dòng**, vì điều kiện login nằm trong SQL."
+
+**Bằng chứng:** [identity.log](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/identity-agent/identity.log): **41 kiểm tra PASS**, gồm "Employee A đọc được dòng của mình, không đọc được B hoặc bảng tổng; giả Session không vượt quyền".
 
 ---
 
-#### Câu hỏi 4: *"Stored Procedure chốt lương xử lý tranh chấp đồng thời như thế nào?"*
-- **Trả lời:**
-  > *"Dạ thưa Cô, trong `sp_ChotBangLuong`, em đặt câu lệnh `SELECT TrangThai FROM dbo.BANGLUONG WITH (UPDLOCK, ROWLOCK)`. Khóa cập nhật UPDLOCK đảm bảo rằng nếu có một phiên khác cũng đang cố gắng tính lương hoặc sửa dữ liệu của kỳ này, phiên đó sẽ bị chặn (Block) ở trạng thái chờ. Sau khi thủ tục kiểm tra hợp lệ, chuyển trạng thái sang `DA_CHOT` và Commit, 3 Trigger bảo vệ sẽ lập tức kích hoạt để từ chối bất kỳ hành vi sửa đổi dữ liệu gốc nào sau đó."*
-- **Chỉ code:** Mở [`database/05_Security_Payroll_TV5.sql`](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql), chỉ vào **dòng 195 – 250**.
+### 3.5 Chốt kỳ lương và mở lại
+
+**Ở đâu**
+- Procedure: [05#L197-L262](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L197-L262)
+- Java: [BaoCaoPanel.java#L351](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/baocao/BaoCaoPanel.java#L351) → [PayrollService.java#L117](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/service/PayrollService.java#L117) → [BangLuongDAO.java#L140-L141](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/dao/BangLuongDAO.java#L140-L141) `{CALL dbo.sp_ChotBangLuong(?)}`
+- Mở lại: nút **Mở lại bảng lương** → `sp_HuyChotBangLuong` ([04#L561](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/04_Module_TinhLuong_TV4.sql#L561), TV4 viết)
+
+**Các bước trong `sp_ChotBangLuong`**
+
+| Bước | Dòng | Việc làm |
+|:-:|:-:|---|
+| 1 | L208 | `BEGIN TRANSACTION` trong `BEGIN TRY` |
+| 2 | L213–215 | Đọc trạng thái kỳ với `WITH (UPDLOCK, HOLDLOCK)` → giữ khóa dòng đến khi commit |
+| 3 | L218–227 | Không tồn tại → lỗi; đã `DA_CHOT` → lỗi "không thể chốt lại" |
+| 4 | L230–237 | Kỳ chưa có chi tiết → không cho chốt bảng trống |
+| 5 | L240–243 | `TrangThai = 'DA_CHOT'`, `NgayChot = GETDATE()` |
+| 6 | L252–261 | `CATCH`: rollback nếu còn transaction, ném lại lỗi cho Java |
+
+**Nói gì**
+> "Chốt kỳ là một transaction. Procedure khóa dòng kỳ lương bằng `UPDLOCK, HOLDLOCK` ngay khi đọc trạng thái, nên hai người không thể cùng chốt. Nó kiểm tra kỳ có tồn tại, chưa chốt và đã có chi tiết lương, rồi mới ghi `DA_CHOT` và ngày chốt. Bất kỳ lỗi nào cũng rollback toàn bộ. Muốn sửa sau khi chốt thì Payroll hoặc Admin phải bấm **Mở lại bảng lương**, tính lại rồi chốt lại."
 
 ---
+
+### 3.6 Bốn trigger khóa dữ liệu sau khi chốt
+
+| Trigger | Bảng | Dòng | Cách xác định kỳ |
+|---|---|:-:|---|
+| `trg_ChiTietLuong_KhongSuaKhiDaChot` | `CHITIETBANGLUONG` | [L164](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L164) | `MaBangLuong` ở `inserted` ∪ `deleted` |
+| `trg_PhuCap_KhongSuaKhiDaChotLuong` | `PHUCAPNHANVIEN` | [L432](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L432) | `Thang, Nam` |
+| `trg_KhauTru_KhongSuaKhiDaChotLuong` | `KHAUTRUNHANVIEN` | [L451](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L451) | `Thang, Nam` |
+| `trg_ChamCong_KhongSuaKhiDaChotLuong` | `CHAMCONG` | [L470](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L470) | `MONTH/YEAR(NgayChamCong)` |
+
+**Ba điểm kỹ thuật nên nói**
+1. Cả bốn đều `AFTER INSERT, UPDATE, DELETE` và gộp `inserted UNION deleted`. Cách này chặn cả trường hợp **chuyển** một dòng từ kỳ đã chốt sang kỳ khác (dòng cũ nằm ở `deleted`).
+2. Đọc `BANGLUONG` với `UPDLOCK, HOLDLOCK`, nên trigger phối hợp khóa với `sp_ChotBangLuong` thay vì đọc trạng thái cũ.
+3. Chặn ở tầng SQL nên áp dụng cho cả thao tác từ SSMS, không chỉ từ giao diện.
+
+**Nói gì**
+> "Sau khi chốt, bốn trigger khóa cả kết quả lẫn dữ liệu nguồn: chi tiết lương, chấm công, phụ cấp và khấu trừ của kỳ đó. Trigger xét cả `inserted` lẫn `deleted`, nên chặn được thêm, sửa, xóa và cả việc chuyển dòng sang kỳ khác."
+
+---
+
+### 3.7 Kiểm soát đồng thời
+
+**Ở đâu:** khóa trong [05#L213-L215](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L213-L215) và trong các trigger; script [SessionA](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/tests/TV4_Payroll_Concurrency_SessionA.sql) / [SessionB](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/tests/TV4_Payroll_Concurrency_SessionB.sql) / [Closed_Source_Concurrency.ps1](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/tests/Closed_Source_Concurrency.ps1). File [test_concurrency_demo_TV5.sql](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/test_concurrency_demo_TV5.sql) chỉ là file chỉ đường tới các script này.
+
+| Kịch bản | Kết quả đo thật | Log |
+|---|---|---|
+| **Hai phiên cùng tính lương một kỳ** (07/10, kỳ 01/2020) | Phiên A (SPID 77) giữ khóa; phiên B (SPID 83) chờ **20.631 ms** rồi hoàn tất. **1 header, 1 chi tiết, 0 nhóm trùng**, cleanup PASS | [Concurrency_A.log](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/fix-verification/Concurrency_A.log), [Concurrency_B.log](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/fix-verification/Concurrency_B.log) |
+| **Chốt kỳ đối đầu sửa nguồn** (08/10, 4 race: chấm công / phụ cấp / khấu trừ / chi tiết) | Chờ **1101 / 1046 / 1042 / 1033 ms**, cả 4 đều **bị từ chối**, dữ liệu nguồn không đổi | [Closed_Source_Concurrency.log](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/sql-verification/Closed_Source_Concurrency.log) |
+
+**Nói gì**
+> "Có hai kịch bản tranh chấp đã chạy thật bằng hai kết nối. Một: hai phiên cùng tính lương một kỳ. Phiên sau phải chờ khoảng 20,6 giây đến khi phiên trước commit, và chỉ có đúng 1 bảng lương, không có dòng trùng. Hai: một phiên đang chốt kỳ, phiên kia cố sửa chấm công, phụ cấp, khấu trừ hoặc chi tiết. Cả bốn thao tác sửa đều phải chờ khoảng 1 giây rồi bị trigger từ chối, dữ liệu nguồn không đổi."
+
+**Giới hạn:** Đây là kịch bản cố định trong script, chưa phải kiểm tải nhiều người dùng; chưa thử phục hồi deadlock hay backup/restore.
+
+---
+
+### 3.8 Tối ưu index và kế hoạch thực thi
+
+**Ở đâu**
+- Index thật trên bảng `NHANVIEN`: [05#L92-L100](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L92-L100) — `IX_NHANVIEN_MaPB_MaCV (MaPB, MaCV) INCLUDE (MaNV, HoTen, LuongCoBan, TrangThai)`
+- Benchmark trên bảng tạm 10.000 dòng: [test_benchmark_index_TV5.sql](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/test_benchmark_index_TV5.sql)
+  - Sinh dữ liệu L10–18: `MaPB = n % 4 + 1`, `MaCV = n % 3 + 1` → điều kiện `MaPB = 2 AND MaCV = 1` ứng với `n % 12 = 9` → đúng **833 dòng**
+  - Tạo index L19–22, đo "trước" L36–38 (ép `INDEX(PK_Bench_MaNV)`), đo "sau" L50–52 (ép `INDEX(IX_Bench_MaPB_MaCV)`)
+  - L57–61: đối chiếu hai chiều bằng `EXCEPT` để chứng minh kết quả trước và sau giống hệt nhau
+
+**Số liệu**
+
+| Chỉ số | Clustered Index Scan | Index Seek (covering) | Thay đổi |
+|---|:-:|:-:|:-:|
+| Dòng phải đọc (`Actual Rows Read`) | 10.000 | 833 | −91,7% |
+| Logical reads — lượt 07/10, actual plan | **142** | **15** | −89,4% |
+| Logical reads — lượt 13/10, chạy lại | **126** | **13** | −89,7% |
+| Estimated I/O cost | 0,106829 | 0,0109645 | −89,7% |
+| Estimated subtree cost | 0,117986 | 0,0120382 | ≈ 9,8 lần |
+| Có Key Lookup không | — | **Không** | covering index |
+
+Nguồn: [README_EVIDENCE.md#L43-L48](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/README_EVIDENCE.md#L43-L48), plan [TV5_ActualPlan_4.sqlplan](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/fix-verification/TV5_ActualPlan_4.sqlplan) / [TV5_ActualPlan_5.sqlplan](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/fix-verification/TV5_ActualPlan_5.sqlplan), log [TV5_Benchmark.messages.log](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/verification-20261013/TV5_Benchmark.messages.log).
+
+**Nói gì (theo đúng 2 ảnh Execution Plan trên slide 17)**
+> "Trước khi tối ưu, SQL Server dùng **Clustered Index Scan**: đọc hết 10.000 dòng rồi mới lọc bằng `Predicate`, để lấy 833 dòng. Sau khi có index `(MaPB, MaCV)`, SQL Server dùng **Index Seek** với `Seek Predicates`: đi theo cây B-Tree đến đúng vùng `MaPB=2, MaCV=1`, chỉ đọc 833 dòng. Vì các cột cần hiển thị đã nằm trong `INCLUDE`, nên plan **không có Key Lookup** quay về bảng chính. Logical reads giảm từ 142 xuống 15, khoảng 89%. Lượt chạy lại ngày 13/10 cho kết quả tương tự là 126 xuống 13."
+
+**Giới hạn cần nói thật (chủ động nói sẽ được đánh giá cao)**
+- Benchmark **ép đường truy cập bằng hint** để so sánh công bằng hai phương án; không khẳng định optimizer luôn tự chọn như vậy trên dữ liệu thật.
+- Thời gian chạy chỉ 0–3 ms, quá nhỏ để kết luận về tốc độ. Kết luận dựa trên **số trang đọc**, không dựa trên mili giây.
+- `MaNV` trong `INCLUDE` của index thật là thừa, vì khóa clustered đã có sẵn ở mọi nonclustered index. Nếu bị hỏi, thừa nhận là có thể bỏ.
+
+---
+
+### 3.9 Kiểm thử tự động
+
+| Bộ kiểm thử | Số assertion | Log |
+|---|:-:|---|
+| `SecurityRegressionTest` | 104 | [Java_Security.log](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/package-integration-20261015/Java_Security.log) |
+| `GuiQaRegressionTest` | 88 | [Java_GuiQa.log](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/package-integration-20261015/Java_GuiQa.log) |
+| `LightThemeRegressionTest` | 45 | [Java_LightTheme.log](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/package-integration-20261015/Java_LightTheme.log) |
+| `LoginChipRegressionTest` | 20 | [Java_LoginChip.log](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/package-integration-20261015/Java_LoginChip.log) |
+| **Tổng Java offline** | **257** | [README](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/package-integration-20261015/README.md) |
+| SQL phân quyền (`EXECUTE AS USER`) | 22 kiểm tra + 3 bị từ chối | [test_security_roles_TV5.log](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/sql-verification/test_security_roles_TV5.log) |
+| Danh tính thật (login A/B) | 41 + 9 = 50 | [identity.log](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/identity-agent/identity.log) |
+| GUI chạy thật với SQL | 87 | [gui-followup README](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/gui-followup-20261013/README.md) |
+
+> [!WARNING]
+> **257 là test Java không kết nối SQL.** Đừng nói "257 test kiểm tra toàn bộ hệ thống". Hãy nói: "257 assertion Java offline, cộng với các bộ kiểm tra SQL và danh tính chạy riêng". Các con số không được cộng dồn với nhau.
+
+---
+
+### 3.10 Thanh đăng nhập nhanh (chỉ dùng cho demo)
+
+**Ở đâu:** [LoginFrame.java#L150-L232](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/ui/auth/LoginFrame.java#L150-L232). Bấm 1 lần để điền thông tin; nhấp đúp để đăng nhập luôn. Ẩn bằng `-Dapp.hideDemo=true`.
+
+> [!CAUTION]
+> Mật khẩu 5 tài khoản demo đang **nằm trực tiếp trong source** (L170–177). Giảng viên hỏi về bảo mật thì **chủ động nhận**: "Đây là tiện ích chỉ cho buổi demo trên database QA. Bản triển khai thật phải chạy với `-Dapp.hideDemo=true` và xóa các dòng này. Các tài khoản demo vẫn phải qua đủ hai lớp xác thực SQL + PBKDF2, không có đường tắt bỏ qua xác thực."
+
+---
+
+## 4. Kịch bản demo 120 giây
+
+**Chuẩn bị trước giờ bảo vệ**
+- Chạy ứng dụng: `powershell -NoProfile -ExecutionPolicy Bypass -File .\start_app.ps1`
+- Kỳ **10/2026** đã được tính, đang ở trạng thái **Bản nháp** (`CHUA_CHOT`). Kiểm tra A = **730.000đ**, B = **0đ**.
+- Không tạo thêm nhân viên hay chấm công để "ép" số liệu.
+
+| Thời gian | Tài khoản | Thao tác | Kết quả cần chỉ cho giảng viên |
+|:-:|---|---|---|
+| 0–25s | **Kế toán** (nhấp đúp) | **Báo cáo & Phiếu lương** → chọn 10/2026 → **Chốt bảng lương** → Xác nhận | Trạng thái chuyển **Đã chốt**, có ngày chốt, số tiền không đổi |
+| 25–60s | **HR Manager** | **Nhật ký chấm công** → thêm công cho A ngày **2026-10-10**, 08:00–17:00, *Có mặt* | Báo lỗi *"Kỳ lương đã chốt: không được thay đổi chấm công."*. Dùng ngày chưa có công để không bị lỗi trùng ngày che mất |
+| 60–85s | **Nhân viên A** | **Báo cáo & Phiếu lương** (tiêu đề **Phiếu lương của tôi**) | Chỉ có dòng của A (730.000đ), không có B hay bảng tổng |
+| 85–100s | **Nhân viên B** | Mở cùng màn hình | Chỉ thấy phiếu 0đ của B |
+| 100–120s | **Kế toán** | **Mở lại bảng lương** → **Làm mới** | Kỳ về **Bản nháp**, sẵn sàng cho lượt demo sau |
 
 > [!TIP]
-> **Lời khuyên khi bước lên bục báo cáo:** Bạn chỉ cần mở sẵn tệp này trên một tab màn hình hoặc in ra 2 mặt giấy. Mọi câu hỏi của Thầy/Cô đều đã có sẵn câu trả lời và số dòng code để chỉ ngay lập tức! Chúc bạn có một buổi bảo vệ đồ án thành công xuất sắc đạt điểm tối đa!
+> Bước cuối **không được bỏ**. Nếu quên mở lại kỳ, lượt demo sau (hoặc phần của TV4) sẽ bị trigger chặn. Nếu thiếu thời gian, bỏ bước B, giữ bước mở lại.
+
+**Phương án dự phòng trong SSMS** (kết nối bằng chính login `gui_a`, không dùng tài khoản DBA):
+
+```sql
+SELECT ORIGINAL_LOGIN() AS LoginDangKetNoi, IS_ROLEMEMBER('role_Employee') AS LaEmployee;
+SELECT MaNV, HoTen, Thang, Nam, ThucNhan FROM dbo.vw_PhieuLuongCaNhan;   -- chỉ 1 dòng
+SELECT * FROM dbo.vw_BangLuongChiTiet;                                    -- phải báo permission denied
+```
+
+---
+
+## 5. Câu hỏi vấn đáp
+
+**Câu 1. Tại sao dùng PBKDF2 mà không dùng MD5 hay SHA-256?**
+> "MD5 và SHA-256 là hàm băm nhanh, GPU thử được hàng tỷ mật khẩu mỗi giây. PBKDF2 lặp 600.000 vòng HMAC-SHA256 nên mỗi lần thử chậm hơn hàng trăm nghìn lần; salt 16 byte ngẫu nhiên khiến hai người cùng mật khẩu vẫn có hash khác nhau, vô hiệu hóa bảng tra sẵn."
+→ [PasswordUtil.java#L11-L17](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/util/PasswordUtil.java#L11-L17)
+
+**Câu 2. Đã có SQL login rồi, sao còn cần hash trong bảng `TAIKHOAN`?**
+> "SQL login xác thực với SQL Server. Bảng `TAIKHOAN` giữ trạng thái khóa/mở, vai trò ứng dụng và liên kết `MaNV`. Ứng dụng yêu cầu cả hai khớp nhau: login đúng, hồ sơ đang hoạt động, vai trò trong bảng trùng role SQL thật. Admin khóa tài khoản thì `sp_AdminSetStatus` vừa `DISABLE` login SQL vừa đổi trạng thái trong bảng, trong cùng một transaction."
+→ [AuthService.java#L42-L47](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/service/AuthService.java#L42-L47), [05#L598-L620](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L598-L620)
+
+**Câu 3. `REVOKE` khác `DENY` thế nào? Em dùng ở đâu?**
+> "`REVOKE` gỡ một quyền đã cấp, người dùng vẫn có thể nhận lại quyền đó qua role khác. `DENY` là cấm tường minh và **luôn thắng GRANT**. Em dùng `REVOKE SELECT` view tổng khỏi Employee (L387) và `DENY` các bảng gốc (L390–400), `DENY EXECUTE sp_ChotBangLuong` cho HR (L333)."
+→ [05#L333](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L333), [05#L387-L400](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L387-L400)
+
+**Câu 4. Employee bị DENY bảng gốc, sao vẫn đọc được qua view?**
+> "Nhờ **ownership chaining**: view và bảng cùng chủ sở hữu `dbo`, nên SQL Server chỉ kiểm quyền trên view, không kiểm lại trên bảng bên dưới. Employee được SELECT view cá nhân nhưng vẫn không thể SELECT trực tiếp bảng."
+
+**Câu 5. Tại sao dùng `ORIGINAL_LOGIN()` mà không dùng `SUSER_SNAME()`?**
+> "`SUSER_SNAME()` thay đổi theo ngữ cảnh khi có `EXECUTE AS`. `ORIGINAL_LOGIN()` luôn trả về login đã kết nối ban đầu, nên không thể dùng chuyển ngữ cảnh để đọc phiếu lương người khác."
+
+**Câu 6. Client sửa `MaNV` để xem lương người khác được không?**
+> "Không. DAO có truyền `MaNV`, nhưng view đã lọc theo login thật ở SQL. Truyền `MaNV` của B khi đang đăng nhập A thì view trả 0 dòng. Log danh tính 07/10 đã kiểm trường hợp giả Session."
+→ [BangLuongDAO.java#L241](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/src/main/java/com/dao/BangLuongDAO.java#L241), [05#L528](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L528)
+
+**Câu 7. Tại sao HR không được chốt lương? Có phải HR ít quyền hơn Payroll?**
+> "Không ít hơn, mà là **tách trách nhiệm**. HR độc quyền ghi hồ sơ, phòng ban, chức vụ, chấm công; Payroll bị DENY các thao tác đó. Ngược lại, Payroll tính và chốt lương, còn HR bị DENY chốt. Nếu một người vừa tạo được nhân viên và công, vừa chốt được tiền, người đó có thể tạo 'nhân viên ma' rồi tự duyệt chi. Tách hai vai trò buộc dữ liệu phải qua kiểm soát chéo."
+
+**Câu 8. `UPDLOCK, HOLDLOCK` để làm gì? Sao không chỉ `UPDLOCK`?**
+> "`UPDLOCK` cho phép phiên khác đọc nhưng không cho hai phiên cùng giữ quyền chuẩn bị cập nhật một dòng, tránh deadlock kiểu 'cùng đọc rồi cùng ghi'. `HOLDLOCK` giữ khóa đến cuối transaction như mức `SERIALIZABLE`, nên giữa lúc kiểm trạng thái và lúc `UPDATE` không ai chen vào đổi trạng thái được."
+→ [05#L213-L215](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/05_Security_Payroll_TV5.sql#L213-L215)
+
+**Câu 9. Sao plan sau tối ưu không có Key Lookup?**
+> "Vì là covering index. Cột lọc `MaPB, MaCV` nằm ở khóa; cột cần hiển thị `HoTen, LuongCoBan, TrangThai` nằm ở `INCLUDE`, còn `MaNV` là khóa clustered nên có sẵn ở tầng lá. Tất cả cột của câu `SELECT` đều có trong index, không phải quay về bảng chính."
+→ [test_benchmark_index_TV5.sql#L20-L21](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/test_benchmark_index_TV5.sql#L20-L21)
+
+**Câu 10. Em ép hint trong benchmark, vậy có công bằng không?**
+> "Mục đích là so sánh hai đường truy cập trên cùng dữ liệu, cùng điều kiện, nên em ép hint, `MAXDOP 1` và chạy với cache đã nóng. Script còn dùng `EXCEPT` hai chiều để chứng minh kết quả trước và sau giống hệt nhau. Đây là phép so sánh đường truy cập, không phải tuyên bố về tải thực tế."
+→ [test_benchmark_index_TV5.sql#L36-L61](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/test_benchmark_index_TV5.sql#L36-L61)
+
+**Câu 11. Sao có hai bộ số 142→15 và 126→13?**
+> "Hai lượt đo khác ngày trên cùng script. Lượt 07/10 lấy từ actual plan XML, lượt 13/10 chạy lại khi đóng gói. Số trang lệch do phân bố trang của bảng tạm mỗi lần tạo, nhưng tỷ lệ giảm đều khoảng 89–90%. Nhóm giữ nguyên cả hai, không sửa số."
+
+**Câu 12. Hai người cùng bấm Tính lương thì sao?**
+> "Procedure tính lương khóa header kỳ bằng `UPDLOCK, HOLDLOCK`. Phiên thứ hai phải chờ. Log thật: phiên B chờ 20.631 ms, kết quả chỉ 1 header, không có dòng trùng."
+→ [04#L274](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/database/04_Module_TinhLuong_TV4.sql#L274), [Concurrency_B.log](file:///c:/Users/DUCANHZZ/Downloads/HQTCSDL/PRJ/Bo_nop_Nhom06/evidence/TV5/fix-verification/Concurrency_B.log)
+
+---
+
+## 6. Checklist trước giờ bảo vệ
+
+- [ ] SQL Server đang chạy, `start_app.ps1` mở được màn hình đăng nhập
+- [ ] Nhấp đúp được cả 5 chip; HR không thấy menu **Bảng lương**, Employee không thấy menu **Hồ sơ nhân viên**
+- [ ] Kỳ 10/2026 đang là **Bản nháp**; A = 730.000đ, B = 0đ
+- [ ] Mở sẵn trong VS Code: file 05 (L197, L333, L470, L523), `PasswordUtil.java`, `test_benchmark_index_TV5.sql`
+- [ ] Mở sẵn trong SSMS: 2 ảnh Execution Plan, hoặc file `.sqlplan` 4 và 5
+- [ ] Học thuộc 4 con số: **833 / 10.000 dòng**, **142 → 15 reads**, **20.631 ms**, **257 assertion Java**
+- [ ] Đọc lại Phần 0 để không nói nhầm tên `sp_MoLaiKyLuong` hay tên trigger cũ
