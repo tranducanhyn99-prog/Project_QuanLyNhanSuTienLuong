@@ -106,9 +106,9 @@ public class LoginFrame extends JFrame {
 
         SoftPanel card = new SoftPanel(Color.WHITE, UITheme.BORDER, 24);
         card.setLayout(new GridBagLayout());
-        card.setBorder(new EmptyBorder(30, 40, 30, 40));
+        card.setBorder(new EmptyBorder(20, 32, 20, 32));
         JPanel form = column();
-        form.setPreferredSize(new Dimension(360, Boolean.getBoolean("app.demo") ? 568 : 480));
+        form.setPreferredSize(new Dimension(380, 560));
         form.add(UITheme.createBadge("KHÔNG GIAN LÀM VIỆC", UITheme.PRIMARY,
                 UITheme.PRIMARY_LIGHT, UITheme.PRIMARY_BORDER));
         form.add(Box.createVerticalStrut(18));
@@ -147,20 +147,39 @@ public class LoginFrame extends JFrame {
         form.add(Box.createVerticalStrut(16));
         form.add(text("Sử dụng tài khoản đã được cấp để đăng nhập.", 11, Font.PLAIN, UITheme.TEXT_MUTED));
 
-        if (Boolean.getBoolean("app.demo")) {
-            form.add(Box.createVerticalStrut(18));
-            JPanel sample = new JPanel(new BorderLayout(0, 8));
+                        if (!Boolean.getBoolean("app.hideDemo")) {
+            form.add(Box.createVerticalStrut(14));
+            JPanel sample = new JPanel(new BorderLayout(0, 6));
             sample.setOpaque(false);
             sample.setAlignmentX(Component.LEFT_ALIGNMENT);
-            sample.add(text("TÀI KHOẢN DÙNG THỬ", 10, Font.BOLD, UITheme.TEXT_MUTED), BorderLayout.NORTH);
-            JPanel chips = new JPanel(new GridLayout(1, 4, 6, 0));
-            chips.setOpaque(false);
-            addQuickLoginChip(chips, "Admin", "admin", "");
-            addQuickLoginChip(chips, "HR Manager", "hr_manager", "");
-            addQuickLoginChip(chips, "Kế toán", "payroll_officer", "");
-            addQuickLoginChip(chips, "Nhân viên", "employee01", "");
-            sample.add(chips, BorderLayout.CENTER);
-            sample.setMaximumSize(new Dimension(Integer.MAX_VALUE, 57));
+
+            JPanel headerRow = new JPanel(new BorderLayout(6, 0));
+            headerRow.setOpaque(false);
+            JLabel titleLabel = text("ĐĂNG NHẬP NHANH (DEMO)", 11, Font.BOLD, UITheme.PRIMARY);
+            titleLabel.setIcon(UITheme.icon("users", 14, UITheme.PRIMARY));
+            headerRow.add(titleLabel, BorderLayout.WEST);
+            JLabel hintLabel = text("Nhấp đúp để vào ngay", 10, Font.ITALIC, UITheme.TEXT_MUTED);
+            headerRow.add(hintLabel, BorderLayout.EAST);
+            sample.add(headerRow, BorderLayout.NORTH);
+
+            JPanel chipContainer = new JPanel(new GridLayout(2, 1, 0, 5));
+            chipContainer.setOpaque(false);
+
+            JPanel row1 = new JPanel(new GridLayout(1, 3, 6, 0));
+            row1.setOpaque(false);
+            addQuickLoginChip(row1, "Admin", "gui_admin", "Gui9!RViC8RsC5P6e0Xt8kGcEXw==", "Quản trị hệ thống (role_DBAdmin)");
+            addQuickLoginChip(row1, "HR Manager", "gui_hr", "Gui9!2aC+pyk01j8/1/rs3V+1pg==", "Trưởng phòng Nhân sự (role_HRManager)");
+            addQuickLoginChip(row1, "Kế toán", "gui_payroll", "Gui9!M2oYx/cQugmI/Y9pYrawlA==", "Kế toán tiền lương (role_PayrollOfficer)");
+
+            JPanel row2 = new JPanel(new GridLayout(1, 2, 6, 0));
+            row2.setOpaque(false);
+            addQuickLoginChip(row2, "Nhân viên A (730k)", "gui_a", "Gui9!41Ay2bMK+OIlMSeew2Or3Q==", "Nhân viên A - Thực nhận 730k (role_Employee)");
+            addQuickLoginChip(row2, "Nhân viên B (0đ)", "gui_b", "Gui9!f9bTBwZZNFygXZU3FkknSw==", "Nhân viên B - Thực nhận 0đ (role_Employee)");
+
+            chipContainer.add(row1);
+            chipContainer.add(row2);
+            sample.add(chipContainer, BorderLayout.CENTER);
+            sample.setMaximumSize(new Dimension(Integer.MAX_VALUE, 85));
             form.add(sample);
         }
         form.add(Box.createVerticalGlue());
@@ -180,20 +199,34 @@ public class LoginFrame extends JFrame {
         setContentPane(root);
     }
 
-    private void addQuickLoginChip(JPanel parent, String label, String user, String pass) {
+        private void addQuickLoginChip(JPanel parent, String label, String user, String pass, String tooltip) {
         JButton button = new JButton(label);
         button.setUI(new UITheme.RoundedButtonUI(10, UITheme.PRIMARY_BORDER));
         button.setFont(new Font(UITheme.FONT_FAMILY, Font.BOLD, 10));
         button.setForeground(UITheme.PRIMARY);
         button.setBackground(UITheme.PRIMARY_LIGHT);
         button.setFocusPainted(false);
-        button.setBorder(new EmptyBorder(7, 3, 7, 3));
+        button.setBorder(new EmptyBorder(6, 3, 6, 3));
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setToolTipText(tooltip + " (Nhấp 1 lần để điền, nhấp đúp để vào ngay)");
+
         button.addActionListener(e -> {
             txtTenDangNhap.setText(user);
             txtMatKhau.setText(pass);
-            lblStatus.setText("Đã nạp tài khoản: " + label);
-            lblStatus.setForeground(UITheme.INFO_TEXT);
+            lblStatus.setText("Đã chọn: " + label + " (" + user + ") · Bấm Đăng nhập hoặc Enter");
+            lblStatus.setForeground(UITheme.SUCCESS_TEXT);
+            btnDangNhap.requestFocusInWindow();
+        });
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    txtTenDangNhap.setText(user);
+                    txtMatKhau.setText(pass);
+                    btnDangNhap.doClick();
+                }
+            }
         });
         parent.add(button);
     }
@@ -338,7 +371,7 @@ public class LoginFrame extends JFrame {
     private void setupFrame() {
         setTitle(APP_TITLE + " · Đăng nhập");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1040, 720);
+        setSize(1040, 740);
         setMinimumSize(new Dimension(1000, 700));
         setLocationRelativeTo(null);
         setResizable(true);
