@@ -4,7 +4,7 @@ Cập nhật 08/10/2026. Ứng dụng Swing dùng **SQL login cá nhân**: tên/
 
 ## 1. Cài schema
 
-Để demo môn học, nhóm lưu rõ bộ mật khẩu QA trong [database/demo_accounts.json](../database/demo_accounts.json). [DEMO_ACCOUNTS](DEMO_ACCOUNTS.md) hướng dẫn cấp cùng mapping trên máy khác; [GUI_TEST_GUIDE](GUI_TEST_GUIDE.md) hướng dẫn thao tác từng màn hình. Bộ fixture này không chứa mật khẩu DBA và không thay thế SQL role/mapping.
+Để demo môn học, nhóm lưu rõ bộ mật khẩu QA trong [database/demo_accounts.json](../database/demo_accounts.json). [DEMO_ACCOUNTS](DEMO_ACCOUNTS.md) hướng dẫn cấp cùng mapping trên máy khác; [TV5_Huong_Dan_Bao_Cao_Chi_Tiet](TV5_Huong_Dan_Bao_Cao_Chi_Tiet.md) hướng dẫn tra cứu mã nguồn và thao tác từng màn hình. Bộ fixture này không chứa mật khẩu DBA và không thay thế SQL role/mapping.
 
 Dùng JDK 11 trở lên, SQL Server và JDBC JAR cho Java 11 trong `lib/` hoặc biến `MSSQL_JDBC_JAR`. Không cần thêm framework.
 

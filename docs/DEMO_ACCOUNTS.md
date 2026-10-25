@@ -44,4 +44,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start_gui_qa.ps1 -Database
 
 Thay tên ví dụ bằng tên QA thực. Script cấp cùng bộ mật khẩu trong JSON, tạo hai hồ sơ theo email và mapping role trong transaction; từ chối ghi đè login/user/profile hoặc hồ sơ đã tồn tại. Không chạy lại chế độ tạo trên máy hiện tại. Có thể dùng `-VerifyOnly` để kiểm tra lại đăng nhập mà không tạo tài khoản.
 
-Xem [kịch bản test giao diện](GUI_TEST_GUIDE.md) và [trạng thái các test tự động](FIX_TASKLIST.md).
+Xem [sổ tay hướng dẫn báo cáo chi tiết](TV5_Huong_Dan_Bao_Cao_Chi_Tiet.md) và [bộ SQL kiểm tra chức năng](SQL_Kiem_Tra_Chuc_Nang/TV5_SQL_Kiem_Tra_Chuc_Nang.md).

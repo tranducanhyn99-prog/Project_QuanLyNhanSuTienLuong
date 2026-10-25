@@ -24,6 +24,9 @@ Thumbs.db
 *.env
 config.properties
 application.properties
+tools/ssms_assistant/api_key.txt
+__pycache__/
+*.pyc
 
 # SQL Server local artifacts
 *.bak
