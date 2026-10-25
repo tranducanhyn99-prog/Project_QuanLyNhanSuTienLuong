@@ -20,7 +20,12 @@ python tools\ssms_assistant\ssms_daemon.py
 
 ---
 
-## 2. Bảng phím tắt điều khiển trong SSMS
+## 2. Bảng phím tắt & Chế độ "Giả bộ gõ phím" (`Fake-Typing Shield`)
+
+> **Tính năng đặc biệt — Tự động khóa bàn phím vật lý trong lúc đang sinh code (`WH_KEYBOARD_LL`):**
+> - Ngay khi bạn bấm **`F8`** / **`Alt + Q`** / **`Ctrl + Q`**, hệ thống tự động bật **Lá chắn bàn phím vật lý (`KEYBOARD_LOCKED`)**.
+> - Trong suốt thời gian code đang tự động gõ ra trên màn hình SSMS, bạn có thể **đặt hai tay lên bàn phím và gõ bất kỳ phím nào thoải mái** (tạo tiếng lạch cạch và chuyển động ngón tay như thật) mà **không có bất kỳ ký tự thừa nào từ bàn phím thật lọt vào SSMS**!
+> - Ngay khoảnh khắc dòng code cuối cùng gõ xong (hoặc khi bạn bấm **`Esc`**), bàn phím vật lý tự động mở khóa trở lại ngay lập tức.
 
 | Phím tắt | Chức năng |
 | :--- | :--- |
