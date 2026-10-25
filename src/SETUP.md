@@ -9,7 +9,7 @@ Yêu cầu JDK **11 trở lên**, JDBC SQL Server JAR cho Java 11 trong lib/ ho�
 3. DBA cấp login cá nhân/mapping theo [SECURE_SETUP](../docs/SECURE_SETUP.md). Nhập chính SQL login/password này tại LoginFrame.
 4. Chạy `powershell -NoProfile -ExecutionPolicy Bypass -File .\start_app.ps1` từ root.
 
-Với bộ demo đã mapping, chạy `start_gui_qa.ps1` để chọn QA tường minh. Username/password được nhóm lưu trong [database/demo_accounts.json](../database/demo_accounts.json); xem [DEMO_ACCOUNTS](../docs/DEMO_ACCOUNTS.md) và [GUI_TEST_GUIDE](../docs/GUI_TEST_GUIDE.md). `setup_gui_accounts.ps1 -Database PRJ_Fix_QA_...` cấp cùng fixture trên máy khác; `-VerifyOnly` xác minh tài khoản đã có.
+Với bộ demo đã mapping, chạy `start_gui_qa.ps1` để chọn QA tường minh. Username/password được nhóm lưu trong [database/demo_accounts.json](../database/demo_accounts.json); xem [DEMO_ACCOUNTS](../docs/DEMO_ACCOUNTS.md) và [TV5_Huong_Dan_Bao_Cao_Chi_Tiet](../docs/TV5_Huong_Dan_Bao_Cao_Chi_Tiet.md). `setup_gui_accounts.ps1 -Database PRJ_Fix_QA_...` cấp cùng fixture trên máy khác; `-VerifyOnly` xác minh tài khoản đã có.
 
 ```properties
 db.url=jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhanSuTienLuong;encrypt=true;trustServerCertificate=false

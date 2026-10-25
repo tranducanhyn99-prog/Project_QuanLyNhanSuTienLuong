@@ -33,9 +33,8 @@ SHA-256 deck chung (18 slide):
 
 ## Bản bàn giao gốc được giữ riêng
 
-- [TV2 slide 4–6](../evidence/TV2/presentation/final/TV2_Slides_4_6.pptx), đúng Quân và notes, nhận nguyên byte từ PR #44 head 7efd9dd. Dùng [biên nhận và hiệu đính TV5](../evidence/TV2/README_TV5_RECEIPT.md) theo canonical v3; biên bản v2 gốc được giữ nguyên để truy vết.
-- [TV3 slide 7–9](../evidence/TV3/Minh_chung/TV3_Slides_7-9.pptx), đúng Đạt, nguyên byte PR #43; [biên nhận](../evidence/TV3/README_EVIDENCE.md) phân biệt log/plan 13/10 với ảnh lịch sử.
-- [TV4 slide 10–12](../evidence/TV4/TV4_Slides_10-12.pptx), đúng Vinh, từ PR #41. Giữ nguyên cạnh `Minh_chung/` để nguồn trong notes truy được.
-- [TV5 slide 13–15](TV5_Slide_13-15.pptx) là deck từng phần dựng 11/10. Notes/số liệu ghi phạm vi lịch sử, không dùng nó thay deck chung cập nhật 13/10. [Ba preview cũ](preview/TV5_Slide_13.png) giữ nguồn cũ.
-
-[Kịch bản và phiếu ghi lượt tập](../TV5_TAP_DEMO.md) vẫn để kết quả trống đến khi chạy thật. Hướng dẫn 1–5 nằm trong docs của repo; chúng không thay PPTX. Nguồn dựng/QA deck chung lưu riêng `build/tv5-final-docs-20261013/`, không phải log thực thi nghiệp vụ.
+- [TV1 slide 1–3](TV1_Slides_1-3.pptx), đúng Trí.
+- [TV2 slide 4–6](../evidence/TV2/presentation/final/TV2_Slides_4_6.pptx), đúng Quân và notes, nhận nguyên byte từ PR #44.
+- [TV3 slide 7–9](../evidence/TV3/Minh_chung/TV3_Slides_7-9.pptx), đúng Đạt, nguyên byte PR #43.
+- [TV4 slide 10–12](../evidence/TV4/TV4_Slides_10-12.pptx), đúng Vinh, từ PR #41.
+- [TV5 slide 13–15](TV5_Slide_13-15.pptx) là deck từng phần dựng 11/10.
