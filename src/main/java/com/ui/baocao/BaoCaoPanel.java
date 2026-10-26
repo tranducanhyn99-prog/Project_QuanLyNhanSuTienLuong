@@ -49,6 +49,7 @@ public class BaoCaoPanel extends JPanel {
     private JButton              btnHuyChot;
     private JButton              btnXoaKyBaoCao;
     private JButton              btnLamMoi;
+    private JPanel               pnlActions;
     private boolean loadingPeriods;
 
     public BaoCaoPanel() {
@@ -183,16 +184,33 @@ public class BaoCaoPanel extends JPanel {
         pnlBottom.add(lblTongThucNhan, BorderLayout.NORTH);
 
         // Khối thao tác (Chốt, Hủy chốt, Xóa kỳ nháp) chỉ hiện cho DB_Admin/Payroll_Officer
-        if (session.hasRole("DB_Admin", "Payroll_Officer")) {
-            JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-            pnlActions.setOpaque(false);
-            pnlActions.add(btnXoaKyBaoCao);
-            pnlActions.add(btnHuyChot);
-            pnlActions.add(btnChotLuong);
-            pnlBottom.add(pnlActions, BorderLayout.SOUTH);
-        }
+        pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        pnlActions.setOpaque(false);
+        pnlActions.add(btnXoaKyBaoCao);
+        pnlActions.add(btnHuyChot);
+        pnlActions.add(btnChotLuong);
+        pnlActions.setVisible(session.hasRole("DB_Admin", "Payroll_Officer"));
+        pnlBottom.add(pnlActions, BorderLayout.SOUTH);
 
         add(pnlBottom, BorderLayout.SOUTH);
+    }
+
+    public void refreshRoleControls() {
+        if (pnlActions != null) {
+            pnlActions.setVisible(session.hasRole("DB_Admin", "Payroll_Officer"));
+        }
+    }
+
+    public void reloadFromDatabase() {
+        com.ui.main.MainFrame.syncFramePermissions(this);
+        refreshRoleControls();
+        boolean isEmployee = session.hasRole("Employee")
+                && !session.hasRole("DB_Admin", "HR_Manager", "Payroll_Officer");
+        if (isEmployee) {
+            loadPhieuLuongCaNhan();
+        } else {
+            loadKyLuong();
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -207,13 +225,7 @@ public class BaoCaoPanel extends JPanel {
             cboKyLuong.addActionListener(e -> { if (!loadingPeriods) loadChiTietByKyLuong(); });
         }
 
-        btnLamMoi.addActionListener(e -> {
-            if (isEmployee) {
-                loadPhieuLuongCaNhan();
-            } else {
-                loadKyLuong();
-            }
-        });
+        btnLamMoi.addActionListener(e -> reloadFromDatabase());
 
         btnChotLuong.addActionListener(e -> handleChotLuong());
         btnHuyChot.addActionListener(e -> handleHuyChotLuong());

@@ -1,6 +1,16 @@
 package com.session;
 
+import com.config.DatabaseConnection;
+import com.dao.TaiKhoanDAO;
 import com.model.TaiKhoan;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.LinkedHashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Session – Singleton lưu trữ thông tin phiên đăng nhập.
@@ -19,6 +29,7 @@ public class Session {
     private volatile String tenDangNhap;
     private volatile String vaiTro;         // "DB_Admin" | "HR_Manager" | "Payroll_Officer" | "Employee"
     private volatile String hoTenNV;        // Họ tên nhân viên (null nếu DB_Admin hệ thống)
+    private final Set<String> effectiveRoles = ConcurrentHashMap.newKeySet();
 
     // ─── Constructor (private – Singleton) ───────────────────────────
 
@@ -58,6 +69,7 @@ public class Session {
         this.tenDangNhap = tenDangNhap;
         this.vaiTro      = vaiTro;
         this.hoTenNV     = hoTenNV;
+        this.effectiveRoles.clear();
     }
 
     /**
@@ -74,6 +86,7 @@ public class Session {
         tenDangNhap = null;
         vaiTro      = null;
         hoTenNV     = null;
+        effectiveRoles.clear();
     }
 
     // ─── Kiểm tra quyền ─────────────────────────────────────────────
@@ -93,9 +106,69 @@ public class Session {
     public boolean hasRole(String... roles) {
         if (vaiTro == null) return false;
         for (String r : roles) {
-            if (vaiTro.equals(r)) return true;
+            if (vaiTro.equals(r) || effectiveRoles.contains(r)) return true;
         }
         return false;
+    }
+
+    /**
+     * Đồng bộ lại thông tin tài khoản và quyền hạn thực tế (HAS_PERMS_BY_NAME) từ SQL Server.
+     * Cho phép giao diện cập nhật ngay khi người dùng GRANT/REVOKE/DENY hoặc đổi vai trò trong SSMS.
+     *
+     * @return true nếu vai trò hoặc bộ quyền hiệu lực thay đổi
+     */
+    public boolean syncFromDatabase() {
+        if (!isLoggedIn() || DatabaseConnection.identityToken() == null
+                || System.getProperty("db.url", "").startsWith("jdbc:prj-regression:")) {
+            return false;
+        }
+        String sql =
+            "SELECT " +
+            "  (ISNULL(IS_SRVROLEMEMBER('sysadmin'), 0) | ISNULL(IS_ROLEMEMBER('db_owner'), 0) | ISNULL(IS_ROLEMEMBER('role_DBAdmin'), 0)) AS IsAdmin, " +
+            "  (ISNULL(HAS_PERMS_BY_NAME('dbo.NHANVIEN', 'OBJECT', 'INSERT'), 0) & ISNULL(HAS_PERMS_BY_NAME('dbo.NHANVIEN', 'OBJECT', 'UPDATE'), 0)) AS CanWriteHR, " +
+            "  (ISNULL(HAS_PERMS_BY_NAME('dbo.BANGLUONG', 'OBJECT', 'INSERT'), 0) | ISNULL(HAS_PERMS_BY_NAME('dbo.sp_ChotBangLuong', 'OBJECT', 'EXECUTE'), 0) | ISNULL(HAS_PERMS_BY_NAME('dbo.sp_TinhBangLuongThang', 'OBJECT', 'EXECUTE'), 0)) AS CanWritePayroll, " +
+            "  (ISNULL(HAS_PERMS_BY_NAME('dbo.TAIKHOAN', 'OBJECT', 'SELECT'), 0) & ISNULL(HAS_PERMS_BY_NAME('dbo.sp_AdminSetRole', 'OBJECT', 'EXECUTE'), 0)) AS CanWriteAdmin";
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            TaiKhoan latest = new TaiKhoanDAO().findCurrentIdentity(conn);
+            Set<String> newEffective = new LinkedHashSet<>();
+            try (PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    if (rs.getInt("IsAdmin") == 1 || rs.getInt("CanWriteAdmin") == 1) {
+                        newEffective.add("DB_Admin");
+                        newEffective.add("HR_Manager");
+                        newEffective.add("Payroll_Officer");
+                    }
+                    if (rs.getInt("CanWriteHR") == 1) {
+                        newEffective.add("HR_Manager");
+                    }
+                    if (rs.getInt("CanWritePayroll") == 1) {
+                        newEffective.add("Payroll_Officer");
+                    }
+                }
+            }
+            synchronized (this) {
+                boolean changed = false;
+                if (latest != null) {
+                    if (!Objects.equals(this.vaiTro, latest.getVaiTro())
+                            || !Objects.equals(this.hoTenNV, latest.getHoTenNV())
+                            || this.maNV != latest.getMaNV()) {
+                        this.vaiTro = latest.getVaiTro();
+                        this.hoTenNV = latest.getHoTenNV();
+                        this.maNV = latest.getMaNV();
+                        changed = true;
+                    }
+                }
+                if (!this.effectiveRoles.equals(newEffective)) {
+                    this.effectiveRoles.clear();
+                    this.effectiveRoles.addAll(newEffective);
+                    changed = true;
+                }
+                return changed;
+            }
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     /**
