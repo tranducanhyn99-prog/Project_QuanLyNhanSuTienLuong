@@ -98,10 +98,23 @@ public class PhuCapKhauTruPanel extends JPanel {
         tabs.addTab("Khấu trừ", UITheme.icon("wallet", 16, UITheme.PRIMARY), createKhauTruPanel());
         tabs.addTab("Tổng hợp theo kỳ", UITheme.icon("chart", 16, UITheme.PRIMARY), createTongHopPanel());
         add(tabs, BorderLayout.CENTER);
-        btnLoc.addActionListener(e -> loadAllData());
+        btnLoc.addActionListener(e -> reloadFromDatabase());
         cbThang.addActionListener(e -> loadAllData());
         cbNam.addActionListener(e -> loadAllData());
         btnXoaKyLuong.addActionListener(e -> handleXoaKyLuong());
+    }
+
+    public void reloadFromDatabase() {
+        com.ui.main.MainFrame.syncFramePermissions(this);
+        refreshRoleControls();
+        loadNhanVienCombobox();
+        loadAllData();
+    }
+
+    public void refreshRoleControls() {
+        if (btnXoaKyLuong != null) {
+            btnXoaKyLuong.setVisible(com.session.Session.getInstance().hasRole("DB_Admin", "Payroll_Officer"));
+        }
     }
 
     private JPanel createPhuCapPanel() {

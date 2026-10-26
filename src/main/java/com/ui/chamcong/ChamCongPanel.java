@@ -223,9 +223,9 @@ public class ChamCongPanel extends JPanel {
         btnGhiNhan.addActionListener(e -> xuLyGhiNhanChamCong());
         btnLamMoiForm.addActionListener(e -> lamMoiForm());
         btnDiemDanhHangLoat.addActionListener(e -> xuLyDiemDanhHangLoat());
-        btnTaiLaiChiTiet.addActionListener(e -> loadDuLieuChiTiet());
+        btnTaiLaiChiTiet.addActionListener(e -> reloadFromDatabase());
         btnXoaChamCong.addActionListener(e -> xuLyXoaChamCong());
-        btnXemTongHop.addActionListener(e -> loadDuLieuTongHop());
+        btnXemTongHop.addActionListener(e -> reloadFromDatabase());
         spnThangLoc.addChangeListener(e -> loadDuLieuChiTiet());
         spnNamLoc.addChangeListener(e -> loadDuLieuChiTiet());
         spnThangTongHop.addChangeListener(e -> loadDuLieuTongHop());
@@ -286,6 +286,20 @@ public class ChamCongPanel extends JPanel {
         spinner.setValue(cal.getTime());
         UITheme.styleSpinner(spinner);
         return spinner;
+    }
+
+    public void reloadFromDatabase() {
+        com.ui.main.MainFrame.syncFramePermissions(this);
+        applySecurityPermissions();
+        loadNhanVienComboBox();
+        loadDuLieuChiTiet();
+        loadDuLieuTongHop();
+    }
+
+    public void refreshRoleControls() {
+        if (cboNhanVien.getClientProperty("db.request") == null) {
+            applySecurityPermissions();
+        }
     }
 
     private void loadNhanVienComboBox() {
@@ -491,6 +505,11 @@ public class ChamCongPanel extends JPanel {
             btnDiemDanhHangLoat.setToolTipText("Chỉ Quản lý nhân sự hoặc Quản trị viên mới được điểm danh hàng loạt.");
             if (btnXoaChamCong != null) btnXoaChamCong.setToolTipText("Chỉ Quản lý nhân sự hoặc Quản trị viên mới được xóa chấm công.");
             if (btnDieuChinhCong != null) btnDieuChinhCong.setToolTipText("Chỉ Quản lý nhân sự hoặc Quản trị viên mới được điều chỉnh ngày công.");
+        } else {
+            btnGhiNhan.setToolTipText(null);
+            btnDiemDanhHangLoat.setToolTipText("Ghi nhận giờ làm 08:00–17:00 hôm nay cho toàn bộ nhân viên đang làm việc");
+            if (btnXoaChamCong != null) btnXoaChamCong.setToolTipText(null);
+            if (btnDieuChinhCong != null) btnDieuChinhCong.setToolTipText("Chọn nhân viên để xem và điều chỉnh chi tiết ngày công trong tháng");
         }
     }
 

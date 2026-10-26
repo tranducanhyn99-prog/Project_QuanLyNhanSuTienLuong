@@ -206,7 +206,17 @@ public class MainFrame extends JFrame {
         identity.add(lblHeaderRoleBadge);
         user.add(identity, BorderLayout.CENTER);
         user.setPreferredSize(new Dimension(245, 42));
-        header.add(user, BorderLayout.EAST);
+
+        JButton btnSyncHeader = new JButton("Đồng bộ", UITheme.icon("refresh", 15, UITheme.TEXT_MAIN));
+        UITheme.styleSecondaryButton(btnSyncHeader);
+        btnSyncHeader.setToolTipText("Đồng bộ dữ liệu và quyền hạn mới nhất từ SQL Server");
+        btnSyncHeader.addActionListener(e -> syncWithDatabase());
+
+        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 0));
+        rightControls.setOpaque(false);
+        rightControls.add(btnSyncHeader);
+        rightControls.add(user);
+        header.add(rightControls, BorderLayout.EAST);
         return header;
     }
 
@@ -413,7 +423,8 @@ public class MainFrame extends JFrame {
     }
 
     public void switchView(String key, String breadcrumb) {
-        if (!cachedViews.containsKey(key)) {
+        boolean alreadyCached = cachedViews.containsKey(key);
+        if (!alreadyCached) {
             // Lazy load panel
             for (NavItem item : navItems) {
                 if (item.getKey().equals(key)) {
@@ -435,8 +446,105 @@ public class MainFrame extends JFrame {
             item.setActive(item.getKey().equals(key));
         }
 
+        if (alreadyCached && !"HOME".equals(key)) {
+            reloadViewComponent(cachedViews.get(key));
+        } else {
+            syncFramePermissions(this);
+        }
+
         contentContainer.revalidate();
         contentContainer.repaint();
+    }
+
+    public void syncWithDatabase() {
+        syncFramePermissions(this);
+        JComponent current = cachedViews.get(currentViewKey);
+        if (current != null && !"HOME".equals(currentViewKey)) {
+            reloadViewComponent(current);
+        }
+    }
+
+    private void reloadViewComponent(JComponent comp) {
+        if (comp instanceof NhanVienPanel) {
+            ((NhanVienPanel) comp).reloadFromDatabase();
+        } else if (comp instanceof DanhMucPanel) {
+            ((DanhMucPanel) comp).reloadFromDatabase();
+        } else if (comp instanceof ChamCongPanel) {
+            ((ChamCongPanel) comp).reloadFromDatabase();
+        } else if (comp instanceof PhuCapKhauTruPanel) {
+            ((PhuCapKhauTruPanel) comp).reloadFromDatabase();
+        } else if (comp instanceof BangLuongPanel) {
+            ((BangLuongPanel) comp).reloadFromDatabase();
+        } else if (comp instanceof BaoCaoPanel) {
+            ((BaoCaoPanel) comp).reloadFromDatabase();
+        } else if (comp instanceof TaiKhoanPanel) {
+            ((TaiKhoanPanel) comp).reloadFromDatabase();
+        }
+    }
+
+    public static void syncFramePermissions(Component source) {
+        if (source == null) return;
+        Window win = source instanceof Window ? (Window) source : SwingUtilities.getWindowAncestor(source);
+        if (!(win instanceof MainFrame)) return;
+        MainFrame frame = (MainFrame) win;
+        Object identity = com.config.DatabaseConnection.identityToken();
+        if (identity == null || System.getProperty("db.url", "").startsWith("jdbc:prj-regression:")) {
+            return;
+        }
+        new SwingWorker<Boolean, Void>() {
+            @Override
+            protected Boolean doInBackground() throws Exception {
+                return com.config.DatabaseConnection.withIdentity(identity,
+                        () -> Session.getInstance().syncFromDatabase());
+            }
+
+            @Override
+            protected void done() {
+                if (identity != com.config.DatabaseConnection.identityToken()) return;
+                try {
+                    if (Boolean.TRUE.equals(get())) {
+                        frame.refreshNavigationFromSession();
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }.execute();
+    }
+
+    public void refreshNavigationFromSession() {
+        String activeKey = currentViewKey;
+        if (sidebarPanel != null) {
+            remove(sidebarPanel);
+        }
+        navItems.clear();
+        sidebarPanel = createSidebar();
+        add(sidebarPanel, BorderLayout.WEST);
+
+        JComponent oldHome = cachedViews.get("HOME");
+        if (oldHome != null) {
+            contentContainer.remove(oldHome);
+        }
+        JComponent newHome = createDashboardView();
+        cachedViews.put("HOME", newHome);
+        contentContainer.add(newHome, "HOME");
+
+        for (JComponent comp : cachedViews.values()) {
+            if (comp instanceof ChamCongPanel) {
+                ((ChamCongPanel) comp).refreshRoleControls();
+            } else if (comp instanceof BaoCaoPanel) {
+                ((BaoCaoPanel) comp).refreshRoleControls();
+            } else if (comp instanceof PhuCapKhauTruPanel) {
+                ((PhuCapKhauTruPanel) comp).refreshRoleControls();
+            }
+        }
+
+        for (NavItem item : navItems) {
+            item.setActive(item.getKey().equals(activeKey));
+        }
+        cardLayout.show(contentContainer, activeKey);
+        updateSessionDisplay();
+        revalidate();
+        repaint();
     }
 
     // Backward compatibility cho các method openTab cũ

@@ -294,7 +294,7 @@ public class NhanVienPanel extends JPanel {
         btnLamMoi.addActionListener(e -> lamMoiForm());
         btnTimKiem.addActionListener(e -> xuLyTimKiem());
         txtTimKiem.addActionListener(e -> xuLyTimKiem());
-        btnTaiLai.addActionListener(e -> loadTableData());
+        btnTaiLai.addActionListener(e -> reloadFromDatabase());
         btnMoHoSo.addActionListener(e -> {
             if (tblNhanVien.getSelectedRow() < 0) {
                 JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên để xem hồ sơ.",
@@ -329,6 +329,12 @@ public class NhanVienPanel extends JPanel {
         panel.add(input, BorderLayout.CENTER);
         panel.setMinimumSize(new Dimension(0, 58));
         return panel;
+    }
+
+    public void reloadFromDatabase() {
+        com.ui.main.MainFrame.syncFramePermissions(this);
+        loadComboboxData();
+        loadTableData();
     }
 
     private void loadComboboxData() {

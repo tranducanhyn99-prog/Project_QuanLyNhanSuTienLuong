@@ -156,7 +156,7 @@ public class BangLuongPanel extends JPanel {
 
         btnTinhLuong.addActionListener(e -> xuLyTinhLuong());
         btnXemKy.addActionListener(e -> xuLyXemKy());
-        btnTaiLai.addActionListener(e -> loadBangLuong());
+        btnTaiLai.addActionListener(e -> reloadFromDatabase());
         btnXoaKy.addActionListener(e -> xuLyXoaKyLuong());
         tblBangLuong.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -246,6 +246,11 @@ public class BangLuongPanel extends JPanel {
             if(period==null) { clearChiTiet(); JOptionPane.showMessageDialog(this,"Chưa có bảng lương kỳ này."); return; }
             loadBangLuong(period.getMaBangLuong());
         });
+    }
+
+    public void reloadFromDatabase() {
+        com.ui.main.MainFrame.syncFramePermissions(this);
+        loadBangLuong();
     }
 
     private void loadBangLuong() { loadBangLuong(-1); }

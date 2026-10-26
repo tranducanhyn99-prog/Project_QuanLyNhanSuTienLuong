@@ -146,10 +146,15 @@ public class TaiKhoanPanel extends JPanel {
     }
 
     private void setupEvents() {
-        btnLamMoi.addActionListener(e -> loadData());
+        btnLamMoi.addActionListener(e -> reloadFromDatabase());
         btnKhoaMoKhoa.addActionListener(e -> handleKhoaMoKhoa());
         btnDatLaiMatKhau.addActionListener(e -> handleDatLaiMatKhau());
         btnDoiVaiTro.addActionListener(e -> handleDoiVaiTro());
+    }
+
+    public void reloadFromDatabase() {
+        com.ui.main.MainFrame.syncFramePermissions(this);
+        loadData();
     }
 
     private void loadData() {

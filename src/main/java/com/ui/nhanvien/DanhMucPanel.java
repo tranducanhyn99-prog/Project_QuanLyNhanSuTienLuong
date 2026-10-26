@@ -169,7 +169,11 @@ public class DanhMucPanel extends JPanel {
         btnThemPB.addActionListener(e -> xuLyThemPB());
         btnSuaPB.addActionListener(e -> xuLySuaPB());
         btnXoaPB.addActionListener(e -> xuLyXoaPB());
-        btnLamMoiPB.addActionListener(e -> lamMoiPB());
+        btnLamMoiPB.addActionListener(e -> {
+            lamMoiPB();
+            loadDataPhongBan();
+            com.ui.main.MainFrame.syncFramePermissions(this);
+        });
 
         // Events Chức Vụ
         tblChucVu.getSelectionModel().addListSelectionListener(e -> {
@@ -184,7 +188,11 @@ public class DanhMucPanel extends JPanel {
         btnThemCV.addActionListener(e -> xuLyThemCV());
         btnSuaCV.addActionListener(e -> xuLySuaCV());
         btnXoaCV.addActionListener(e -> xuLyXoaCV());
-        btnLamMoiCV.addActionListener(e -> lamMoiCV());
+        btnLamMoiCV.addActionListener(e -> {
+            lamMoiCV();
+            loadDataChucVu();
+            com.ui.main.MainFrame.syncFramePermissions(this);
+        });
     }
 
     private JPanel cardHeader(String title, String subtitle, String iconName) {
@@ -243,6 +251,12 @@ public class DanhMucPanel extends JPanel {
         for (int i = 0; i < widths.length; i++) {
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
+    }
+
+    public void reloadFromDatabase() {
+        com.ui.main.MainFrame.syncFramePermissions(this);
+        loadDataPhongBan();
+        loadDataChucVu();
     }
 
     private void loadDataPhongBan() {
