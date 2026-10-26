@@ -23,6 +23,7 @@ class TestSsmsLifecycle(unittest.TestCase):
             "user32": self.win32,
             "kernel32": self.kernel32,
             "STOP_REQUESTED": threading.Event(),
+            "PAUSED": threading.Event(),
             "KEYBOARD_LOCKED": False,
             "ABORT_TYPING": False,
             "FAST_MODE": False,
@@ -36,6 +37,10 @@ class TestSsmsLifecycle(unittest.TestCase):
             "_HOOK_READY": threading.Event(),
             "_PHYSICAL_KEYS": set(),
             "_INJECTED_KEYS": set(),
+            "_SHIELD_REQUESTED": False,
+            "_RESUME_PENDING": False,
+            "_CAPTURING_PROMPT": False,
+            "_ACTIVE_QUERY_TITLE": "",
             "get_active_window_title": MagicMock(return_value="SQLQuery1.sql - SERVER.ExistingPayroll (user (51)) - Microsoft SQL Server Management Studio"),
             "get_clipboard_text": MagicMock(return_value="old clipboard"),
             "set_clipboard_text": MagicMock(return_value=True),
@@ -82,6 +87,51 @@ class TestSsmsLifecycle(unittest.TestCase):
         daemon.generate_sql.assert_not_called()
         daemon.type_sql_humanlike.assert_not_called()
         daemon._tap_key.assert_not_called()
+
+    def test_generation_error_is_logged_before_typing_without_sql_or_credentials(self):
+        test_key = "AIza" + "x" * 35
+        hidden_sql = "select N'generated SQL must not appear in the log';"
+        for generated, expected_error in (
+            (
+                "-- Không thể sinh SQL bằng Gemini. Không đọc được schema. "
+                f"GEMINI_API_KEY={test_key}; password='test secret'\n{hidden_sql}",
+                "Không thể sinh SQL bằng Gemini.",
+            ),
+            (
+                "-- Gemini trả về lệnh tạo/sửa cấu trúc ngoài yêu cầu. "
+                "Hãy yêu cầu dùng đối tượng đã có trong database.",
+                "Gemini trả về lệnh tạo/sửa cấu trúc ngoài yêu cầu.",
+            ),
+            (hidden_sql, None),
+        ):
+            with self.subTest(expected_error=expected_error):
+                output = io.StringIO()
+                daemon.generate_sql.return_value = generated
+                daemon.type_sql_humanlike.reset_mock()
+
+                def typing_starts(sql):
+                    self.assertEqual(generated, sql, "Logging must preserve the inserted result")
+                    if expected_error:
+                        self.assertIn(expected_error, output.getvalue())
+                        self.assertIn("[LOI]", output.getvalue())
+                    self.assertNotIn(test_key, output.getvalue())
+                    self.assertNotIn("test secret", output.getvalue())
+                    self.assertNotIn(hidden_sql, output.getvalue())
+
+                daemon.type_sql_humanlike.side_effect = typing_starts
+                with patch.object(daemon.sys, "stdout", output):
+                    daemon.handle_hotkey_trigger(daemon.HOTKEY_CTRL_Q)
+                daemon.type_sql_humanlike.assert_called_once_with(generated)
+                log_text = output.getvalue()
+                self.assertNotIn(test_key, log_text)
+                self.assertNotIn("test secret", log_text)
+                self.assertNotIn(hidden_sql, log_text)
+                if expected_error:
+                    self.assertIn("Da chen thong bao loi", log_text)
+                    self.assertNotIn("Da go xong", log_text)
+                else:
+                    self.assertIn("Da go xong", log_text)
+                    self.assertNotIn("[LOI]", log_text)
 
     def test_shutdown_during_blocked_generation_unlocks_now_and_prevents_later_typing(self):
         generation_entered = threading.Event()
@@ -262,7 +312,8 @@ class TestSsmsLifecycle(unittest.TestCase):
                 patch.object(daemon, "stop_keyboard_shield_thread"):
             self.assertEqual(0, daemon.run_daemon())
         unregistered_ids = {invocation.args[1] for invocation in self.win32.UnregisterHotKey.call_args_list}
-        self.assertEqual({daemon.HOTKEY_ALT_Q, daemon.HOTKEY_CTRL_Q, daemon.HOTKEY_QUIT}, unregistered_ids)
+        self.assertEqual({daemon.HOTKEY_ALT_Q, daemon.HOTKEY_CTRL_Q,
+                          daemon.HOTKEY_QUIT, daemon.HOTKEY_PAUSE}, unregistered_ids)
         self.assertTrue(daemon.STOP_REQUESTED.is_set())
         self.kernel32.CloseHandle.assert_any_call(701)
 

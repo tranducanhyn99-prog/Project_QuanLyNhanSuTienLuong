@@ -27,13 +27,14 @@ class TestGeminiSql(unittest.TestCase):
             patch.dict(os.environ, {}, clear=True),
             patch("sql_brain._load_api_key", return_value=self.TEST_KEY),
             patch("sql_brain.load_schema_context", return_value=self.LIVE_SCHEMA),
+            patch("sql_brain.get_last_schema_error", return_value=""),
             patch("sql_brain.urllib.request.urlopen"),
         )
         started = []
         for test_patch in patches:
             started.append(test_patch.start())
             self.addCleanup(test_patch.stop)
-        _, self.load_key, self.load_schema, self.urlopen = started
+        _, self.load_key, self.load_schema, self.schema_error, self.urlopen = started
         self.response = MagicMock()
         self.urlopen.return_value.__enter__.return_value = self.response
         self.set_response({
@@ -104,6 +105,15 @@ class TestGeminiSql(unittest.TestCase):
         self.urlopen.assert_not_called()
         self.assertIn("GEMINI_API_KEY", sql)
         self.assertTrue(sql.lstrip().startswith("--"), sql)
+
+    def test_metadata_failure_reports_specific_cause_without_calling_api(self):
+        self.load_schema.return_value = None
+        self.schema_error.return_value = "SQL Server đọc metadata quá thời gian chờ."
+        sql = sql_brain.generate_sql(
+            "-- viết code thực hiện lấy danh sách 3 người có tiền lương cao nhất", force_ai=True,
+        )
+        self.assertIn(self.schema_error.return_value, sql)
+        self.urlopen.assert_not_called()
 
     def test_response_joins_all_sql_parts_and_omits_thoughts(self):
         self.set_response({

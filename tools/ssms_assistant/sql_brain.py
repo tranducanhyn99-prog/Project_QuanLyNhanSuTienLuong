@@ -11,7 +11,7 @@ import urllib.request
 import urllib.error
 from typing import Optional, Tuple, List
 
-from schema_context import load_schema_context
+from schema_context import get_last_schema_error, load_schema_context
 from sql_format import code_mask, materialize_payroll_exec_arguments, prepare_sql
 
 
@@ -1022,8 +1022,11 @@ def _call_gemini_fallback(user_prompt: str) -> Optional[str]:
         return None
     schema = load_schema_context(**_active_sql_target)
     if not schema:
+        detail = get_last_schema_error()
         _last_ai_error = (
-            "Không đọc được schema database hiện có. Kiểm tra sqlcmd, quyền Windows "
+            "Không đọc được schema database hiện có. "
+            + (detail + " " if detail else "")
+            + "Kiểm tra sqlcmd, quyền Windows "
             "và kết nối SSMS_SQL_SERVER / SSMS_SQL_DATABASE."
         )
         return None

@@ -9,7 +9,7 @@ Trợ lý sinh và chèn T-SQL vào cửa sổ Query trong SSMS. SQL được vi
 
 File `.vbs` ưu tiên **`pyw -3`** (Python Launcher không có cửa sổ), sau đó thử `pythonw.exe` đã xác minh chạy Python 3 cho Windows. File `.bat` cũng chuyển sang cách chạy nền này rồi thoát, nhưng cửa sổ console có thể lóe lên khi nhấp đúp `.bat`; dùng trực tiếp `.vbs` để không xuất hiện console.
 
-Thông báo hoạt động và lỗi được ghi vào **`tools/ssms_assistant/assistant.log`**. Nếu cần chạy có console để kiểm tra, dùng PowerShell tại thư mục gốc dự án:
+Thông báo hoạt động và lỗi được ghi vào **`tools/ssms_assistant/assistant.log`**. Khi sinh SQL thất bại, nguyên nhân được ghi ngay vào log trước khi chèn thông báo vào Query. Nếu cần chạy có console để kiểm tra, dùng PowerShell tại thư mục gốc dự án:
 
 ```powershell
 py -3 tools\ssms_assistant\ssms_daemon.py
@@ -22,10 +22,15 @@ Nếu báo không tìm thấy Python, kiểm tra `py -3 --version`. Nếu lệnh
 | **F8 / Alt + Q** | Ưu tiên mẫu offline; yêu cầu chưa có mẫu sẽ thử Gemini. |
 | **Ctrl + Q** | Gọi Gemini cho yêu cầu hiện tại. Nếu lỗi, chèn thông báo nguyên nhân; không thay bằng mẫu offline. |
 | **F9** | Tăng tốc khi đang chèn SQL. |
+| **Ctrl + Alt + P** | Tạm dừng/tiếp tục trợ lý. Khi dừng, bàn phím được mở khóa để gõ, xóa và sửa SQL bình thường; F8/Alt + Q/Ctrl + Q không tạo yêu cầu mới. Bấm lại để chèn tiếp phần SQL còn lại. |
 | **Esc** | Dừng chèn và mở khóa bàn phím, kể cả khi đang chờ metadata/API. Tác vụ mạng có thể còn chờ trả về, nhưng kết quả đã hủy sẽ không được chèn. |
 | **Ctrl + Alt + Q** | Tắt hẳn trợ lý nền và gỡ các phím tắt của trợ lý. Mở lại file `.vbs` khi cần dùng tiếp. |
 
-Bàn phím thường tạm khóa trong lúc trợ lý xử lý và chèn SQL. **Esc chỉ hủy lần chèn hiện tại; Ctrl + Alt + Q tắt chương trình.** Dòng bắt đầu bằng `---` hoặc kết thúc bằng `.` / `?` cũng ép gọi Gemini, kể cả khi nhấn F8.
+Bàn phím thường tạm khóa trong lúc trợ lý xử lý và chèn SQL. **Ctrl + Alt + P tạm dừng và mở khóa; Esc hủy lần chèn hiện tại, kể cả đang tạm dừng; Ctrl + Alt + Q tắt chương trình.** Khi bấm tiếp tục, thả hết Ctrl/Alt/P rồi trợ lý mới gõ tiếp. Nếu đang chờ AI lúc tạm dừng, kết quả được giữ lại đến khi tiếp tục.
+
+Bạn có thể gõ/xóa trong lúc tạm dừng. Trước khi tiếp tục, đặt con trỏ ở vị trí muốn chèn phần SQL còn lại trong **đúng Query ban đầu**. Trợ lý tiếp tục từ ký tự kế tiếp, nên hãy kiểm tra SQL nếu đã sửa phần đang chèn dở. Nếu đang ở Query/cửa sổ khác khi tiếp tục, yêu cầu hiện tại bị hủy để tránh gõ nhầm chỗ. Tạm dừng ngay lúc trợ lý đang sao chép dòng yêu cầu cũng hủy lần đó; tiếp tục rồi nhấn F8 để gọi lại. Tạm dừng khi chưa có tác vụ sẽ giữ trợ lý ở trạng thái nghỉ đến khi bạn bấm tiếp tục.
+
+Dòng bắt đầu bằng `---` hoặc kết thúc bằng `.` / `?` cũng ép gọi Gemini, kể cả khi nhấn F8.
 
 Các ví dụ dùng được với F8, không cần API key hay mạng:
 
