@@ -11,11 +11,15 @@ While typing (Physical Keyboard Shield active - mash any keys to pretend typing!
 """
 import ctypes
 from ctypes import wintypes
+import argparse
+from pathlib import Path
 import random
+import re
 import sys
 import threading
 import time
-from sql_brain import generate_sql
+import traceback
+from sql_brain import generate_sql, set_database_context
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -27,8 +31,12 @@ kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 
 # Win32 Constants
 WM_HOTKEY = 0x0312
+WM_QUIT = 0x0012
 WM_KEYDOWN = 0x0100
+WM_KEYUP = 0x0101
 WM_SYSKEYDOWN = 0x0104
+WM_SYSKEYUP = 0x0105
+PM_NOREMOVE = 0x0000
 WH_KEYBOARD_LL = 13
 LLKHF_INJECTED = 0x00000010
 
@@ -39,6 +47,7 @@ MOD_NOREPEAT = 0x4000
 HOTKEY_ALT_Q = 1
 HOTKEY_F8 = 2
 HOTKEY_CTRL_Q = 3
+HOTKEY_QUIT = 4
 
 VK_BACK = 0x08
 VK_TAB = 0x09
@@ -56,6 +65,8 @@ VK_Q = 0x51
 VK_V = 0x56
 VK_F8 = 0x77
 VK_F9 = 0x78
+VK_LCONTROL, VK_RCONTROL = 0xA2, 0xA3
+VK_LMENU, VK_RMENU = 0xA4, 0xA5
 
 INPUT_KEYBOARD = 1
 KEYEVENTF_KEYUP = 0x0002
@@ -150,6 +161,17 @@ user32.CallNextHookEx.argtypes = [wintypes.HANDLE, ctypes.c_int, wintypes.WPARAM
 user32.CallNextHookEx.restype = LRESULT
 user32.UnhookWindowsHookEx.argtypes = [wintypes.HANDLE]
 user32.UnhookWindowsHookEx.restype = wintypes.BOOL
+user32.PostThreadMessageW.argtypes = [wintypes.DWORD, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+user32.PostThreadMessageW.restype = wintypes.BOOL
+user32.PeekMessageW.argtypes = [ctypes.POINTER(wintypes.MSG), wintypes.HWND, wintypes.UINT, wintypes.UINT, wintypes.UINT]
+user32.PeekMessageW.restype = wintypes.BOOL
+user32.GetMessageW.argtypes = [ctypes.POINTER(wintypes.MSG), wintypes.HWND, wintypes.UINT, wintypes.UINT]
+user32.GetMessageW.restype = ctypes.c_int
+kernel32.GetCurrentThreadId.restype = wintypes.DWORD
+kernel32.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
+kernel32.CreateMutexW.restype = wintypes.HANDLE
+kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+kernel32.CloseHandle.restype = wintypes.BOOL
 
 kernel32.GlobalAlloc.argtypes = [wintypes.UINT, ctypes.c_size_t]
 kernel32.GlobalAlloc.restype = wintypes.HGLOBAL
@@ -163,6 +185,34 @@ KEYBOARD_LOCKED = False
 ABORT_TYPING = False
 FAST_MODE = False
 _HOOK_PROC_REF = None
+STOP_REQUESTED = threading.Event()
+_STATE_LOCK = threading.Lock()
+_OPERATION_LOCK = threading.Lock()
+_INPUT_LOCK = threading.RLock()
+_MAIN_THREAD_ID = 0
+_HOOK_THREAD_ID = 0
+_HOOK_THREAD = None
+_HOOK_READY = threading.Event()
+_PHYSICAL_KEYS = set()
+_INJECTED_KEYS = set()
+
+
+def request_shutdown() -> None:
+    """Stop from any thread, including while a background API request is waiting."""
+    global ABORT_TYPING, KEYBOARD_LOCKED
+    STOP_REQUESTED.set()
+    with _STATE_LOCK:
+        ABORT_TYPING = True
+        KEYBOARD_LOCKED = False
+    for thread_id in (_MAIN_THREAD_ID, _HOOK_THREAD_ID):
+        if thread_id:
+            user32.PostThreadMessageW(thread_id, WM_QUIT, 0, 0)
+
+
+def _release_injected_keys() -> None:
+    with _INPUT_LOCK:
+        for vk in tuple(_INJECTED_KEYS):
+            _key_up(vk)
 
 
 def switch_to_default_desktop() -> bool:
@@ -181,14 +231,30 @@ def _low_level_keyboard_proc(n_code: int, w_param: int, l_param: int) -> int:
         characters pass straight into SSMS.
       - Physical Esc cancels typing immediately; physical F9 enables turbo speed.
     """
-    global ABORT_TYPING, FAST_MODE
-    if n_code >= 0 and KEYBOARD_LOCKED:
+    global ABORT_TYPING, FAST_MODE, KEYBOARD_LOCKED
+    if n_code >= 0:
         kb = ctypes.cast(l_param, ctypes.POINTER(KBDLLHOOKSTRUCT)).contents
         is_injected = bool(kb.flags & LLKHF_INJECTED)
         if not is_injected:
             if w_param in (WM_KEYDOWN, WM_SYSKEYDOWN):
+                _PHYSICAL_KEYS.add(kb.vkCode)
+            elif w_param in (WM_KEYUP, WM_SYSKEYUP):
+                _PHYSICAL_KEYS.discard(kb.vkCode)
+            ctrl = bool(_PHYSICAL_KEYS.intersection((VK_CONTROL, VK_LCONTROL, VK_RCONTROL)))
+            alt = bool(_PHYSICAL_KEYS.intersection((VK_MENU, VK_LMENU, VK_RMENU)))
+            if not _INJECTED_KEYS.intersection((VK_CONTROL, VK_LCONTROL, VK_RCONTROL)):
+                ctrl = ctrl or bool(user32.GetAsyncKeyState(VK_CONTROL) & 0x8000)
+            if not _INJECTED_KEYS.intersection((VK_MENU, VK_LMENU, VK_RMENU)):
+                alt = alt or bool(user32.GetAsyncKeyState(VK_MENU) & 0x8000)
+            if kb.vkCode == VK_Q and w_param in (WM_KEYDOWN, WM_SYSKEYDOWN) and ctrl and alt:
+                request_shutdown()
+                return 1
+            if not KEYBOARD_LOCKED or STOP_REQUESTED.is_set():
+                return user32.CallNextHookEx(None, n_code, w_param, l_param)
+            if w_param in (WM_KEYDOWN, WM_SYSKEYDOWN):
                 if kb.vkCode == VK_ESCAPE:
                     ABORT_TYPING = True
+                    KEYBOARD_LOCKED = False
                 elif kb.vkCode == VK_F9:
                     FAST_MODE = True
             # Swallow 100% of physical keystrokes while auto-typing is active
@@ -198,25 +264,44 @@ def _low_level_keyboard_proc(n_code: int, w_param: int, l_param: int) -> int:
 
 def start_keyboard_shield_thread() -> None:
     """Run dedicated non-blocking message loop thread for WH_KEYBOARD_LL."""
-    global _HOOK_PROC_REF
+    global _HOOK_PROC_REF, _HOOK_THREAD
     _HOOK_PROC_REF = HOOKPROC(_low_level_keyboard_proc)
 
     def _hook_worker() -> None:
-        switch_to_default_desktop()
-        h_hook = user32.SetWindowsHookExW(WH_KEYBOARD_LL, _HOOK_PROC_REF, None, 0)
-        if not h_hook:
-            print("[WARN] Khong the khoi tao Keyboard Shield (WH_KEYBOARD_LL).", flush=True)
-            return
-        msg = wintypes.MSG()
+        global _HOOK_THREAD_ID
+        h_hook = None
         try:
-            while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) != 0:
+            switch_to_default_desktop()
+            msg = wintypes.MSG()
+            user32.PeekMessageW(ctypes.byref(msg), None, 0, 0, PM_NOREMOVE)
+            _HOOK_THREAD_ID = kernel32.GetCurrentThreadId()
+            if STOP_REQUESTED.is_set():
+                return
+            h_hook = user32.SetWindowsHookExW(WH_KEYBOARD_LL, _HOOK_PROC_REF, None, 0)
+            if not h_hook:
+                print("[WARN] Khong the khoi tao Keyboard Shield (WH_KEYBOARD_LL).", flush=True)
+                return
+            _HOOK_READY.set()
+            while not STOP_REQUESTED.is_set() and user32.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:
                 user32.TranslateMessage(ctypes.byref(msg))
                 user32.DispatchMessageW(ctypes.byref(msg))
         finally:
-            user32.UnhookWindowsHookEx(h_hook)
+            if h_hook:
+                user32.UnhookWindowsHookEx(h_hook)
+            _HOOK_THREAD_ID = 0
+            _HOOK_READY.set()
 
-    t = threading.Thread(target=_hook_worker, daemon=True)
-    t.start()
+    _HOOK_READY.clear()
+    _HOOK_THREAD = threading.Thread(target=_hook_worker, name="SSMSKeyboardHook", daemon=True)
+    _HOOK_THREAD.start()
+    _HOOK_READY.wait(timeout=1)
+
+
+def stop_keyboard_shield_thread() -> None:
+    if _HOOK_THREAD_ID:
+        user32.PostThreadMessageW(_HOOK_THREAD_ID, WM_QUIT, 0, 0)
+    if _HOOK_THREAD is not None and _HOOK_THREAD is not threading.current_thread():
+        _HOOK_THREAD.join(timeout=0.5)
 
 
 def get_active_window_title() -> str:
@@ -275,17 +360,27 @@ def set_clipboard_text(text: str) -> bool:
 
 
 def _key_down(vk: int) -> None:
-    user32.keybd_event(vk, 0, 0, 0)
+    with _INPUT_LOCK:
+        if STOP_REQUESTED.is_set():
+            return
+        user32.keybd_event(vk, 0, 0, 0)
+        _INJECTED_KEYS.add(vk)
 
 
 def _key_up(vk: int) -> None:
-    user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
+    with _INPUT_LOCK:
+        user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
+        _INJECTED_KEYS.discard(vk)
 
 
 def _tap_key(vk: int, hold: float = 0.015) -> None:
-    _key_down(vk)
-    time.sleep(hold)
-    _key_up(vk)
+    if STOP_REQUESTED.is_set() or ABORT_TYPING:
+        return
+    try:
+        _key_down(vk)
+        time.sleep(hold)
+    finally:
+        _key_up(vk)
 
 
 def _send_unicode_char(ch: str) -> None:
@@ -310,7 +405,9 @@ def _send_unicode_char(ch: str) -> None:
         ),
     )
     arr = (INPUT * 2)(inp_down, inp_up)
-    user32.SendInput(2, arr, ctypes.sizeof(INPUT))
+    with _INPUT_LOCK:
+        if not STOP_REQUESTED.is_set() and not ABORT_TYPING:
+            user32.SendInput(2, arr, ctypes.sizeof(INPUT))
 
 
 def _unindent_ssms_line(tabs_to_unindent: int = 1) -> None:
@@ -349,7 +446,7 @@ def type_sql_humanlike(sql_text: str) -> None:
     typos_made = 0
 
     for line_idx, raw_line in enumerate(lines):
-        if ABORT_TYPING or (user32.GetAsyncKeyState(VK_ESCAPE) & 0x8000):
+        if STOP_REQUESTED.is_set() or ABORT_TYPING or (user32.GetAsyncKeyState(VK_ESCAPE) & 0x8000):
             print("[SSMS-Assistant] Da dung go theo lenh Esc!", flush=True)
             return
 
@@ -376,7 +473,7 @@ def type_sql_humanlike(sql_text: str) -> None:
         word_char_pos = 0
 
         for ch in text_to_type:
-            if ABORT_TYPING or (user32.GetAsyncKeyState(VK_ESCAPE) & 0x8000):
+            if STOP_REQUESTED.is_set() or ABORT_TYPING or (user32.GetAsyncKeyState(VK_ESCAPE) & 0x8000):
                 print("[SSMS-Assistant] Da dung go theo lenh Esc!", flush=True)
                 return
             if user32.GetAsyncKeyState(VK_F9) & 0x8000:
@@ -466,9 +563,26 @@ def _copy_current_line_text() -> str:
     return ""
 
 
+def parse_ssms_connection(window_title: str):
+    """Read server/database from the SSMS query title, not from sample settings."""
+    match = re.search(r"\.sql\s+-\s+(\S+)\.([^\r\n]+?)\s+\(", window_title, re.IGNORECASE)
+    if not match:
+        return None
+    return match.group(1).strip(), match.group(2).strip()
+
+
 def handle_hotkey_trigger(hotkey_id: int) -> None:
     global KEYBOARD_LOCKED, ABORT_TYPING, FAST_MODE
+    with _STATE_LOCK:
+        if STOP_REQUESTED.is_set():
+            return
+        ABORT_TYPING = False
     win_title = get_active_window_title()
+    connection = parse_ssms_connection(win_title)
+    if connection is None:
+        print("[SSMS-Assistant] Hãy chọn cửa sổ Query đã kết nối database trong SSMS.", flush=True)
+        return
+    set_database_context(*connection)
     _wait_modifiers_released(hotkey_id)
 
     old_clipboard = get_clipboard_text()
@@ -504,62 +618,126 @@ def handle_hotkey_trigger(hotkey_id: int) -> None:
     )
 
     # Activate Physical Keyboard Shield right away so user can start pretend-typing on keyboard!
-    ABORT_TYPING = False
-    FAST_MODE = False
-    KEYBOARD_LOCKED = True
+    with _STATE_LOCK:
+        if STOP_REQUESTED.is_set():
+            return
+        FAST_MODE = False
+        KEYBOARD_LOCKED = True
     try:
         sql_block = generate_sql(copied_line, force_ai=force_ai, clean_comments=True)
+        if STOP_REQUESTED.is_set() or ABORT_TYPING:
+            return
         type_sql_humanlike(sql_block)
         print(f"[SSMS-Assistant] -> Da go xong {len(sql_block.splitlines())} dong SQL!", flush=True)
     finally:
         # Always unlock physical keyboard immediately when done or aborted
         KEYBOARD_LOCKED = False
+        _release_injected_keys()
+
+
+def start_hotkey_task(hotkey_id: int) -> bool:
+    """Keep the main message loop free to process the exit shortcut during API work."""
+    if STOP_REQUESTED.is_set() or not _OPERATION_LOCK.acquire(blocking=False):
+        return False
+
+    def _worker() -> None:
+        try:
+            switch_to_default_desktop()
+            handle_hotkey_trigger(hotkey_id)
+        except Exception:
+            traceback.print_exc()
+        finally:
+            _OPERATION_LOCK.release()
+
+    try:
+        threading.Thread(target=_worker, name="SSMSSuggestion", daemon=True).start()
+    except Exception:
+        _OPERATION_LOCK.release()
+        raise
+    return True
 
 
 def run_daemon() -> int:
-    switched = switch_to_default_desktop()
-    start_keyboard_shield_thread()
-
-    ok_alt_q = bool(user32.RegisterHotKey(None, HOTKEY_ALT_Q, MOD_ALT | MOD_NOREPEAT, VK_Q))
-    ok_f8 = bool(user32.RegisterHotKey(None, HOTKEY_F8, MOD_NOREPEAT, VK_F8))
-    ok_ctrl_q = bool(user32.RegisterHotKey(None, HOTKEY_CTRL_Q, MOD_CONTROL | MOD_NOREPEAT, VK_Q))
-
-    if not (ok_alt_q or ok_f8 or ok_ctrl_q):
-        print("[LOI] Khong the dang ky phim tat Alt+Q, Ctrl+Q hoac F8.", flush=True)
-        return 1
-
-    print("======================================================================", flush=True)
-    print("  TRO LY GO CODE NHU NGUOI THAT TRONG SSMS DA SAN SANG!               ", flush=True)
-    print(f"  - Desktop ket noi: Default (attached={switched})                    ", flush=True)
-    print("  - Che do Fake-Typing: TỰ ĐỘNG KHÓA PHÍM VẬT LÝ KHI ĐANG GÕ CODE!    ", flush=True)
-    print("    (Ban co the go tay thoai mai len ban phim ma khong so nhay chu!)  ", flush=True)
-    print(f"  - F8 / Alt+Q : Goi y thong minh (Offline -> tu dong AI)             ", flush=True)
-    print(f"  - Ctrl + Q   : Ep goi AI Gemini tu bat ky dong comment nao          ", flush=True)
-    print("  - Esc        : Dung go ngay lap tuc & mo khoa ban phim              ", flush=True)
-    print("  - F9         : Tang toc go het phan con lai                         ", flush=True)
-    print("======================================================================", flush=True)
-
-    msg = wintypes.MSG()
+    global _MAIN_THREAD_ID
+    mutex = kernel32.CreateMutexW(None, False, "Local\\SSMSInlineAssistant")
+    if not mutex:
+        raise ctypes.WinError(ctypes.get_last_error())
+    if ctypes.get_last_error() == 183:  # ERROR_ALREADY_EXISTS
+        kernel32.CloseHandle(mutex)
+        print("[SSMS-Assistant] Tro ly da chay; Ctrl+Alt+Q de thoat.", flush=True)
+        return 0
+    registered = []
     try:
-        while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) != 0:
+        STOP_REQUESTED.clear()
+        _PHYSICAL_KEYS.clear()
+        switch_to_default_desktop()
+        msg = wintypes.MSG()
+        user32.PeekMessageW(ctypes.byref(msg), None, 0, 0, PM_NOREMOVE)
+        _MAIN_THREAD_ID = kernel32.GetCurrentThreadId()
+        shortcuts = (
+            (HOTKEY_QUIT, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, VK_Q),
+            (HOTKEY_ALT_Q, MOD_ALT | MOD_NOREPEAT, VK_Q),
+            (HOTKEY_F8, MOD_NOREPEAT, VK_F8),
+            (HOTKEY_CTRL_Q, MOD_CONTROL | MOD_NOREPEAT, VK_Q),
+        )
+        for hotkey_id, modifiers, key in shortcuts:
+            if user32.RegisterHotKey(None, hotkey_id, modifiers, key):
+                registered.append(hotkey_id)
+            elif hotkey_id == HOTKEY_QUIT:
+                print("[LOI] Ctrl+Alt+Q dang duoc chuong trinh khac su dung.", flush=True)
+                return 1
+        if not any(key in registered for key in (HOTKEY_ALT_Q, HOTKEY_F8, HOTKEY_CTRL_Q)):
+            print("[LOI] Khong the dang ky phim tat goi y SQL.", flush=True)
+            return 1
+        start_keyboard_shield_thread()
+        print("[SSMS-Assistant] San sang. Ctrl+Alt+Q: thoat; Esc: dung go; F9: tang toc.", flush=True)
+        while not STOP_REQUESTED.is_set():
+            result = user32.GetMessageW(ctypes.byref(msg), None, 0, 0)
+            if result == 0:
+                break
+            if result == -1:
+                raise ctypes.WinError(ctypes.get_last_error())
+            if msg.message == WM_HOTKEY and msg.wParam == HOTKEY_QUIT:
+                request_shutdown()
+                break
             if msg.message == WM_HOTKEY and msg.wParam in (HOTKEY_ALT_Q, HOTKEY_F8, HOTKEY_CTRL_Q):
-                try:
-                    handle_hotkey_trigger(int(msg.wParam))
-                except Exception as exc:
-                    print(f"[WARN] Loi xu ly phim tat: {exc}", flush=True)
+                start_hotkey_task(int(msg.wParam))
             user32.TranslateMessage(ctypes.byref(msg))
             user32.DispatchMessageW(ctypes.byref(msg))
     except KeyboardInterrupt:
         pass
     finally:
-        if ok_alt_q:
-            user32.UnregisterHotKey(None, HOTKEY_ALT_Q)
-        if ok_f8:
-            user32.UnregisterHotKey(None, HOTKEY_F8)
-        if ok_ctrl_q:
-            user32.UnregisterHotKey(None, HOTKEY_CTRL_Q)
+        request_shutdown()
+        _release_injected_keys()
+        for hotkey_id in registered:
+            user32.UnregisterHotKey(None, hotkey_id)
+        stop_keyboard_shield_thread()
+        _MAIN_THREAD_ID = 0
+        kernel32.CloseHandle(mutex)
     return 0
 
 
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description="SSMS SQL assistant")
+    parser.add_argument("--hidden", action="store_true", help="Write output to assistant.log")
+    parser.add_argument("--check", action="store_true", help="Check startup without installing hooks")
+    args = parser.parse_args(argv)
+    if args.hidden or sys.stdout is None or sys.stderr is None:
+        log_path = Path(__file__).with_name("assistant.log")
+        log = log_path.open("a", encoding="utf-8", buffering=1)
+        sys.stdout = sys.stderr = log
+    if args.check:
+        print("[SSMS-Assistant] Startup check OK.", flush=True)
+        return 0
+    try:
+        result = run_daemon()
+    except Exception:
+        traceback.print_exc()
+        result = 1
+    if result and args.hidden:
+        user32.MessageBoxW(None, "Khong the khoi dong tro ly. Xem tools/ssms_assistant/assistant.log.", "Tro ly SSMS", 0x10)
+    return result
+
+
 if __name__ == "__main__":
-    sys.exit(run_daemon())
+    sys.exit(main())

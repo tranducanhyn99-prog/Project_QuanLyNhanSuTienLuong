@@ -1,122 +1,63 @@
-# HƯỚNG DẪN SỬ DỤNG TRỢ LÝ GÕ CODE SQL TRONG SSMS
+# Hướng dẫn sử dụng Trợ lý SSMS
 
-Bộ công cụ nằm tại thư mục `tools/ssms_assistant/` giúp tự động sinh và **gõ từng ký tự T-SQL như người thật** trực tiếp bên trong cửa sổ soạn thảo **SQL Server Management Studio (SSMS)**.
+Trợ lý sinh và chèn T-SQL vào cửa sổ Query trong SSMS. SQL được viết ngắn gọn, từ khóa viết thường (`select`, `from`, `where`, `join`, `exec`...), giữ nguyên tên bảng/cột và giá trị chuỗi. Bạn đọc lại SQL và tự nhấn **F5** để thực thi.
 
----
+1. Nhấp đúp **`BAT_TRO_LY_SSMS.vbs`** ở thư mục gốc dự án. Trợ lý chạy nền, không mở cửa sổ Terminal.
+2. Mở **SSMS → New Query**, kết nối server và chọn database đã có các bảng/hàm/thủ tục của dự án, chẳng hạn `QuanLyNhanSuTienLuong`.
+3. Gõ một dòng yêu cầu bắt đầu bằng `--`. Đặt con trỏ ở cuối dòng đó hoặc ở dòng trống ngay bên dưới, rồi nhấn **F8** hoặc **Alt + Q**. Không cần bôi đen hay thêm `#`.
+4. Đợi SQL được chèn xong, kiểm tra nội dung, chọn phần cần chạy rồi nhấn **F5**. Giữ con trỏ trong vùng soạn thảo; tránh chuyển cửa sổ hoặc đổi kết nối/database khi trợ lý đang xử lý.
 
-## 1. Cách khởi động trước buổi vấn đáp
+File `.vbs` ưu tiên **`pyw -3`** (Python Launcher không có cửa sổ), sau đó thử `pythonw.exe` đã xác minh chạy Python 3 cho Windows. File `.bat` cũng chuyển sang cách chạy nền này rồi thoát, nhưng cửa sổ console có thể lóe lên khi nhấp đúp `.bat`; dùng trực tiếp `.vbs` để không xuất hiện console.
 
-### Cách 1: Chạy bằng file `.bat` (Nhanh nhất)
-- Nhấp đúp (Double-click) vào file **`BAT_TRO_LY_SSMS.bat`** ở thư mục gốc của đồ án.
-- Thu nhỏ (Minimize) cửa sổ đen xuống thanh Taskbar rồi mở **SSMS** lên sử dụng bình thường.
+Thông báo hoạt động và lỗi được ghi vào **`tools/ssms_assistant/assistant.log`**. Nếu cần chạy có console để kiểm tra, dùng PowerShell tại thư mục gốc dự án:
 
-### Cách 2: Chạy bằng Terminal / PowerShell
 ```powershell
-python tools\ssms_assistant\ssms_daemon.py
+py -3 tools\ssms_assistant\ssms_daemon.py
 ```
 
-> **Lưu ý khi đổi máy tính khác:**
-> Để dùng chế độ AI Gemini trên máy mới, chỉ cần tạo file `tools/ssms_assistant/api_key.txt` và dán mã Gemini API Key vào dòng đầu tiên (file này đã được ẩn trong `.gitignore` để bảo mật). Nếu không có mạng hoặc không có key, toàn bộ **18 nhóm kịch bản Offline** vẫn hoạt động 100%.
+Nếu báo không tìm thấy Python, kiểm tra `py -3 --version`. Nếu lệnh này cũng thất bại, cài Python 3 cho Windows kèm Python Launcher. **Sau khi cập nhật mã nguồn, nhấn Ctrl + Alt + Q để tắt trợ lý cũ rồi mở lại file `.vbs`.** Nếu phiên cũ được mở trước khi có phím tắt thoát này, đóng cửa sổ Terminal của phiên cũ một lần rồi mở `.vbs`.
 
----
+| Phím | Chức năng |
+| --- | --- |
+| **F8 / Alt + Q** | Ưu tiên mẫu offline; yêu cầu chưa có mẫu sẽ thử Gemini. |
+| **Ctrl + Q** | Gọi Gemini cho yêu cầu hiện tại. Nếu lỗi, chèn thông báo nguyên nhân; không thay bằng mẫu offline. |
+| **F9** | Tăng tốc khi đang chèn SQL. |
+| **Esc** | Dừng chèn và mở khóa bàn phím, kể cả khi đang chờ metadata/API. Tác vụ mạng có thể còn chờ trả về, nhưng kết quả đã hủy sẽ không được chèn. |
+| **Ctrl + Alt + Q** | Tắt hẳn trợ lý nền và gỡ các phím tắt của trợ lý. Mở lại file `.vbs` khi cần dùng tiếp. |
 
-## 2. Bảng phím tắt & Chế độ "Giả bộ gõ phím" (`Fake-Typing Shield`)
+Bàn phím thường tạm khóa trong lúc trợ lý xử lý và chèn SQL. **Esc chỉ hủy lần chèn hiện tại; Ctrl + Alt + Q tắt chương trình.** Dòng bắt đầu bằng `---` hoặc kết thúc bằng `.` / `?` cũng ép gọi Gemini, kể cả khi nhấn F8.
 
-> **Tính năng đặc biệt — Tự động khóa bàn phím vật lý trong lúc đang sinh code (`WH_KEYBOARD_LL`):**
-> - Ngay khi bạn bấm **`F8`** / **`Alt + Q`** / **`Ctrl + Q`**, hệ thống tự động bật **Lá chắn bàn phím vật lý (`KEYBOARD_LOCKED`)**.
-> - Trong suốt thời gian code đang tự động gõ ra trên màn hình SSMS, bạn có thể **đặt hai tay lên bàn phím và gõ bất kỳ phím nào thoải mái** (tạo tiếng lạch cạch và chuyển động ngón tay như thật) mà **không có bất kỳ ký tự thừa nào từ bàn phím thật lọt vào SSMS**!
-> - Ngay khoảnh khắc dòng code cuối cùng gõ xong (hoặc khi bạn bấm **`Esc`**), bàn phím vật lý tự động mở khóa trở lại ngay lập tức.
+Các ví dụ dùng được với F8, không cần API key hay mạng:
 
-| Phím tắt | Chức năng |
-| :--- | :--- |
-| **`F8`** *(hoặc **`Alt + Q`**)* | **Gợi ý thông minh**: Ưu tiên khớp kịch bản chuẩn trong đồ án, nếu câu hỏi lạ/có điều kiện riêng thì tự động gọi AI Gemini |
-| **`Ctrl + Q`** | **Ép gọi thẳng AI Gemini**: Sinh code T-SQL tự do bằng AI cho dòng ghi chú hiện tại |
-| **`Esc`** *(trong lúc đang gõ)* | **Dừng khẩn cấp**: Ngừng gõ ngay lập tức tại ký tự hiện tại |
-| **`F9`** *(trong lúc đang gõ)* | **Tăng tốc (Turbo)**: Gõ lướt cực nhanh phần code còn lại nếu muốn xong sớm |
+```sql
+-- metadata
+-- xem code sp_ChotBangLuong
+-- test trigger chấm công kỳ đã chốt
+-- tìm 3 nhân viên lương cao nhất tháng 10 năm 2026
+-- thống kê quỹ lương theo phòng ban tháng 10 năm 2026
+-- test hàm tính thực nhận
+-- tv4
+-- đo hiệu năng index
+```
 
----
+Chạy từng yêu cầu riêng. `tv4` đọc dữ liệu lương hiện có và tính lại tiền công để đối chiếu. Truy vấn lương không nêu kỳ sẽ chọn kỳ gần nhất có dữ liệu phù hợp; có nêu tháng/năm thì lọc đúng kỳ đó.
 
-## 3. Cách gõ lệnh "Tàng hình" trong SSMS
+SQL thông thường dùng **database đang chọn trong Query**, không thêm `use` hoặc `go` dư thừa. Truy vấn đọc dùng trực tiếp bảng/view hiện có, không thêm khối khai báo biến và xử lý lỗi khi không cần; không có dữ liệu thì trả kết quả rỗng. Thao tác thay đổi dữ liệu vẫn kiểm tra mục tiêu và báo lỗi nếu thiếu dòng phù hợp, không tự tạo database, object hoặc dữ liệu mẫu. Kiểm tra trigger dùng dòng có sẵn và rollback thay đổi; yêu cầu hoàn tất transaction hiện tại trước khi chạy. Benchmark chỉ đo dữ liệu/index hiện có, không sinh thêm 10.000 dòng giả.
 
-Bạn **không cần** gõ ký tự `#` hay chữ `ai`. Chỉ cần gõ một dòng ghi chú SQL (`-- ...`) bình thường như đang ghi lại câu hỏi của giảng viên:
+Yêu cầu sửa định nghĩa rõ ràng, như `-- sửa hàm thực nhận âm thì về 0`, sinh `ALTER` cho object đã có và giữ `GO` cần thiết để tách batch. Các lệnh chốt/mở kỳ, phân quyền, bật/tắt trigger hoặc sửa định nghĩa sẽ thay đổi database nếu bạn thực thi chúng.
 
-### Hai kiểu đặt con trỏ đều nhận:
-1. **Kiểu 1 (Bấm ngay cuối dòng ghi chú)**:
-   ```sql
-   -- cấp quyền chốt lương cho hr|   <-- (Con trỏ ở cuối dòng, bấm F8 hoặc Ctrl+Q)
-   ```
-2. **Kiểu 2 (Tự bấm `Enter` xuống dòng mới rồi mới bấm phím tắt)**:
-   ```sql
-   -- cấp quyền chốt lương cho hr
-   |                                <-- (Con trỏ ở dòng trống ngay dưới, bấm F8 hoặc Ctrl+Q)
-   ```
-   *(Công cụ tự động nhìn lên dòng trên để đọc câu hỏi rồi gõ code ngay tại dòng trống hiện tại).*
+Muốn gọi thủ tục tính lại một kỳ **đã tồn tại**, dùng:
 
-### Ba cách gọi AI Gemini kín đáo (không lộ chữ `ai`):
-- **Cách A**: Gõ `-- câu hỏi bất kỳ` rồi bấm **`Ctrl + Q`**.
-- **Cách B**: Đặt **dấu chấm `.`** hoặc **dấu hỏi `?`** ở cuối dòng ghi chú rồi bấm **`F8`**:
-  ```sql
-  -- tìm 3 nhân viên lương cao nhất.
-  ```
-- **Cách C**: Dùng **3 dấu gạch ngang `---`** ở đầu dòng rồi bấm **`F8`**:
-  ```sql
-  --- liệt kê các nhân viên đi trễ trong tháng 10 năm 2026
-  ```
+```sql
+-- chạy sp_TinhBangLuongThang tháng 10 năm 2026
+```
 
----
+Trợ lý chọn kỳ chưa chốt phù hợp rồi sinh lời gọi thủ tục đã cài đặt. **Nhấn F5 với SQL này sẽ tính lại dữ liệu lương thực tế của kỳ đó.** Nếu kỳ không tồn tại hoặc không phù hợp, chương trình báo lỗi; không chuẩn bị dữ liệu mẫu.
 
-## 4. Danh sách từ khóa Offline chuẩn (Phản hồi tức thì, không cần mạng)
+Để dùng Gemini, đặt key trong **`tools/ssms_assistant/api_key.txt`**: chỉ dán API key vào một dòng, không thêm dấu nháy. Hoặc đặt biến môi trường **`GEMINI_API_KEY`**, được ưu tiên hơn file. File key đã có trong `.gitignore`; không chia sẻ key. Có thể đặt **`GEMINI_MODEL`** để chọn model nếu cần, rồi khởi động lại trợ lý.
 
-Khi dùng **`F8`** (hoặc `Alt + Q`), bạn có thể gõ tự nhiên các cụm từ dưới đây:
+Chế độ AI đọc cấu trúc thực tế bằng **`sqlcmd`** với Windows Authentication (`-E`). Cần có `sqlcmd` trong PATH và tài khoản Windows đang chạy trợ lý phải kết nối được, có quyền đọc metadata của database. Quyền này độc lập với tài khoản SQL Authentication bạn dùng trong SSMS. Chỉ metadata được đọc; không gửi các dòng dữ liệu hay ID mẫu làm ngữ cảnh schema.
 
-### A. Phân quyền động & Quản lý Login/Role (Hỏi xoáy đáp xoay)
-| Bạn gõ trong SSMS (`-- ...`) | Code SQL tự động gõ ra |
-| :--- | :--- |
-| `-- cấp quyền chốt lương cho hr` | Gỡ `DENY`, cấp `GRANT EXECUTE ON dbo.sp_ChotBangLuong TO role_HRManager` và test bằng `EXECUTE AS LOGIN = 'gui_hr'` |
-| `-- cấm kế toán sửa bảng nhân viên` | `DENY UPDATE ON dbo.NHANVIEN TO role_PayrollOfficer` kèm khối `TRY...CATCH` kiểm chứng |
-| `-- thu hồi quyền select trên bangluong của nhân viên` | `REVOKE SELECT ON dbo.BANGLUONG FROM role_Employee` kèm kiểm chứng |
-| `-- cấp quyền xem bảng tài khoản cho hr` | Gỡ `DENY` và `GRANT SELECT ON dbo.TAIKHOAN TO role_HRManager` |
-| `-- tạo login test_gv và gán vào role hr` | `CREATE LOGIN [test_gv]` + `CREATE USER [test_gv]` + `ALTER ROLE role_HRManager ADD MEMBER [test_gv]` |
-| `-- thêm user gui_a vào role kế toán` | `ALTER ROLE role_PayrollOfficer ADD MEMBER [gui_a]` |
-| `-- gỡ gui_a khỏi role kế toán` | `ALTER ROLE role_PayrollOfficer DROP MEMBER [gui_a]` |
-| `-- xem quyền của role hr` | Truy vấn `sys.database_permissions` JOIN `sys.database_principals` liệt kê ma trận quyền |
+Khi dùng phím tắt, server/database được lấy từ tiêu đề cửa sổ Query SSMS hiện tại. Nếu không nhận diện được Query đã kết nối, trợ lý yêu cầu chọn lại cửa sổ đó. Metadata được cache theo server/database tối đa **60 giây**. Khi gọi bộ sinh SQL bằng mã riêng, có thể đặt **`SSMS_SQL_SERVER`** và **`SSMS_SQL_DATABASE`** làm đích dự phòng; mặc định là `localhost` và `QuanLyNhanSuTienLuong`.
 
-### B. 9 Nhóm kịch bản bảo vệ đồ án TV5
-| Bạn gõ trong SSMS (`-- ...`) | Code SQL tự động gõ ra |
-| :--- | :--- |
-| `-- test quyền hr` *(hoặc `kế toán` / `nhân viên`)* | Chạy bộ test phân quyền RBAC (`EXECUTE AS LOGIN`, chặn lỗi `229`, `REVERT`) |
-| `-- test rls` | Kiểm tra bảo mật cấp dòng `dbo.vw_PhieuLuongCaNhan` giữa `gui_a` (`1008`) và `gui_b` (`1009`) |
-| `-- sửa view rls chỉ xem kỳ đã chốt` | `CREATE OR ALTER VIEW dbo.vw_PhieuLuongCaNhan` thêm điều kiện `AND bl.TrangThai = 'DA_CHOT'` |
-| `-- chốt bảng lương` | Chốt kỳ lương `1009` (`sp_ChotBangLuong`), kiểm tra lỗi chặn chốt trùng (kỳ `1008`) |
-| `-- mở lại kỳ lương` | Gọi `EXEC dbo.sp_HuyChotBangLuong @MaBangLuong = 1009;` |
-| `-- test trigger` *(hoặc thêm: `chấm công` / `phụ cấp` / `khấu trừ` / `chi tiết` / `xóa nhân viên`)* | Kích hoạt các Trigger chống sửa dữ liệu sau khi chốt lương và chống xóa nhân viên đã có lương |
-| `-- tắt trigger chấm công` *(hoặc `-- bật trigger chấm công`)* | `DISABLE TRIGGER` / `ENABLE TRIGGER` trên bảng tương ứng |
-| `-- test hàm tính thực nhận` | Kiểm thử `dbo.fn_TinhThucNhan` ở trường hợp bình thường và trường hợp khấu trừ vượt lương (ra âm) |
-| `-- sửa hàm thực nhận âm thì về 0` | `CREATE OR ALTER FUNCTION dbo.fn_TinhThucNhan` dùng `CASE WHEN ... < 0 THEN 0` |
-| `-- tràn số 8115` | Demo lỗi `Arithmetic overflow error (Msg 8115)` khi dùng `DECIMAL(10,2)` so với `DECIMAL(18,2)` |
-| `-- đo hiệu năng index` | Bật `SET STATISTICS IO, TIME ON` so sánh truy vấn lọc `NHANVIEN` theo `TrangThai, MaPB` |
-| `-- benchmark 10000 dòng bảng tạm` | Sinh 10.000 dòng vào `#BenchmarkNhanVien` để đo chênh lệch `logical reads` trước và sau khi tạo Covering Index |
-| `-- concurrency cửa sổ 1` | **Cửa sổ 1**: `BEGIN TRAN` giữ khóa `WITH (UPDLOCK, HOLDLOCK)` trên `MaBangLuong = 1009` |
-| `-- concurrency cửa sổ 2` | **Cửa sổ 2**: `SET LOCK_TIMEOUT 3000` và gọi `sp_ChotBangLuong` để chứng minh bị chặn chờ khóa |
-| `-- xem session nào đang block` | Truy vấn `sys.dm_exec_requests` và `sys.dm_tran_locks` tìm `blocking_session_id` |
-| `-- test check tháng 13` *(hoặc `tuổi` / `cccd` / `lương âm` / `khóa ngoại`)* | Kiểm thử các ràng buộc toàn vẹn `CHECK`, `UNIQUE`, `FOREIGN KEY` |
-| `-- metadata` | Truy vấn `sys.objects` thống kê toàn bộ đối tượng trong CSDL |
-| `-- xem code sp_ChotBangLuong` *(hoặc tên SP/View/Trigger/Hàm bất kỳ)* | Chạy `EXEC sp_helptext` và `OBJECT_DEFINITION` để xem mã nguồn |
-
-### C. Truy vấn thống kê & Lệnh cứu hộ khẩn cấp
-| Bạn gõ trong SSMS (`-- ...`) | Code SQL tự động gõ ra |
-| :--- | :--- |
-| `-- thống kê quỹ lương theo phòng ban` | Truy vấn `GROUP BY` + `HAVING` trên `dbo.vw_BangLuongChiTiet` |
-| `-- tìm nhân viên lương cao nhất` *(hoặc `thấp nhất`)* | Truy vấn `SELECT TOP (1) WITH TIES` trên `dbo.vw_BangLuongChiTiet` |
-| `-- nhân viên chưa có tài khoản` | Truy vấn `LEFT JOIN ... WHERE tk.MaTK IS NULL` |
-| `-- lịch sử lương` | Truy vấn đối chiếu lương snapshot và `dbo.LICHSULUONG` |
-| `-- reset` *(hoặc `-- cứu hộ`)* | **Lệnh cứu hộ**: `REVERT`, `ROLLBACK`, khôi phục lại toàn bộ quyền `DENY` mặc định, mở khóa tài khoản `gui_%` và mở lại kỳ lương `1009` |
-
----
-
-## 5. Dự phòng: Bộ 17 SSMS Code Snippets có sẵn trong SSMS
-
-Ngay cả khi bạn không bật công cụ Python, trong SSMS của bạn đã được cài sẵn **17 mẫu Code Snippets (`01` -> `17`)**:
-1. Trong cửa sổ truy vấn SSMS, bấm **`Ctrl + K`**, rồi bấm tiếp **`Ctrl + X`** (hoặc chuột phải chọn **Insert Snippet...**).
-2. Chọn thư mục **`My Code Snippets`**.
-3. Chọn mục cần dùng (từ `01` đến `17`) và nhấn **`Enter`**.
+Nếu Ctrl + Q báo lỗi, đọc thông báo được chèn vào Query để kiểm tra API key, kết nối, model hoặc quyền đọc metadata. Các mẫu offline của F8 vẫn dùng được khi không có Gemini; chúng cần đúng schema dự án và dữ liệu thực tế phù hợp khi bạn nhấn F5.
