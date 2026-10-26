@@ -43,6 +43,9 @@ public final class DatabaseTask {
         Object identity = DatabaseConnection.identityToken();
         List<Component> components = new ArrayList<>();
         remember(owner, components);
+        // Swing composite controls propagate setEnabled to their children.
+        // Capture the whole tree before any parent changes a child's state.
+        for (Component component : components) component.setEnabled(false);
         owner.putClientProperty("db.request", request);
         new SwingWorker<T, Void>() {
             protected T doInBackground() throws Exception {
@@ -55,6 +58,11 @@ public final class DatabaseTask {
                         busy.remove(component);
                         component.setEnabled(state.enabled);
                     }
+                }
+                // Re-enabling a composite parent can also enable a child that
+                // another worker still owns. Keep those controls busy.
+                for (Component component : components) {
+                    if (busy.containsKey(component)) component.setEnabled(false);
                 }
                 if (owner.getClientProperty("db.request") != request) return;
                 owner.putClientProperty("db.request", null);
@@ -93,7 +101,6 @@ public final class DatabaseTask {
     private static void remember(Component component, List<Component> components) {
         components.add(component);
         busy.computeIfAbsent(component, BusyState::new).count++;
-        component.setEnabled(false);
         if (component instanceof Container) {
             for (Component child : ((Container) component).getComponents()) remember(child, components);
         }

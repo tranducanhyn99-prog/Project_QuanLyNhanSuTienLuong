@@ -8,7 +8,11 @@ import os
 import re
 import unicodedata
 import urllib.request
+import urllib.error
 from typing import Optional, Tuple, List
+
+from schema_context import get_last_schema_error, load_schema_context
+from sql_format import code_mask, materialize_payroll_exec_arguments, prepare_sql
 
 
 def strip_accents(text: str) -> str:
@@ -116,20 +120,62 @@ def _extract_privileges(norm: str, is_exec: bool) -> str:
 
 
 def _clean_for_human_typing(sql: str) -> str:
-    """Strip comments and decorative banners so typed SQL looks 100% hand-written live."""
-    no_block = re.sub(r"/\*.*?\*/", "", sql, flags=re.DOTALL)
-    out_lines = []
-    for line in no_block.splitlines():
-        clean_line = re.sub(r"\s*--.*$", "", line).rstrip()
-        if not clean_line.strip():
-            continue
-        if re.match(r"^\s*PRINT\b", clean_line, flags=re.IGNORECASE):
-            if "ERROR_MESSAGE" in clean_line.upper():
-                indent = re.match(r"^\s*", clean_line).group(0)
-                out_lines.append(f"{indent}PRINT ERROR_MESSAGE();")
-            continue
-        out_lines.append(clean_line)
-    return "\n".join(out_lines)
+    """Prepare current-database SQL, preserving quoted text and error messages."""
+    return prepare_sql(sql, clean_comments=True)
+
+
+_last_ai_error = ""
+_active_sql_target = {}
+
+
+def set_database_context(server: str, database: str) -> None:
+    """Use the connection shown by the active SSMS query for metadata reads."""
+    _active_sql_target.clear()
+    _active_sql_target.update(server=server, database=database)
+
+
+def _ai_unavailable_message() -> str:
+    detail = _last_ai_error or "Kiểm tra API key, kết nối mạng và model Gemini."
+    return "-- Không thể sinh SQL bằng Gemini. " + detail
+
+
+def _prepare_ai_sql(sql: str, prompt: str, clean_comments: bool) -> str:
+    """Do not accept schema bootstrap for a request to use existing objects."""
+    norm = strip_accents(prompt)
+    definition_requested = bool(re.search(
+        r"\b(?:tao|create|sua|alter)\s+(?:(?:moi|lai|or alter)\s+)?"
+        r"(?:dinh nghia|cau truc|doi tuong|bang\b|co so du lieu|database\b|table\b|view\b|ham\b|function\b|"
+        r"thu tuc|procedure\b|proc\b|trigger\b|index\b|chi muc|login\b|user\b|tai khoan sql)"
+        r"|\bdinh nghia lai\b", norm,
+    ))
+    mask = code_mask(sql)
+    if not definition_requested and (
+        re.search(
+            r"\b(?:CREATE\s+(?:OR\s+ALTER\s+)?(?:(?:UNIQUE|CLUSTERED|NONCLUSTERED)\s+)*|ALTER\s+)"
+            r"(?:DATABASE|TABLE|VIEW|FUNCTION|PROC(?:EDURE)?|TRIGGER|INDEX|LOGIN|USER)\b",
+            mask, re.IGNORECASE,
+        )
+        or re.search(r"\bSELECT\b[\s\S]*?\bINTO\b", mask, re.IGNORECASE)
+    ):
+        return "-- Gemini trả về lệnh tạo/sửa cấu trúc ngoài yêu cầu. Hãy yêu cầu dùng đối tượng đã có trong database."
+    return prepare_sql(materialize_payroll_exec_arguments(sql), clean_comments=clean_comments)
+
+
+def _explicit_payroll_id(norm: str) -> Optional[int]:
+    match = re.search(
+        r"\b(?:mabangluong|ma\s*(?:bang\s*)?luong|(?:bang|ky)\s+luong|sp_(?:huy)?chotbangluong)"
+        r"\s*(?:=|:|so|ma)?\s*(\d+)\b(?!\s*[/.-])", norm,
+    )
+    return int(match.group(1)) if match else None
+
+
+def _explicit_period(norm: str) -> Tuple[Optional[int], Optional[int]]:
+    pair = re.search(r"\b(?:thang|ky(?:\s+luong)?)\s*(\d{1,2})\s*/\s*(\d{4})\b", norm)
+    if pair:
+        return int(pair.group(1)), int(pair.group(2))
+    month = re.search(r"\bthang\s+(\d{1,2})\b", norm)
+    year = re.search(r"\bnam\s*(\d{4})\b", norm)
+    return (int(month.group(1)) if month else None, int(year.group(1)) if year else None)
 
 
 # ---------------------------------------------------------------------------
@@ -148,20 +194,28 @@ def generate_sql(prompt_line: str, force_ai: bool = False, clean_comments: bool 
     norm = strip_accents(cleaned_raw)
 
     if not norm or norm in ("help", "menu", "tro giup", "huong dan"):
-        return _sql_help_menu()
+        return prepare_sql(_sql_help_menu())
 
     # Force AI mode if triggered via stealth syntax (`---`, trailing `.`, `Ctrl+Q`) or legacy `ai `
     if force_ai or norm.startswith("ai "):
         prompt_text = cleaned_raw[3:].strip() if norm.startswith("ai ") else cleaned_raw
         ai_sql = _call_gemini_fallback(prompt_text)
         if ai_sql:
-            return _clean_for_human_typing(ai_sql) if clean_comments else ai_sql
+            return _prepare_ai_sql(ai_sql, prompt_text, clean_comments)
+        return _ai_unavailable_message()
 
     res = _generate_offline_or_fallback(cleaned_raw, norm)
-    return _clean_for_human_typing(res) if clean_comments else res
+    return prepare_sql(res, clean_comments=clean_comments)
 
 
 def _generate_offline_or_fallback(cleaned_raw: str, norm: str) -> str:
+
+    # Calling an installed payroll procedure is different from viewing its module.
+    if ("sp_tinhbangluongthang" in norm or "tinh bang luong" in norm) and re.search(
+        r"\b(chay|exec(?:ute)?|tinh(?: lai)?)\b", norm,
+    ) and not any(word in norm for word in ("xem code", "dinh nghia", "sua", "tao")):
+        month, year = _explicit_period(norm)
+        return _sql_run_existing_payroll(_explicit_payroll_id(norm), month, year)
 
     # 1. Rescue / Reset
     if any(w in norm for w in ["reset", "cuu ho", "khoi phuc trang thai", "ve ban dau"]):
@@ -172,10 +226,7 @@ def _generate_offline_or_fallback(cleaned_raw: str, norm: str) -> str:
         m = re.search(r"(sp_[a-z0-9_]+|trg_[a-z0-9_]+|vw_[a-z0-9_]+|fn_[a-z0-9_]+)", norm)
         obj = f"dbo.{m.group(1)}" if m else _extract_object(norm)[0]
         return (
-            f"USE QuanLyNhanSuTienLuong;\nGO\n"
-            f"EXEC sp_helptext '{obj}';\n"
-            f"-- Hoặc lấy nguyên khối:\n"
-            f"SELECT OBJECT_DEFINITION(OBJECT_ID(N'{obj}')) AS CodeDinhNghia;\nGO"
+            f"exec sys.sp_helptext N'{obj}';"
         )
 
     # 3. Create Login + User + Assign Role
@@ -184,11 +235,10 @@ def _generate_offline_or_fallback(cleaned_raw: str, norm: str) -> str:
         login_id = m.group(1) if m and m.group(1) not in ("sql", "moi", "cho", "va") else "test_gv"
         role_name, _ = _extract_role(norm)
         return (
-            f"USE QuanLyNhanSuTienLuong;\nGO\n"
             f"-- 1. Tạo SQL Login ở mức Server + Tạo User trong DB + Gán vào {role_name}:\n"
             f"CREATE LOGIN [{login_id}] WITH PASSWORD = N'Test@123456', CHECK_POLICY = ON;\n"
             f"CREATE USER [{login_id}] FOR LOGIN [{login_id}];\n"
-            f"ALTER ROLE {role_name} ADD MEMBER [{login_id}];\nGO\n"
+            f"ALTER ROLE {role_name} ADD MEMBER [{login_id}];\n"
             f"-- 2. (Tùy chọn) Lệnh gỡ khỏi Role và xóa sau khi demo xong:\n"
             f"/*\n"
             f"ALTER ROLE {role_name} DROP MEMBER [{login_id}];\n"
@@ -204,8 +254,7 @@ def _generate_offline_or_fallback(cleaned_raw: str, norm: str) -> str:
         user_target = m.group(1) if m else login_name
         action = "DROP MEMBER" if any(w in norm for w in ["go khoi", "xoa khoi", "drop"]) else "ADD MEMBER"
         return (
-            f"USE QuanLyNhanSuTienLuong;\nGO\n"
-            f"ALTER ROLE {role_name} {action} [{user_target}];\nGO"
+            f"ALTER ROLE {role_name} {action} [{user_target}];"
         )
 
     # 5. Dynamic GRANT / REVOKE / DENY
@@ -231,13 +280,12 @@ def _generate_offline_or_fallback(cleaned_raw: str, norm: str) -> str:
     if any(w in norm for w in ["xem quyen", "ma tran quyen", "danh sach quyen", "database_permissions"]):
         role_name, _ = _extract_role(norm)
         return (
-            f"USE QuanLyNhanSuTienLuong;\nGO\n"
             f"SELECT pr.name AS TenRole, dp.state_desc AS TrangThai,\n"
             f"       dp.permission_name AS Quyen, OBJECT_NAME(dp.major_id) AS DoiTuong\n"
             f"FROM sys.database_permissions dp\n"
             f"JOIN sys.database_principals pr ON dp.grantee_principal_id = pr.principal_id\n"
             f"WHERE pr.name LIKE 'role_%' -- Hoặc lọc riêng: pr.name = '{role_name}'\n"
-            f"ORDER BY pr.name, dp.state_desc, DoiTuong;\nGO"
+            f"ORDER BY pr.name, dp.state_desc, DoiTuong;"
         )
 
     # 7. Section 1: RBAC Test Suites (HR, Payroll, Employee)
@@ -250,23 +298,21 @@ def _generate_offline_or_fallback(cleaned_raw: str, norm: str) -> str:
 
     # 8. Section 2: Row-Level Security (vw_PhieuLuongCaNhan)
     if any(w in norm for w in ["rls", "phieu luong ca nhan", "vw_phieuluongcanhan", "sua view", "phan 2", "2.1", "2.2", "original_login"]):
-        if any(w in norm for w in ["sua view", "da_chot", "da chot", "suser_sname", "create or alter view"]):
+        if any(w in norm for w in ["sua view", "alter view", "create or alter view"]):
             return _sql_alter_rls_view(only_da_chot=("da_chot" in norm or "da chot" in norm))
         return _sql_test_rls()
 
     # 9. Section 3: Payroll Closing & Reopening (sp_ChotBangLuong / sp_HuyChotBangLuong)
-    if any(w in norm for w in ["mo lai", "huy chot", "sp_huychotbangluong", "3.4"]):
-        return (
-            "USE QuanLyNhanSuTienLuong;\nGO\n"
-            "EXEC dbo.sp_HuyChotBangLuong @MaBangLuong = 1009;\n"
-            "SELECT MaBangLuong, Thang, Nam, TrangThai, NgayChot FROM dbo.BANGLUONG WHERE MaBangLuong = 1009;\nGO"
-        )
+    if any(w in norm for w in ["mo lai", "huy chot", "bo chot", "mo khoa bang luong", "mo khoa ky luong", "sp_huychotbangluong", "3.4"]):
+        month, year = _explicit_period(norm)
+        return _sql_reopen_bang_luong(_explicit_payroll_id(norm), month, year)
     if any(w in norm for w in ["chot bang luong", "chot luong", "sp_chotbangluong", "phan 3", "3.1", "3.2", "3.3"]):
-        return _sql_test_chot_bang_luong()
+        month, year = _explicit_period(norm)
+        return _sql_test_chot_bang_luong(_explicit_payroll_id(norm), month, year)
 
     # 10. Section 4: Triggers (5 TV5 Triggers + Enable/Disable)
     if "trigger" in norm or "phan 4" in norm or any(w in norm for w in ["4.1", "4.2", "4.3", "4.4", "4.5", "khoa so"]):
-        if any(w in norm for w in ["tat trigger", "disable trigger", "bat trigger", "enable trigger"]):
+        if any(w in norm for w in ["tat trigger", "disable trigger", "bat trigger", "enable trigger", "kich hoat trigger"]):
             return _sql_toggle_trigger(norm)
         if any(w in norm for w in ["cham cong", "chamcong", "4.1"]):
             return _sql_trigger_chamcong()
@@ -276,15 +322,21 @@ def _generate_offline_or_fallback(cleaned_raw: str, norm: str) -> str:
             return _sql_trigger_khautru()
         if any(w in norm for w in ["chi tiet", "chitiet", "100 trieu", "4.4"]):
             return _sql_trigger_chitiet()
+        if any(w in norm for w in ["bang luong", "bangluong"]):
+            return _sql_trigger_bangluong()
         if any(w in norm for w in ["xoa nhan vien", "delete nhan vien", "nhanvien", "4.5"]):
             return _sql_trigger_xoa_nv()
         return _sql_all_5_triggers()
 
     # 11. Section 5: Function fn_TinhThucNhan & Overflow 8115
+    if any(w in norm for w in ["fn_tinhtiencong", "ham tinh tien cong"]):
+        return _sql_tv4_demo()
+    if any(w in norm for w in ["fn_tinhsongaycong", "ham tinh so ngay cong"]):
+        return _sql_tv1_demo()
     if any(w in norm for w in ["tran so", "8115", "overflow", "bien tien te", "decimal"]):
         return _sql_test_money_overflow()
-    if any(w in norm for w in ["fn_tinhthucnhan", "thuc nhan", "sua ham", "phan 5", "ham tinh"]):
-        if any(w in norm for w in ["ve 0", "bang 0", "khong am", "sua ham", "create or alter function"]):
+    if any(w in norm for w in ["fn_tinhthucnhan", "tinh thuc nhan", "ham thuc nhan", "test thuc nhan", "sua ham", "phan 5"]):
+        if any(w in norm for w in ["sua ham", "alter function", "create or alter function"]):
             return _sql_alter_fn_thuc_nhan_clamp_zero()
         return _sql_test_fn_thuc_nhan()
 
@@ -317,12 +369,22 @@ def _generate_offline_or_fallback(cleaned_raw: str, norm: str) -> str:
         re.search(r"\b([2-9]|\d{2,})\s*(nhan vien|nguoi|dong|phong)\b", norm)
         or re.search(r"\btop\s*\(?\s*([2-9]|\d{2,})\b", norm)
     )
+    if has_custom_top_n and any(w in norm for w in ["luong", "thuc nhan"]):
+        match = re.search(r"\btop\s*\(?\s*(\d+)\b|\b(\d+)\s*(?:nhan vien|nguoi|dong)\b", norm)
+        if match:
+            order = "ASC" if any(w in norm for w in ["thap nhat", "it nhat"]) else "DESC"
+            month, year = _explicit_period(norm)
+            return _sql_query_top_luong(
+                order, top_n=max(1, int(match.group(1) or match.group(2))), month=month, year=year,
+            )
     if not has_custom_top_n:
         if any(w in norm for w in ["thong ke", "group by", "having", "quy luong", "theo phong ban"]):
-            return _sql_query_group_by_phongban()
+            month, year = _explicit_period(norm)
+            return _sql_query_group_by_phongban(month=month, year=year)
         if any(w in norm for w in ["top", "cao nhat", "thap nhat", "nhieu nhat", "it nhat"]):
             order = "ASC" if any(w in norm for w in ["thap nhat", "it nhat"]) else "DESC"
-            return _sql_query_top_luong(order)
+            month, year = _explicit_period(norm)
+            return _sql_query_top_luong(order, month=month, year=year)
         if any(w in norm for w in ["chua co tai khoan", "chua cap tai khoan", "chua cham cong", "is null", "not exists"]):
             return _sql_query_unassigned()
         if any(w in norm for w in ["lich su luong", "tang luong", "lichsuluong", "snapshot"]):
@@ -341,14 +403,13 @@ def _generate_offline_or_fallback(cleaned_raw: str, norm: str) -> str:
     # 18. Optional Gemini API fallback if GEMINI_API_KEY is available in environment
     ai_sql = _call_gemini_fallback(cleaned_raw)
     if ai_sql:
-        return ai_sql
+        return _prepare_ai_sql(ai_sql, cleaned_raw, clean_comments=False)
 
-    # Default fallback: return a helpful comment + quick metadata lookup
+    # An unmatched request must not execute an unrelated payroll query.
     return (
-        f"-- [Gợi ý nhanh cho yêu cầu: {cleaned_raw}]\n"
-        f"-- Gõ: -- #help (và bấm Alt+Q hoặc F8) để xem danh sách từ khóa hỗ trợ.\n"
-        f"USE QuanLyNhanSuTienLuong;\nGO\n"
-        f"SELECT TOP(10) * FROM dbo.vw_BangLuongChiTiet WHERE Thang = 10 AND Nam = 2026;\nGO"
+        "-- Chưa có mẫu SQL phù hợp với yêu cầu này.\n"
+        + _ai_unavailable_message() + "\n"
+        + "-- Gõ -- help rồi bấm F8 để xem các yêu cầu hỗ trợ."
     )
 
 
@@ -356,253 +417,244 @@ def _generate_offline_or_fallback(cleaned_raw: str, norm: str) -> str:
 # Template Builders
 # ---------------------------------------------------------------------------
 def _sql_dynamic_permission(norm: str) -> str:
-    role_name, login_name = _extract_role(norm)
+    role_name, _ = _extract_role(norm)
     obj_name, is_exec = _extract_object(norm)
     privs = _extract_privileges(norm, is_exec)
+    if any(w in norm for w in ["cam", "chan", "deny", "khong cho"]):
+        return f"DENY {privs} ON OBJECT::{obj_name} TO [{role_name}];"
+    if any(w in norm for w in ["thu hoi", "go quyen", "xoa quyen", "revoke"]):
+        return f"REVOKE {privs} ON OBJECT::{obj_name} FROM [{role_name}];"
+    return f"GRANT {privs} ON OBJECT::{obj_name} TO [{role_name}];"
 
-    is_deny = any(w in norm for w in ["cam", "chan", "deny", "khong cho"])
-    is_revoke = any(w in norm for w in ["thu hoi", "go quyen", "xoa quyen", "revoke"])
 
-    if is_deny:
-        main_cmd = f"DENY {privs} ON {obj_name} TO {role_name};"
-        restore_cmd = f"-- Khôi phục lại (nếu cần): REVOKE {privs} ON {obj_name} FROM {role_name};"
-    elif is_revoke:
-        main_cmd = f"REVOKE {privs} ON {obj_name} FROM {role_name};"
-        restore_cmd = f"-- Cấp lại (nếu cần): GRANT {privs} ON {obj_name} TO {role_name};"
-    else:
-        main_cmd = (
-            f"-- Gỡ lệnh DENY cũ (nếu có) trước khi GRANT:\n"
-            f"REVOKE {privs} ON {obj_name} FROM {role_name};\n"
-            f"GRANT {privs} ON {obj_name} TO {role_name};"
+def _sql_existing_period(status: Optional[str] = None, payroll_id: Optional[int] = None,
+                         require_details: bool = False, month: Optional[int] = None,
+                         year: Optional[int] = None, include_parameters: bool = False) -> str:
+    """Resolve a payroll period from rows already present in the current database."""
+    filters = []
+    if payroll_id is not None:
+        filters.append(f"bl.MaBangLuong = {int(payroll_id)}")
+    elif status:
+        filters.append(f"bl.TrangThai = '{status}'")
+    if month is not None:
+        filters.append(f"bl.Thang = {int(month)}")
+    if year is not None:
+        filters.append(f"bl.Nam = {int(year)}")
+    if require_details:
+        filters.append("EXISTS (SELECT 1 FROM dbo.CHITIETBANGLUONG ct WHERE ct.MaBangLuong = bl.MaBangLuong)")
+    where = "\nWHERE " + "\n  AND ".join(filters) if filters else ""
+    declaration = "DECLARE @MaBangLuong INT;\n"
+    selection = "SELECT TOP (1) @MaBangLuong = bl.MaBangLuong\n"
+    if include_parameters:
+        declaration = "DECLARE @MaBangLuong INT, @Thang INT, @Nam INT, @NgayCongChuan INT;\n"
+        selection = (
+            "SELECT TOP (1) @MaBangLuong = bl.MaBangLuong, @Thang = bl.Thang,\n"
+            "       @Nam = bl.Nam, @NgayCongChuan = bl.NgayCongChuan\n"
         )
-        restore_cmd = f"-- Khóa lại như thiết kế gốc sau khi test: DENY {privs} ON {obj_name} TO {role_name};"
-
-    test_stmt = (
-        f"EXEC {obj_name} @MaBangLuong = 1009;"
-        if "sp_ChotBangLuong" in obj_name
-        else (f"EXEC {obj_name};" if is_exec else f"SELECT TOP(3) * FROM {obj_name};")
+    return (
+        declaration + selection
+        + f"FROM dbo.BANGLUONG bl{where}\n"
+        "ORDER BY bl.Nam DESC, bl.Thang DESC, bl.MaBangLuong DESC;\n"
+        "IF @MaBangLuong IS NULL\n"
+        "    THROW 51000, N'Không có kỳ lương hiện có phù hợp với yêu cầu.', 1;\n"
     )
 
+
+def _sql_role_permissions(role: str, checks: List[Tuple[str, str]]) -> str:
+    """Inspect effective permissions using an existing database role member."""
+    from sql_format import lowercase_sql_keywords
+
+    probes = "\nUNION ALL\n".join(
+        f"SELECT N'{obj}' AS DoiTuong, N'{perm}' AS Quyen, "
+        f"HAS_PERMS_BY_NAME(N'{obj}', N'OBJECT', N'{perm}') AS DuocPhep"
+        for obj, perm in checks
+    ) + ";"
+    # SQL identifiers from the database are quoted before constructing EXECUTE AS.
+    body = (
+        "DECLARE @DangGiaLap BIT = 0;\nBEGIN TRY\n"
+        "    EXECUTE AS USER = "
+    )
+    tail = (
+        ";\n    SET @DangGiaLap = 1;\n"
+        "    SELECT USER_NAME() AS NguoiDungDangKiemTra;\n"
+        f"    {probes}\n"
+        "    REVERT;\n    SET @DangGiaLap = 0;\nEND TRY\n"
+        "BEGIN CATCH\n    IF @DangGiaLap = 1 REVERT;\n    THROW;\nEND CATCH;"
+    )
+    body = lowercase_sql_keywords(body)
+    tail = lowercase_sql_keywords(tail)
     return (
-        f"USE QuanLyNhanSuTienLuong;\nGO\n"
-        f"{main_cmd}\nGO\n\n"
-        f"-- Test ngay dưới ngữ cảnh '{login_name}' ({role_name}):\n"
-        f"EXECUTE AS LOGIN = '{login_name}';\n"
-        f"BEGIN TRY\n"
-        f"    {test_stmt}\n"
-        f"    PRINT N'-> THỰC THI THÀNH CÔNG dưới quyền ' + SUSER_SNAME();\n"
-        f"END TRY\n"
-        f"BEGIN CATCH\n"
-        f"    PRINT N'-> BỊ CHẶN (Mã lỗi ' + CAST(ERROR_NUMBER() AS NVARCHAR(10)) + N'): ' + ERROR_MESSAGE();\n"
-        f"END CATCH;\n"
-        f"REVERT;\nGO\n"
-        f"{restore_cmd}\n"
+        "DECLARE @NguoiDung SYSNAME, @Lenh NVARCHAR(MAX);\n"
+        "SELECT TOP (1) @NguoiDung = m.name\n"
+        "FROM sys.database_role_members rm\n"
+        "JOIN sys.database_principals r ON r.principal_id = rm.role_principal_id\n"
+        "JOIN sys.database_principals m ON m.principal_id = rm.member_principal_id\n"
+        f"WHERE r.name = N'{role}' AND m.type IN ('S', 'U', 'E')\n"
+        "ORDER BY m.name;\n"
+        "IF @NguoiDung IS NULL\n"
+        "    THROW 51001, N'Role chưa có người dùng hiện có để kiểm tra quyền.', 1;\n"
+        f"SET @Lenh = N'{body.replace(chr(39), chr(39) * 2)}'\n"
+        "    + QUOTENAME(@NguoiDung, CHAR(39))\n"
+        f"    + N'{tail.replace(chr(39), chr(39) * 2)}';\n"
+        "EXEC sys.sp_executesql @Lenh;"
     )
 
 
 def _sql_test_rbac_hr() -> str:
-    return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "EXECUTE AS LOGIN = 'gui_hr';\n"
-        "PRINT N'=== ĐANG CHẠY DƯỚI QUYỀN: ' + SUSER_SNAME() + N' ===';\n\n"
-        "-- 1. Thao tác hợp lệ (HR đọc nhân sự & chấm công):\n"
-        "SELECT TOP(3) MaNV, HoTen, MaPB, MaCV, TrangThai FROM dbo.NHANVIEN;\n"
-        "SELECT TOP(3) MaChamCong, MaNV, NgayChamCong, TrangThai FROM dbo.CHAMCONG;\n\n"
-        "-- 2. Thao tác bị cấm: HR chốt lương (DENY EXECUTE sp_ChotBangLuong -> Lỗi 229):\n"
-        "BEGIN TRY\n"
-        "    EXEC dbo.sp_ChotBangLuong @MaBangLuong = 1009;\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    PRINT N'-> CHẶN HR CHỐT LƯƠNG: ' + ERROR_MESSAGE() + N' (Mã lỗi: ' + CAST(ERROR_NUMBER() AS NVARCHAR(10)) + N')';\n"
-        "END CATCH;\n\n"
-        "-- 3. Thao tác bị cấm: HR đọc bảng TAIKHOAN (DENY SELECT TAIKHOAN -> Lỗi 229):\n"
-        "BEGIN TRY\n"
-        "    SELECT TOP(1) * FROM dbo.TAIKHOAN;\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    PRINT N'-> CHẶN HR ĐỌC TAIKHOAN: ' + ERROR_MESSAGE() + N' (Mã lỗi: ' + CAST(ERROR_NUMBER() AS NVARCHAR(10)) + N')';\n"
-        "END CATCH;\n\n"
-        "REVERT;\nGO"
-    )
+    return _sql_role_permissions("role_HRManager", [
+        ("dbo.NHANVIEN", "SELECT"), ("dbo.CHAMCONG", "SELECT"),
+        ("dbo.sp_ChotBangLuong", "EXECUTE"), ("dbo.TAIKHOAN", "SELECT"),
+    ])
 
 
 def _sql_test_rbac_payroll() -> str:
-    return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "EXECUTE AS LOGIN = 'gui_payroll';\n"
-        "PRINT N'=== ĐANG CHẠY DƯỚI QUYỀN: ' + SUSER_SNAME() + N' ===';\n\n"
-        "-- 1. Hợp lệ: Kế toán đọc bảng lương:\n"
-        "SELECT TOP(3) MaBangLuong, Thang, Nam, TrangThai FROM dbo.BANGLUONG;\n\n"
-        "-- 2. Bị cấm: Kế toán sửa hồ sơ nhân viên (DENY UPDATE NHANVIEN -> Lỗi 229):\n"
-        "BEGIN TRY\n"
-        "    UPDATE dbo.NHANVIEN SET HoTen = N'Hacker Sửa Tên' WHERE MaNV = 1008;\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    PRINT N'-> CHẶN PAYROLL SỬA NHANVIEN: ' + ERROR_MESSAGE() + N' (Mã lỗi: ' + CAST(ERROR_NUMBER() AS NVARCHAR(10)) + N')';\n"
-        "END CATCH;\n\n"
-        "-- 3. Bị cấm: Kế toán chèn chấm công (DENY INSERT CHAMCONG -> Lỗi 229):\n"
-        "BEGIN TRY\n"
-        "    INSERT INTO dbo.CHAMCONG (MaNV, NgayChamCong, GioVao, GioRa, TrangThai)\n"
-        "    VALUES (1008, '2026-10-28', '08:00', '17:00', N'CO_MAT');\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    PRINT N'-> CHẶN PAYROLL THÊM CHAMCONG: ' + ERROR_MESSAGE() + N' (Mã lỗi: ' + CAST(ERROR_NUMBER() AS NVARCHAR(10)) + N')';\n"
-        "END CATCH;\n\n"
-        "REVERT;\nGO"
-    )
+    return _sql_role_permissions("role_PayrollOfficer", [
+        ("dbo.BANGLUONG", "SELECT"), ("dbo.NHANVIEN", "UPDATE"),
+        ("dbo.CHAMCONG", "INSERT"), ("dbo.sp_ChotBangLuong", "EXECUTE"),
+    ])
 
 
 def _sql_test_rbac_employee() -> str:
-    return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "EXECUTE AS LOGIN = 'gui_a';\n"
-        "PRINT N'=== ĐANG CHẠY DƯỚI QUYỀN: ' + SUSER_SNAME() + N' ===';\n\n"
-        "BEGIN TRY\n"
-        "    SELECT * FROM dbo.BANGLUONG;\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    PRINT N'-> CHẶN EMPLOYEE ĐỌC BANGLUONG: ' + ERROR_MESSAGE();\n"
-        "END CATCH;\n\n"
-        "BEGIN TRY\n"
-        "    SELECT * FROM dbo.vw_BangLuongChiTiet;\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    PRINT N'-> CHẶN EMPLOYEE ĐỌC vw_BangLuongChiTiet: ' + ERROR_MESSAGE();\n"
-        "END CATCH;\n\n"
-        "REVERT;\nGO"
-    )
+    return _sql_role_permissions("role_Employee", [
+        ("dbo.BANGLUONG", "SELECT"), ("dbo.vw_BangLuongChiTiet", "SELECT"),
+        ("dbo.vw_PhieuLuongCaNhan", "SELECT"),
+    ])
 
 
 def _sql_test_rls() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "-- 1. Kiểm tra phiếu lương Nhân viên A (gui_a - MaNV 1008 - Nguyễn Tuấn Anh):\n"
-        "EXECUTE AS LOGIN = 'gui_a';\n"
-        "SELECT ORIGINAL_LOGIN() AS LoginKetNoi, SUSER_SNAME() AS LoginHienTai,\n"
-        "       MaNV, HoTen, Thang, Nam, LuongCoBan, NgayCongThucTe, TongPhuCap, TongKhauTru, ThucNhan\n"
-        "FROM dbo.vw_PhieuLuongCaNhan;\n"
-        "REVERT;\n\n"
-        "-- 2. Kiểm tra phiếu lương Nhân viên B (gui_b - MaNV 1009 - Trần Thị Bảo Bình):\n"
-        "EXECUTE AS LOGIN = 'gui_b';\n"
-        "SELECT ORIGINAL_LOGIN() AS LoginKetNoi, SUSER_SNAME() AS LoginHienTai,\n"
-        "       MaNV, HoTen, Thang, Nam, LuongCoBan, NgayCongThucTe, TongPhuCap, TongKhauTru, ThucNhan\n"
-        "FROM dbo.vw_PhieuLuongCaNhan;\n"
-        "REVERT;\nGO"
+        "SELECT MaNV, HoTen, Thang, Nam, ThucNhan\n"
+        "FROM dbo.vw_PhieuLuongCaNhan\n"
+        "ORDER BY Nam DESC, Thang DESC;"
     )
 
 
 def _sql_alter_rls_view(only_da_chot: bool = False) -> str:
     extra = "\n  AND bl.TrangThaiBangLuong = 'DA_CHOT'" if only_da_chot else ""
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "CREATE OR ALTER VIEW dbo.vw_PhieuLuongCaNhan\n"
-        "AS\n"
+        "GO\n"
+        "ALTER VIEW dbo.vw_PhieuLuongCaNhan\nAS\n"
         "SELECT bl.*\n"
         "FROM dbo.vw_BangLuongChiTiet bl\n"
         "JOIN dbo.TAIKHOAN tk ON tk.MaNV = bl.MaNV\n"
         "WHERE tk.SqlLogin IN (ORIGINAL_LOGIN(), SUSER_SNAME())\n"
-        f"  AND tk.TrangThai = 'HOAT_DONG'{extra};\n"
-        "GO"
+        f"  AND tk.TrangThai = 'HOAT_DONG'{extra};\nGO"
     )
 
 
-def _sql_test_chot_bang_luong() -> str:
+def _sql_test_chot_bang_luong(payroll_id: Optional[int] = None,
+                             month: Optional[int] = None, year: Optional[int] = None) -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "-- Bước 1: Đưa kỳ 1009 về CHUA_CHOT nếu đang DA_CHOT\n"
-        "IF EXISTS (SELECT 1 FROM dbo.BANGLUONG WHERE MaBangLuong = 1009 AND TrangThai = 'DA_CHOT')\n"
-        "    EXEC dbo.sp_HuyChotBangLuong @MaBangLuong = 1009;\nGO\n\n"
-        "-- Bước 2: Chốt bảng lương kỳ 1009 (Kỳ vọng: THÀNH CÔNG -> DA_CHOT)\n"
-        "EXEC dbo.sp_ChotBangLuong @MaBangLuong = 1009;\n"
-        "SELECT MaBangLuong, Thang, Nam, TrangThai, NgayChot FROM dbo.BANGLUONG WHERE MaBangLuong = 1009;\nGO\n\n"
-        "-- Bước 3: Cố tình chốt lại lần 2 (Kỳ vọng: Bẫy lỗi 50000 mức 16)\n"
+        _sql_existing_period("CHUA_CHOT", payroll_id, require_details=True, month=month, year=year)
+        + "EXEC dbo.sp_ChotBangLuong @MaBangLuong = @MaBangLuong;\n"
+        "SELECT MaBangLuong, Thang, Nam, TrangThai, NgayChot\n"
+        "FROM dbo.BANGLUONG\nWHERE MaBangLuong = @MaBangLuong;"
+    )
+
+
+def _sql_reopen_bang_luong(payroll_id: Optional[int] = None,
+                          month: Optional[int] = None, year: Optional[int] = None) -> str:
+    return (
+        _sql_existing_period("DA_CHOT", payroll_id, month=month, year=year)
+        + "EXEC dbo.sp_HuyChotBangLuong @MaBangLuong = @MaBangLuong;\n"
+        "SELECT MaBangLuong, Thang, Nam, TrangThai, NgayChot\n"
+        "FROM dbo.BANGLUONG\nWHERE MaBangLuong = @MaBangLuong;"
+    )
+
+
+def _sql_existing_trigger_test(table: str, primary_key: str, trigger: str,
+                               source: str, assignment: Optional[str],
+                               suffix: str, expected_message: str) -> str:
+    """Exercise an installed trigger using existing rows; never prepare fixtures."""
+    variable = f"@MaKiemTra_{suffix}"
+    operation = (
+        f"UPDATE dbo.{table} SET {assignment} WHERE {primary_key} = {variable};"
+        if assignment else f"DELETE FROM dbo.{table} WHERE {primary_key} = {variable};"
+    )
+    return (
+        "IF @@TRANCOUNT <> 0\n"
+        "    THROW 51002, N'Hãy hoàn tất transaction hiện tại trước khi chạy kiểm tra trigger.', 1;\n"
+        "IF NOT EXISTS (SELECT 1 FROM sys.triggers\n"
+        f"               WHERE object_id = OBJECT_ID(N'dbo.{trigger}') AND is_disabled = 0)\n"
+        "    THROW 51003, N'Trigger cần kiểm tra chưa tồn tại hoặc đang tắt.', 1;\n"
+        f"DECLARE {variable} INT;\n"
+        f"SELECT TOP (1) {variable} = t.{primary_key}\n{source}\n"
+        f"ORDER BY t.{primary_key};\n"
+        f"IF {variable} IS NULL\n"
+        "    THROW 51004, N'Không có dòng hiện có phù hợp để kiểm tra trigger; không tự tạo dữ liệu.', 1;\n"
         "BEGIN TRY\n"
-        "    EXEC dbo.sp_ChotBangLuong @MaBangLuong = 1009;\n"
+        "    BEGIN TRANSACTION;\n"
+        f"    {operation}\n"
+        "    ROLLBACK TRANSACTION;\n"
+        "    THROW 51005, N'Thao tác không bị trigger chặn; mọi thay đổi đã rollback.', 1;\n"
         "END TRY\n"
         "BEGIN CATCH\n"
-        "    PRINT N'-> BẪY LỖI CHỐT LẠI THÀNH CÔNG: ' + ERROR_MESSAGE();\n"
-        "END CATCH;\nGO"
+        "    IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;\n"
+        f"    IF ERROR_NUMBER() <> 50000 OR ERROR_MESSAGE() NOT LIKE N'%{expected_message}%' THROW;\n"
+        f"    SELECT N'{trigger}' AS TriggerDaChan, ERROR_NUMBER() AS MaLoi,\n"
+        "           ERROR_MESSAGE() AS ThongBao;\n"
+        "END CATCH;"
     )
 
 
 def _sql_trigger_chamcong() -> str:
-    return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "BEGIN TRY\n"
-        "    INSERT INTO dbo.CHAMCONG (MaNV, NgayChamCong, GioVao, GioRa, TrangThai, GhiChu)\n"
-        "    VALUES (1008, '2026-10-15', '08:00:00', '17:00:00', N'CO_MAT', N'Test Trigger Chấm Công');\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    PRINT N'-> TRIGGER CHẤM CÔNG BẮT THÀNH CÔNG: ' + ERROR_MESSAGE();\n"
-        "END CATCH;\nGO"
+    return _sql_existing_trigger_test(
+        "CHAMCONG", "MaChamCong", "trg_ChamCong_KhongSuaKhiDaChotLuong",
+        "FROM dbo.CHAMCONG t\nJOIN dbo.BANGLUONG bl ON bl.Thang = MONTH(t.NgayChamCong)\n"
+        "    AND bl.Nam = YEAR(t.NgayChamCong)\nWHERE bl.TrangThai = 'DA_CHOT'",
+        "GhiChu = GhiChu", "ChamCong", "không được thay đổi chấm công",
     )
 
 
 def _sql_trigger_phucap() -> str:
-    return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "BEGIN TRY\n"
-        "    INSERT INTO dbo.PHUCAPNHANVIEN (MaNV, Thang, Nam, TenPhuCap, SoTien, NgayGhiNhan)\n"
-        "    VALUES (1008, 10, 2026, N'Phụ cấp khống', 2000000, GETDATE());\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    PRINT N'-> TRIGGER PHỤ CẤP BẮT THÀNH CÔNG: ' + ERROR_MESSAGE();\n"
-        "END CATCH;\nGO"
+    return _sql_existing_trigger_test(
+        "PHUCAPNHANVIEN", "MaPCNV", "trg_PhuCap_KhongSuaKhiDaChotLuong",
+        "FROM dbo.PHUCAPNHANVIEN t\nJOIN dbo.BANGLUONG bl ON bl.Thang = t.Thang AND bl.Nam = t.Nam\n"
+        "WHERE bl.TrangThai = 'DA_CHOT'",
+        "SoTien = SoTien", "PhuCap", "không được thay đổi phụ cấp",
     )
 
 
 def _sql_trigger_khautru() -> str:
-    return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "BEGIN TRY\n"
-        "    INSERT INTO dbo.KHAUTRUNHANVIEN (MaNV, Thang, Nam, TenKhauTru, SoTien, NgayGhiNhan)\n"
-        "    VALUES (1008, 10, 2026, N'Phạt bổ sung', 100000, GETDATE());\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    PRINT N'-> TRIGGER KHẤU TRỪ BẮT THÀNH CÔNG: ' + ERROR_MESSAGE();\n"
-        "END CATCH;\nGO"
+    return _sql_existing_trigger_test(
+        "KHAUTRUNHANVIEN", "MaKTNV", "trg_KhauTru_KhongSuaKhiDaChotLuong",
+        "FROM dbo.KHAUTRUNHANVIEN t\nJOIN dbo.BANGLUONG bl ON bl.Thang = t.Thang AND bl.Nam = t.Nam\n"
+        "WHERE bl.TrangThai = 'DA_CHOT'",
+        "SoTien = SoTien", "KhauTru", "không được thay đổi khấu trừ",
     )
 
 
 def _sql_trigger_chitiet() -> str:
-    return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "BEGIN TRY\n"
-        "    UPDATE dbo.CHITIETBANGLUONG SET ThucNhan = 100000000.00 WHERE MaBangLuong = 1009 AND MaNV = 1008;\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    PRINT N'-> TRIGGER CHI TIẾT LƯƠNG BẮT THÀNH CÔNG: ' + ERROR_MESSAGE();\n"
-        "END CATCH;\nGO"
+    return _sql_existing_trigger_test(
+        "CHITIETBANGLUONG", "MaChiTiet", "trg_ChiTietLuong_KhongSuaKhiDaChot",
+        "FROM dbo.CHITIETBANGLUONG t\nJOIN dbo.BANGLUONG bl ON bl.MaBangLuong = t.MaBangLuong\n"
+        "WHERE bl.TrangThai = 'DA_CHOT'",
+        "ThucNhan = ThucNhan", "ChiTiet", "chi tiết bảng lương đã chốt",
+    )
+
+
+def _sql_trigger_bangluong() -> str:
+    return _sql_existing_trigger_test(
+        "BANGLUONG", "MaBangLuong", "trg_BangLuong_KhongSuaKhiDaChot",
+        "FROM dbo.BANGLUONG t\nWHERE t.TrangThai = 'DA_CHOT'",
+        "NgayCongChuan = NgayCongChuan", "BangLuong", "Khong duoc sua hoac xoa bang luong da chot",
     )
 
 
 def _sql_trigger_xoa_nv() -> str:
-    return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "BEGIN TRY\n"
-        "    DELETE FROM dbo.NHANVIEN WHERE MaNV = 1008;\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    PRINT N'-> TRIGGER CHẶN XÓA NHÂN VIÊN BẮT THÀNH CÔNG: ' + ERROR_MESSAGE();\n"
-        "END CATCH;\nGO"
+    return _sql_existing_trigger_test(
+        "NHANVIEN", "MaNV", "trg_NhanVien_KhongXoaKhiDaPhatSinhLuong",
+        "FROM dbo.NHANVIEN t\nWHERE EXISTS (SELECT 1 FROM dbo.CHITIETBANGLUONG ct WHERE ct.MaNV = t.MaNV)\n"
+        "   OR EXISTS (SELECT 1 FROM dbo.CHAMCONG cc WHERE cc.MaNV = t.MaNV)",
+        None, "NhanVien", "Không được phép xóa nhân viên",
     )
 
 
 def _sql_all_5_triggers() -> str:
-    return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "IF EXISTS (SELECT 1 FROM dbo.BANGLUONG WHERE MaBangLuong = 1009 AND TrangThai = 'CHUA_CHOT')\n"
-        "    EXEC dbo.sp_ChotBangLuong @MaBangLuong = 1009;\nGO\n"
-        + _sql_trigger_chamcong()
-        + "\n"
-        + _sql_trigger_phucap()
-        + "\n"
-        + _sql_trigger_khautru()
-        + "\n"
-        + _sql_trigger_chitiet()
-        + "\n"
-        + _sql_trigger_xoa_nv()
-    )
+    return "\n\n".join(builder() for builder in (
+        _sql_trigger_chamcong, _sql_trigger_phucap, _sql_trigger_khautru,
+        _sql_trigger_chitiet, _sql_trigger_xoa_nv,
+    ))
 
 
 def _sql_toggle_trigger(norm: str) -> str:
@@ -615,328 +667,302 @@ def _sql_toggle_trigger(norm: str) -> str:
         trig, tbl = "dbo.trg_ChiTietLuong_KhongSuaKhiDaChot", "dbo.CHITIETBANGLUONG"
     elif "nhan vien" in norm or "nhanvien" in norm:
         trig, tbl = "dbo.trg_NhanVien_KhongXoaKhiDaPhatSinhLuong", "dbo.NHANVIEN"
-    return (
-        f"USE QuanLyNhanSuTienLuong;\nGO\n"
-        f"-- Tắt tạm thời Trigger:\n"
-        f"DISABLE TRIGGER {trig} ON {tbl};\nGO\n"
-        f"-- Bật lại Trigger:\n"
-        f"ENABLE TRIGGER {trig} ON {tbl};\nGO"
-    )
+    elif "bang luong" in norm or "bangluong" in norm:
+        trig, tbl = "dbo.trg_BangLuong_KhongSuaKhiDaChot", "dbo.BANGLUONG"
+    action = "DISABLE" if "tat trigger" in norm or "disable trigger" in norm else "ENABLE"
+    return f"{action} TRIGGER {trig} ON {tbl};"
 
 
 def _sql_test_fn_thuc_nhan() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "SELECT\n"
-        "    dbo.fn_TinhThucNhan(10000000, 2000000, 1000000) AS [1_Binh_Thuong_11M],\n"
-        "    dbo.fn_TinhThucNhan(NULL, 1500000, NULL)        AS [2_Xu_Ly_NULL_1.5M],\n"
-        "    dbo.fn_TinhThucNhan(5000000, 0, 7000000)        AS [3_Thuc_Nhan_Am_-2M];\nGO"
+        "SELECT MaNV, HoTen, ThucNhan AS ThucNhanDaLuu,\n"
+        "       dbo.fn_TinhThucNhan(TienCong, TongPhuCap, TongKhauTru) AS ThucNhanTinhLai\n"
+        "FROM dbo.vw_BangLuongChiTiet\n"
+        + _sql_read_payroll_filter()
+        + "\nORDER BY MaNV;"
     )
 
 
 def _sql_alter_fn_thuc_nhan_clamp_zero() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "-- Sửa hàm fn_TinhThucNhan: nếu Thực nhận < 0 thì ép về 0\n"
-        "CREATE OR ALTER FUNCTION dbo.fn_TinhThucNhan(\n"
-        "    @TienCong    DECIMAL(18,2),\n"
-        "    @TongPhuCap  DECIMAL(18,2),\n"
-        "    @TongKhauTru DECIMAL(18,2)\n"
-        ")\n"
-        "RETURNS DECIMAL(18,2)\n"
-        "AS\n"
-        "BEGIN\n"
-        "    DECLARE @KetQua DECIMAL(18,2) = ISNULL(@TienCong, 0) + ISNULL(@TongPhuCap, 0) - ISNULL(@TongKhauTru, 0);\n"
-        "    RETURN CASE WHEN @KetQua < 0 THEN 0 ELSE @KetQua END;\n"
+        "GO\n"
+        "ALTER FUNCTION dbo.fn_TinhThucNhan(\n"
+        "    @TienCong DECIMAL(18,2),\n"
+        "    @TongPhuCap DECIMAL(18,2),\n"
+        "    @TongKhauTru DECIMAL(18,2)\n)\n"
+        "RETURNS DECIMAL(18,2)\nAS\nBEGIN\n"
+        "    DECLARE @KetQua DECIMAL(20,2) = ISNULL(@TienCong, 0)\n"
+        "        + ISNULL(@TongPhuCap, 0) - ISNULL(@TongKhauTru, 0);\n"
+        "    RETURN CASE WHEN @KetQua < 0 THEN 0 ELSE CAST(@KetQua AS DECIMAL(18,2)) END;\n"
         "END;\nGO\n"
-        "SELECT dbo.fn_TinhThucNhan(5000000, 0, 7000000) AS KetQua_DaEpVe0;\nGO"
+        + _sql_test_fn_thuc_nhan()
     )
 
 
 def _sql_test_money_overflow() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "-- 1. Tính đúng ở biên tối đa DECIMAL(18,2):\n"
-        "SELECT dbo.fn_TinhThucNhan(9999999999999999.99, 0.00, 0.00) AS Max_Decimal_18_2;\n\n"
-        "-- 2. Bẫy lỗi tràn số Arithmetic Overflow (Mã lỗi 8115):\n"
+        "SELECT dbo.fn_TinhThucNhan(9999999999999999.99, 0.00, 0.00) AS Max_Decimal_18_2;\n"
         "BEGIN TRY\n"
-        "    SELECT dbo.fn_TinhThucNhan(9999999999999999.99, 1.00, 0.00) AS Tran_So;\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    PRINT N'-> BẮT THÀNH CÔNG LỖI TRÀN SỐ (Mã ' + CAST(ERROR_NUMBER() AS NVARCHAR(10)) + N'): ' + ERROR_MESSAGE();\n"
-        "END CATCH;\nGO"
+        "    SELECT dbo.fn_TinhThucNhan(9999999999999999.99, 1.00, 0.00) AS TranSo;\n"
+        "END TRY\nBEGIN CATCH\n"
+        "    IF ERROR_NUMBER() <> 8115 THROW;\n"
+        "    SELECT ERROR_NUMBER() AS MaLoi, ERROR_MESSAGE() AS ThongBao;\n"
+        "END CATCH;"
+    )
+
+
+def _sql_benchmark_existing(row_limit: int) -> str:
+    return (
+        "SET STATISTICS IO ON;\nSET STATISTICS TIME ON;\n"
+        f"SELECT TOP ({int(row_limit)}) MaNV, HoTen, LuongCoBan, TrangThai\n"
+        "FROM dbo.NHANVIEN\n"
+        "WHERE MaPB = (SELECT TOP (1) MaPB FROM dbo.NHANVIEN ORDER BY MaNV)\n"
+        "ORDER BY MaNV;\n"
+        "SET STATISTICS IO OFF;\nSET STATISTICS TIME OFF;"
     )
 
 
 def _sql_benchmark_index() -> str:
-    return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "SET NOCOUNT ON;\n"
-        "SET STATISTICS IO ON;\n"
-        "SET STATISTICS TIME ON;\n\n"
-        "PRINT N'=== 1. CLUSTERED INDEX SCAN (INDEX 1) ===';\n"
-        "SELECT MaNV, HoTen, LuongCoBan, TrangThai\n"
-        "FROM dbo.NHANVIEN WITH (INDEX(1))\n"
-        "WHERE MaPB = 2 AND MaCV = 1;\n\n"
-        "PRINT N'=== 2. COVERING INDEX SEEK (IX_NHANVIEN_MaPB_MaCV) ===';\n"
-        "SELECT MaNV, HoTen, LuongCoBan, TrangThai\n"
-        "FROM dbo.NHANVIEN WITH (INDEX(IX_NHANVIEN_MaPB_MaCV))\n"
-        "WHERE MaPB = 2 AND MaCV = 1;\n\n"
-        "SET STATISTICS IO OFF;\n"
-        "SET STATISTICS TIME OFF;\nGO"
-    )
+    return _sql_benchmark_existing(100)
 
 
 def _sql_benchmark_10k() -> str:
-    return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "SET NOCOUNT ON;\n"
-        "IF OBJECT_ID('tempdb..#BenchmarkNhanVien') IS NOT NULL DROP TABLE #BenchmarkNhanVien;\n\n"
-        "SELECT CONVERT(INT, ROW_NUMBER() OVER (ORDER BY a.object_id, b.object_id)) AS MaNV,\n"
-        "       CONVERT(NVARCHAR(100), N'Nhân viên test ' + CONVERT(NVARCHAR(10), ROW_NUMBER() OVER (ORDER BY a.object_id, b.object_id))) AS HoTen,\n"
-        "       CONVERT(INT, (ROW_NUMBER() OVER (ORDER BY a.object_id, b.object_id) % 4) + 1) AS MaPB,\n"
-        "       CONVERT(INT, (ROW_NUMBER() OVER (ORDER BY a.object_id, b.object_id) % 3) + 1) AS MaCV,\n"
-        "       CAST(10000000 + (ROW_NUMBER() OVER (ORDER BY a.object_id, b.object_id) % 20) * 500000 AS DECIMAL(18,2)) AS LuongCoBan,\n"
-        "       CONVERT(NVARCHAR(20), N'DANG_LAM_VIEC') AS TrangThai\n"
-        "INTO #BenchmarkNhanVien\n"
-        "FROM sys.all_objects a CROSS JOIN sys.all_objects b\n"
-        "ORDER BY a.object_id, b.object_id OFFSET 0 ROWS FETCH NEXT 10000 ROWS ONLY;\n\n"
-        "CREATE UNIQUE CLUSTERED INDEX PK_Bench_MaNV ON #BenchmarkNhanVien(MaNV);\n"
-        "CREATE NONCLUSTERED INDEX IX_Bench_MaPB_MaCV ON #BenchmarkNhanVien(MaPB, MaCV) INCLUDE(HoTen, LuongCoBan, TrangThai);\n"
-        "UPDATE STATISTICS #BenchmarkNhanVien WITH FULLSCAN;\n\n"
-        "PRINT N'=== [BEFORE] CLUSTERED SCAN (~126-142 LOGICAL READS) ===';\n"
-        "SET STATISTICS IO ON; SET STATISTICS TIME ON; SET STATISTICS XML ON;\nGO\n"
-        "SELECT MaNV, HoTen, LuongCoBan, TrangThai FROM #BenchmarkNhanVien WITH(INDEX(PK_Bench_MaNV)) WHERE MaPB = 2 AND MaCV = 1 OPTION(MAXDOP 1);\nGO\n"
-        "SET STATISTICS XML OFF; SET STATISTICS IO OFF; SET STATISTICS TIME OFF;\n\n"
-        "PRINT N'=== [AFTER] COVERING INDEX SEEK (~13-15 LOGICAL READS) ===';\n"
-        "SET STATISTICS IO ON; SET STATISTICS TIME ON; SET STATISTICS XML ON;\nGO\n"
-        "SELECT MaNV, HoTen, LuongCoBan, TrangThai FROM #BenchmarkNhanVien WITH(INDEX(IX_Bench_MaPB_MaCV)) WHERE MaPB = 2 AND MaCV = 1 OPTION(MAXDOP 1);\nGO\n"
-        "SET STATISTICS XML OFF; SET STATISTICS IO OFF; SET STATISTICS TIME OFF;\n"
-        "DROP TABLE #BenchmarkNhanVien;\nGO"
-    )
+    return _sql_benchmark_existing(10000)
 
 
 def _sql_concurrency_window1() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "IF EXISTS (SELECT 1 FROM dbo.BANGLUONG WHERE MaBangLuong = 1009 AND TrangThai = 'DA_CHOT')\n"
-        "    EXEC dbo.sp_HuyChotBangLuong @MaBangLuong = 1009;\nGO\n\n"
-        "BEGIN TRANSACTION;\n"
-        "SELECT MaBangLuong, Thang, Nam, TrangThai\n"
-        "FROM dbo.BANGLUONG WITH (UPDLOCK, HOLDLOCK)\n"
-        "WHERE MaBangLuong = 1009;\n\n"
-        "PRINT N'Phiên A (SPID = ' + CAST(@@SPID AS NVARCHAR(10)) + N') đang giữ khóa UPDLOCK + HOLDLOCK trên kỳ 1009...';\n"
-        "-- Sau khi chạy Cửa sổ 2 thấy bị xoay vòng chờ, bôi đen dòng dưới và bấm F5 để nhả khóa:\n"
-        "-- ROLLBACK TRANSACTION;"
+        "IF @@TRANCOUNT <> 0\n"
+        "    THROW 51007, N'Phiên A phải bắt đầu ngoài transaction hiện có.', 1;\n"
+        "DECLARE @MaBangLuong INT;\n"
+        "BEGIN TRY\n    BEGIN TRANSACTION;\n"
+        "    SELECT TOP (1) @MaBangLuong = MaBangLuong\n"
+        "    FROM dbo.BANGLUONG WITH (UPDLOCK, HOLDLOCK)\n"
+        "    ORDER BY Nam DESC, Thang DESC, MaBangLuong DESC;\n"
+        "    IF @MaBangLuong IS NULL THROW 51000, N'Chưa có kỳ lương để kiểm tra khóa.', 1;\n"
+        "    SELECT @@SPID AS PhienAGiuKhoa, @MaBangLuong AS MaBangLuongDangKhoa;\n"
+        "    WAITFOR DELAY '00:00:20';\n"
+        "    ROLLBACK TRANSACTION;\n"
+        "END TRY\nBEGIN CATCH\n"
+        "    IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;\n    THROW;\nEND CATCH;"
     )
 
 
 def _sql_concurrency_window2() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "PRINT N'Phiên B (SPID = ' + CAST(@@SPID AS NVARCHAR(10)) + N') đang gọi sp_ChotBangLuong...';\n"
-        "EXEC dbo.sp_ChotBangLuong @MaBangLuong = 1009;\nGO"
+        "IF @@TRANCOUNT <> 0\n"
+        "    THROW 51008, N'Phiên B phải bắt đầu ngoài transaction hiện có.', 1;\n"
+        "BEGIN TRY\n    BEGIN TRANSACTION;\n"
+        "    SELECT TOP (1) @@SPID AS PhienB, MaBangLuong, Thang, Nam, TrangThai\n"
+        "    FROM dbo.BANGLUONG WITH (UPDLOCK, HOLDLOCK)\n"
+        "    ORDER BY Nam DESC, Thang DESC, MaBangLuong DESC;\n"
+        "    ROLLBACK TRANSACTION;\n"
+        "END TRY\nBEGIN CATCH\n"
+        "    IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;\n    THROW;\nEND CATCH;"
     )
 
 
 def _sql_check_blocking_sessions() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "-- 1. Xem phiên nào đang bị BLOCK và ai đang giữ khóa (blocking_session_id):\n"
         "SELECT session_id AS PhienBiChan, blocking_session_id AS PhienDangGiuKhoa,\n"
         "       wait_type, wait_time, status, command\n"
-        "FROM sys.dm_exec_requests\n"
-        "WHERE blocking_session_id > 0;\n\n"
-        "-- 2. Xem chi tiết loại khóa (U, X, S, IX...) đang giữ trong DB:\n"
+        "FROM sys.dm_exec_requests\nWHERE blocking_session_id > 0 AND database_id = DB_ID();\n"
         "SELECT request_session_id AS Spid, resource_type,\n"
-        "       OBJECT_NAME(resource_associated_entity_id) AS TenBang,\n"
+        "       CASE WHEN resource_type = 'OBJECT'\n"
+        "            THEN OBJECT_NAME(resource_associated_entity_id, resource_database_id) END AS TenBang,\n"
         "       request_mode AS LoaiKhoa, request_status AS TrangThai\n"
-        "FROM sys.dm_tran_locks\n"
-        "WHERE resource_database_id = DB_ID('QuanLyNhanSuTienLuong')\n"
-        "  AND resource_type IN ('OBJECT', 'KEY', 'PAGE', 'RID');\nGO"
+        "FROM sys.dm_tran_locks\nWHERE resource_database_id = DB_ID()\n"
+        "  AND resource_type IN ('OBJECT', 'KEY', 'PAGE', 'RID');"
     )
 
 
 def _sql_constraints_metadata() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
         "SELECT t.name AS Bang, c.name AS TenRangBuoc, c.type_desc AS LoaiRangBuoc,\n"
         "       OBJECT_DEFINITION(c.object_id) AS DinhNghiaChiTiet\n"
-        "FROM sys.objects c\n"
-        "JOIN sys.tables t ON t.object_id = c.parent_object_id\n"
-        "WHERE t.name IN ('BANGLUONG', 'CHITIETBANGLUONG', 'TAIKHOAN')\n"
-        "  AND c.type_desc LIKE '%CONSTRAINT'\n"
-        "ORDER BY t.name, c.type_desc, c.name;\nGO"
+        "FROM sys.objects c\nJOIN sys.tables t ON t.object_id = c.parent_object_id\n"
+        "WHERE c.type_desc LIKE '%CONSTRAINT'\nORDER BY t.name, c.type_desc, c.name;"
     )
 
 
 def _sql_test_constraints(norm: str) -> str:
+    if "unique" in norm or "trung" in norm:
+        target = (
+            "DECLARE @MaKiemTra INT, @ThangTrung INT, @NamTrung INT;\n"
+            "SELECT TOP (1) @MaKiemTra = a.MaBangLuong, @ThangTrung = b.Thang, @NamTrung = b.Nam\n"
+            "FROM dbo.BANGLUONG a\nJOIN dbo.BANGLUONG b ON b.MaBangLuong <> a.MaBangLuong\n"
+            "WHERE a.TrangThai = 'CHUA_CHOT'\nORDER BY a.Nam DESC, a.Thang DESC, b.MaBangLuong;\n"
+        )
+        operation = "UPDATE dbo.BANGLUONG SET Thang = @ThangTrung, Nam = @NamTrung WHERE MaBangLuong = @MaKiemTra;"
+        error_check = "ERROR_NUMBER() NOT IN (2601, 2627)"
+        constraint = "UQ_BANGLUONG_ThangNam"
+    elif "vai tro" in norm or "taikhoan" in norm or "tai khoan" in norm:
+        target = "DECLARE @MaKiemTra INT = (SELECT TOP (1) MaTK FROM dbo.TAIKHOAN ORDER BY MaTK);\n"
+        operation = "UPDATE dbo.TAIKHOAN SET VaiTro = 'INVALID_ROLE' WHERE MaTK = @MaKiemTra;"
+        error_check = "ERROR_NUMBER() <> 547"
+        constraint = "CHK_TAIKHOAN_VaiTro"
+    else:
+        target = (
+            "DECLARE @MaKiemTra INT = (SELECT TOP (1) MaBangLuong FROM dbo.BANGLUONG\n"
+            "    WHERE TrangThai = 'CHUA_CHOT' ORDER BY Nam DESC, Thang DESC);\n"
+        )
+        operation = "UPDATE dbo.BANGLUONG SET Thang = 13 WHERE MaBangLuong = @MaKiemTra;"
+        error_check = "ERROR_NUMBER() <> 547"
+        constraint = "CHK_BANGLUONG_Thang"
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "-- 1. CHECK Constraint: Chặn nhập tháng 13 (CHK_BANGLUONG_Thang -> Lỗi 547)\n"
-        "BEGIN TRY\n"
-        "    BEGIN TRANSACTION;\n"
-        "    INSERT INTO dbo.BANGLUONG (Thang, Nam, NgayCongChuan, TrangThai) VALUES (13, 2026, 26, 'CHUA_CHOT');\n"
+        "IF @@TRANCOUNT <> 0\n"
+        "    THROW 51009, N'Hãy hoàn tất transaction hiện tại trước khi kiểm tra ràng buộc.', 1;\n"
+        + target
+        + "IF @MaKiemTra IS NULL\n"
+        "    THROW 51010, N'Không có dòng hiện có phù hợp để kiểm tra ràng buộc.', 1;\n"
+        "BEGIN TRY\n    BEGIN TRANSACTION;\n"
+        f"    {operation}\n"
         "    ROLLBACK TRANSACTION;\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;\n"
-        "    PRINT N'[CHK_BANGLUONG_Thang - Mã ' + CAST(ERROR_NUMBER() AS NVARCHAR(10)) + N']: ' + ERROR_MESSAGE();\n"
-        "END CATCH;\n\n"
-        "-- 2. UNIQUE Constraint: Chặn trùng kỳ 10/2026 (UQ_BANGLUONG_ThangNam -> Lỗi 2627)\n"
-        "BEGIN TRY\n"
-        "    BEGIN TRANSACTION;\n"
-        "    INSERT INTO dbo.BANGLUONG (Thang, Nam, NgayCongChuan, TrangThai) VALUES (10, 2026, 26, 'CHUA_CHOT');\n"
-        "    ROLLBACK TRANSACTION;\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;\n"
-        "    PRINT N'[UQ_BANGLUONG_ThangNam - Mã ' + CAST(ERROR_NUMBER() AS NVARCHAR(10)) + N']: ' + ERROR_MESSAGE();\n"
-        "END CATCH;\n\n"
-        "-- 3. CHECK Constraint: Chặn vai trò lạ trên TAIKHOAN (CHK_TAIKHOAN_VaiTro -> Lỗi 547)\n"
-        "BEGIN TRY\n"
-        "    BEGIN TRANSACTION;\n"
-        "    INSERT INTO dbo.TAIKHOAN (MaNV, TenDangNhap, MatKhau, VaiTro, TrangThai)\n"
-        "    VALUES (1008, 'test_hacker', 'hash123', 'Hacker_Role', 'HOAT_DONG');\n"
-        "    ROLLBACK TRANSACTION;\n"
-        "END TRY\n"
-        "BEGIN CATCH\n"
-        "    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;\n"
-        "    PRINT N'[CHK_TAIKHOAN_VaiTro - Mã ' + CAST(ERROR_NUMBER() AS NVARCHAR(10)) + N']: ' + ERROR_MESSAGE();\n"
-        "END CATCH;\nGO"
+        "    THROW 51011, N'Ràng buộc không chặn thao tác; thay đổi đã rollback.', 1;\n"
+        "END TRY\nBEGIN CATCH\n"
+        "    IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;\n"
+        f"    IF {error_check} OR ERROR_MESSAGE() NOT LIKE N'%{constraint}%' THROW;\n"
+        f"    SELECT N'{constraint}' AS RangBuocDaChan, ERROR_NUMBER() AS MaLoi, ERROR_MESSAGE() AS ThongBao;\n"
+        "END CATCH;"
     )
 
 
 def _sql_test_admin_sps() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "-- 1. Kiểm tra danh tính hiện tại qua ORIGINAL_LOGIN() và IS_ROLEMEMBER:\n"
-        "EXEC dbo.sp_LayTaiKhoanHienTai;\n\n"
-        "-- 2. Khóa tài khoản gui_b và mở khóa lại qua sp_AdminSetStatus:\n"
-        "DECLARE @MaTK INT = (SELECT MaTK FROM dbo.TAIKHOAN WHERE TenDangNhap = 'gui_b');\n"
-        "EXEC dbo.sp_AdminSetStatus @MaTK = @MaTK, @TrangThai = 'KHOA';\n"
-        "SELECT TenDangNhap, TrangThai, is_disabled AS SqlLoginDisabled\n"
-        "FROM dbo.TAIKHOAN tk JOIN sys.server_principals sp ON sp.name = tk.SqlLogin WHERE tk.MaTK = @MaTK;\n\n"
-        "EXEC dbo.sp_AdminSetStatus @MaTK = @MaTK, @TrangThai = 'HOAT_DONG';\nGO"
+        "EXEC dbo.sp_LayTaiKhoanHienTai;\n"
+        "SELECT MaTK, TenDangNhap, VaiTro, TrangThai\n"
+        "FROM dbo.TAIKHOAN\nORDER BY MaTK;"
     )
 
 
-def _sql_query_group_by_phongban() -> str:
+def _sql_read_payroll_filter(month: Optional[int] = None, year: Optional[int] = None) -> str:
+    """Use plain filters for a specified period, otherwise select the latest with data."""
+    filters = []
+    if month is not None:
+        filters.append(f"Thang = {int(month)}")
+    if year is not None:
+        filters.append(f"Nam = {int(year)}")
+    if month is not None and year is not None:
+        return "WHERE " + " AND ".join(filters)
+    where = "    WHERE " + " AND ".join(filters) + "\n" if filters else ""
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "SELECT\n"
-        "    TenPB,\n"
-        "    COUNT(MaNV)     AS SoNhanVien,\n"
-        "    SUM(TienCong)   AS TongTienCong,\n"
-        "    SUM(TongPhuCap) AS TongPhuCap,\n"
-        "    SUM(TongKhauTru) AS TongKhauTru,\n"
-        "    SUM(ThucNhan)   AS TongQuyLuongThucNhan,\n"
-        "    AVG(ThucNhan)   AS LuongBinhQuan\n"
-        "FROM dbo.vw_BangLuongChiTiet\n"
-        "WHERE Thang = 10 AND Nam = 2026\n"
-        "GROUP BY TenPB\n"
-        "ORDER BY TongQuyLuongThucNhan DESC;\nGO"
+        "WHERE MaBangLuong = (\n"
+        "    SELECT TOP (1) MaBangLuong\n"
+        "    FROM dbo.vw_BangLuongChiTiet\n"
+        + where
+        + "    ORDER BY Nam DESC, Thang DESC\n)"
     )
 
 
-def _sql_query_top_luong(order: str = "DESC") -> str:
+def _sql_query_group_by_phongban(month: Optional[int] = None, year: Optional[int] = None) -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "SELECT TOP (1) WITH TIES\n"
-        "    MaNV, HoTen, TenPB, TenCV, LuongCoBan, NgayCongThucTe, TongPhuCap, TongKhauTru, ThucNhan\n"
+        "SELECT TenPB, COUNT(*) AS SoNhanVien, SUM(ThucNhan) AS TongQuyLuongThucNhan\n"
         "FROM dbo.vw_BangLuongChiTiet\n"
-        "WHERE Thang = 10 AND Nam = 2026\n"
-        f"ORDER BY ThucNhan {order};\nGO"
+        + _sql_read_payroll_filter(month, year)
+        + "\nGROUP BY TenPB\nORDER BY TongQuyLuongThucNhan DESC;"
+    )
+
+
+def _sql_query_top_luong(order: str = "DESC", top_n: int = 1,
+                         month: Optional[int] = None, year: Optional[int] = None) -> str:
+    order = "ASC" if order.upper() == "ASC" else "DESC"
+    return (
+        f"SELECT TOP ({max(1, int(top_n))}) WITH TIES MaNV, HoTen, TenPB, ThucNhan\n"
+        "FROM dbo.vw_BangLuongChiTiet\n"
+        + _sql_read_payroll_filter(month, year)
+        + f"\nORDER BY ThucNhan {order};"
     )
 
 
 def _sql_query_unassigned() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "-- Nhân viên chưa được cấp tài khoản ứng dụng:\n"
         "SELECT nv.MaNV, nv.HoTen, nv.Email, nv.TrangThai\n"
-        "FROM dbo.NHANVIEN nv\n"
-        "LEFT JOIN dbo.TAIKHOAN tk ON tk.MaNV = nv.MaNV\n"
-        "WHERE tk.MaTK IS NULL;\nGO"
+        "FROM dbo.NHANVIEN nv\nLEFT JOIN dbo.TAIKHOAN tk ON tk.MaNV = nv.MaNV\n"
+        "WHERE tk.MaTK IS NULL\nORDER BY nv.MaNV;"
     )
 
 
 def _sql_query_lich_su_luong() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "SELECT ls.MaNV, nv.HoTen, ls.TuThang, ls.LuongCoBan AS LuongMocLichSu, nv.LuongCoBan AS LuongHienTai\n"
-        "FROM dbo.LICHSULUONG ls\n"
-        "JOIN dbo.NHANVIEN nv ON nv.MaNV = ls.MaNV\n"
-        "ORDER BY ls.MaNV, ls.TuThang;\nGO"
+        "SELECT ls.MaNV, nv.HoTen, ls.TuThang, ls.LuongCoBan AS LuongMocLichSu,\n"
+        "       nv.LuongCoBan AS LuongHienTai\n"
+        "FROM dbo.LICHSULUONG ls\nJOIN dbo.NHANVIEN nv ON nv.MaNV = ls.MaNV\n"
+        "ORDER BY ls.MaNV, ls.TuThang;"
     )
 
 
 def _sql_tv1_demo() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "SELECT * FROM dbo.vw_NhanVien_PhongBan_ChucVu;\n"
-        "SELECT dbo.fn_TinhSoNgayCong(1008, 10, 2026) AS SoNgayCong_NV1008;\nGO"
+        "SELECT MaNV, HoTen, TenPB, TenCV, LuongCoBan\n"
+        "FROM dbo.vw_NhanVien_PhongBan_ChucVu\nORDER BY MaNV;"
     )
 
 
 def _sql_tv2_demo() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "SELECT * FROM dbo.vw_TongHopChamCongThang WHERE Nam = 2026 AND Thang = 10;\nGO"
+        "SELECT TOP (1) WITH TIES MaNV, HoTen, Thang, Nam, SoNgayDiLam, SoNgayVang\n"
+        "FROM dbo.vw_TongHopChamCongThang\nORDER BY Nam DESC, Thang DESC;"
     )
 
 
 def _sql_tv3_demo() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "SELECT dbo.fn_TongPhuCap(1008, 10, 2026) AS TongPhuCap_1008,\n"
-        "       dbo.fn_TongKhauTru(1008, 10, 2026) AS TongKhauTru_1008;\n"
-        "SELECT * FROM dbo.vw_TongPhuCapThang WHERE Thang = 10 AND Nam = 2026;\nGO"
+        "SELECT MaNV, HoTen,\n"
+        "       dbo.fn_TongPhuCap(MaNV, Thang, Nam) AS TongPhuCap,\n"
+        "       dbo.fn_TongKhauTru(MaNV, Thang, Nam) AS TongKhauTru\n"
+        "FROM dbo.vw_BangLuongChiTiet\n"
+        + _sql_read_payroll_filter()
+        + "\nORDER BY MaNV;"
     )
 
 
 def _sql_tv4_demo() -> str:
     return (
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "SELECT dbo.fn_TinhTienCong(26000000, 26, 24) AS TienCong_24Ngay;\n"
-        "SELECT * FROM dbo.vw_TongKhauTruThang WHERE Thang = 10 AND Nam = 2026;\nGO"
+        "SELECT MaNV, HoTen, TienCong AS TienCongDaLuu,\n"
+        "       dbo.fn_TinhTienCong(LuongCoBan, NgayCongChuan, NgayCongThucTe) AS TienCongTinhLai\n"
+        "FROM dbo.vw_BangLuongChiTiet\n"
+        + _sql_read_payroll_filter()
+        + "\nORDER BY MaNV;"
+    )
+
+
+def _sql_run_existing_payroll(payroll_id: Optional[int] = None,
+                              month: Optional[int] = None, year: Optional[int] = None) -> str:
+    return (
+        _sql_existing_period("CHUA_CHOT", payroll_id, month=month, year=year, include_parameters=True)
+        + "EXEC dbo.sp_TinhBangLuongThang @Thang = @Thang, @Nam = @Nam,\n"
+        "    @NgayCongChuan = @NgayCongChuan, @MaBangLuong = @MaBangLuong OUTPUT;\n"
+        "SELECT MaNV, HoTen, ThucNhan\nFROM dbo.vw_BangLuongChiTiet\n"
+        "WHERE MaBangLuong = @MaBangLuong\nORDER BY MaNV;"
     )
 
 
 def _sql_reset_state() -> str:
     return (
-        "REVERT;\n"
-        "IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;\nGO\n"
-        "USE QuanLyNhanSuTienLuong;\nGO\n"
-        "DENY EXECUTE ON dbo.sp_ChotBangLuong TO role_HRManager;\n"
-        "DENY SELECT, INSERT, UPDATE, DELETE ON dbo.TAIKHOAN TO role_HRManager;\n"
-        "UPDATE dbo.TAIKHOAN SET TrangThai = 'HOAT_DONG' WHERE TenDangNhap LIKE 'gui_%';\n"
-        "IF EXISTS (SELECT 1 FROM dbo.BANGLUONG WHERE MaBangLuong = 1009 AND TrangThai = 'DA_CHOT')\n"
-        "    EXEC dbo.sp_HuyChotBangLuong @MaBangLuong = 1009;\n"
-        "PRINT N'[OK] Đã khôi phục toàn bộ quyền, tài khoản và kỳ lương 1009 về trạng thái chuẩn!';\nGO"
+        "IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;\n"
+        "BEGIN TRY\n    REVERT;\nEND TRY\nBEGIN CATCH\n"
+        "    SELECT ERROR_MESSAGE() AS ThongBaoHoanNguyen;\nEND CATCH;\n"
+        "SELECT DB_NAME() AS DatabaseHienTai, @@TRANCOUNT AS SoTransaction,\n"
+        "       ORIGINAL_LOGIN() AS LoginKetNoi, SUSER_SNAME() AS LoginHienTai;"
     )
 
 
 def _sql_help_menu() -> str:
     return (
-        "-- ======================================================================\n"
-        "-- DANH SÁCH LỆNH GỢI Ý NHANH TRONG SSMS (Gõ -- #... rồi bấm Alt+Q hoặc F8)\n"
-        "-- ======================================================================\n"
-        "-- 1. Phân quyền động:   -- #cấp quyền chốt lương cho hr\n"
-        "--                       -- #cấm kế toán sửa bảng nhân viên\n"
-        "--                       -- #thu hồi quyền select trên bangluong của nhân viên\n"
-        "--                       -- #tạo login test_gv và gán vào role hr\n"
-        "--                       -- #xem quyền của role hr\n"
-        "-- 2. Test 4 Roles:      -- #test quyền hr  |  -- #test quyền kế toán  |  -- #test quyền nhân viên\n"
-        "-- 3. Test & Sửa RLS:    -- #test rls  |  -- #sửa view rls chỉ xem kỳ đã chốt\n"
-        "-- 4. Chốt / Mở lương:   -- #chốt bảng lương  |  -- #mở lại kỳ lương\n"
-        "-- 5. Test 5 Triggers:   -- #test trigger (hoặc: chấm công / phụ cấp / khấu trừ / chi tiết / xóa nhân viên)\n"
-        "--                       -- #tắt trigger chấm công\n"
-        "-- 6. Hàm Thực nhận:     -- #test hàm tính thực nhận  |  -- #sửa hàm thực nhận âm thì về 0  |  -- #tràn số 8115\n"
-        "-- 7. Index Benchmark:   -- #đo hiệu năng index  |  -- #benchmark 10000 dòng bảng tạm\n"
-        "-- 8. Concurrency Lock:  -- #concurrency cửa sổ 1  |  -- #concurrency cửa sổ 2  |  -- #xem session nào đang block\n"
-        "-- 9. Ràng buộc & Code:  -- #test check tháng 13  |  -- #metadata  |  -- #xem code sp_ChotBangLuong\n"
-        "-- 10. Truy vấn nâng cao:-- #thống kê quỹ lương theo phòng ban  |  -- #tìm nhân viên lương cao nhất  |  -- #reset"
+        "-- Chọn database hiện có trong SSMS trước khi chạy SQL.\n"
+        "-- Gõ yêu cầu trên dòng -- rồi nhấn F8 / Alt+Q; Ctrl+Q ưu tiên Gemini.\n"
+        "-- Truy vấn và kiểm tra dùng dữ liệu hiện có, không tự tạo database, object hay dữ liệu mẫu.\n"
+        "-- test quyền hr | test quyền kế toán | test quyền nhân viên\n"
+        "-- test rls | sửa view rls chỉ xem kỳ đã chốt\n"
+        "-- chốt bảng lương | mở lại kỳ lương\n"
+        "-- test trigger chấm công | phụ cấp | khấu trừ | chi tiết | xóa nhân viên\n"
+        "-- Test trigger cần dòng phù hợp đã có; các thay đổi kiểm tra đều rollback.\n"
+        "-- test hàm tính thực nhận | sửa hàm thực nhận âm thì về 0 | tràn số 8115\n"
+        "-- đo hiệu năng index | benchmark 10000 dòng hiện có\n"
+        "-- concurrency cửa sổ 1 | concurrency cửa sổ 2 | xem session đang block\n"
+        "-- test check tháng 13 | metadata | xem code sp_ChotBangLuong\n"
+        "-- thống kê quỹ lương theo phòng ban | tìm 3 nhân viên lương cao nhất\n"
+        "-- tv1 | tv2 | tv3 | tv4 | reset"
     )
 
 
@@ -963,72 +989,84 @@ def _load_api_key() -> str:
     return ""
 
 
-FULL_DB_SCHEMA_CONTEXT = (
-    "Bạn là chuyên gia T-SQL cho CSDL SQL Server `QuanLyNhanSuTienLuong`.\n"
-    "1. 10 BẢNG & GIÁ TRỊ CHECK CONSTRAINT:\n"
-    "- dbo.PHONGBAN(MaPB int PK, TenPB nvarchar, SoDienThoai varchar, TrangThai nvarchar IN (N'HOAT_DONG', N'NGUNG_HOAT_DONG')) [MaPB: 1001..1005]\n"
-    "- dbo.CHUCVU(MaCV int PK, TenCV nvarchar, PhuCapChucVu decimal(18,2)>=0) [MaCV: 1001..1006]\n"
-    "- dbo.NHANVIEN(MaNV int PK, HoTen nvarchar, NgaySinh date, GioiTinh nvarchar IN (N'Nam',N'Nữ',N'Khác'), CCCD varchar(12), DiaChi nvarchar, SoDienThoai varchar(10), Email varchar, NgayVaoLam date, LuongCoBan decimal(18,2)>0, MaPB int FK, MaCV int FK, TrangThai nvarchar IN (N'DANG_LAM_VIEC',N'NGHI_VIEC'), NgayNghiViec date) [MaNV: 1001..1010]\n"
-    "- dbo.TAIKHOAN(MaTK int PK, MaNV int UNIQUE FK, TenDangNhap varchar UNIQUE, MatKhau varchar, VaiTro varchar IN ('DB_Admin','HR_Manager','Payroll_Officer','Employee'), TrangThai varchar IN ('HOAT_DONG','KHOA'), NgayTao datetime2, NgaySuaCuoi datetime2, SqlLogin sysname)\n"
-    "- dbo.LICHSULUONG(MaLichSu int PK, MaNV int FK, LuongCu decimal(18,2), LuongMoi decimal(18,2), NgayCapNhat datetime2, GhiChu nvarchar)\n"
-    "- dbo.CHAMCONG(MaChamCong int PK, MaNV int FK, NgayChamCong date, GioVao time, GioRa time, SoGioLam decimal(4,2) computed, TrangThai nvarchar IN (N'CO_MAT',N'DI_TRE',N'VE_SOM',N'VANG'), GhiChu nvarchar)\n"
-    "- dbo.PHUCAPNHANVIEN(MaPCNV int PK, MaNV int FK, Thang int 1..12, Nam int>=2020, TenPhuCap nvarchar, SoTien decimal(18,2)>=0, NgayGhiNhan date, GhiChu nvarchar)\n"
-    "- dbo.KHAUTRUNHANVIEN(MaKTNV int PK, MaNV int FK, Thang int 1..12, Nam int>=2020, TenKhauTru nvarchar, SoTien decimal(18,2)>=0, NgayGhiNhan date, LyDo nvarchar)\n"
-    "- dbo.BANGLUONG(MaBangLuong int PK, Thang int 1..12, Nam int>=2020, NgayCongChuan int>0, TrangThai varchar IN ('CHUA_CHOT','DA_CHOT'), NgayTao datetime2, NgayChot datetime2) [MaBangLuong 1008: 9/2026 DA_CHOT; 1009: 10/2026 CHUA_CHOT]\n"
-    "- dbo.CHITIETBANGLUONG(MaChiTiet int PK, MaBangLuong int FK, MaNV int FK, LuongCoBan decimal(18,2), NgayCongThucTe int, TienCong decimal(18,2), TongPhuCap decimal(18,2), TongKhauTru decimal(18,2), ThucNhan decimal(18,2))\n"
-    "2. 6 VIEWS:\n"
-    "- dbo.vw_BangLuongChiTiet(MaBangLuong, Thang, Nam, NgayCongChuan, TrangThaiBangLuong, NgayTaoBangLuong, NgayChot, MaChiTiet, MaNV, HoTen, TenPB, TenCV, LuongCoBan, NgayCongThucTe, TienCong, TongPhuCap, TongKhauTru, ThucNhan)\n"
-    "- dbo.vw_PhieuLuongCaNhan(cùng cột với vw_BangLuongChiTiet, lọc RLS theo ORIGINAL_LOGIN()/SUSER_SNAME())\n"
-    "- dbo.vw_NhanVien_PhongBan_ChucVu(MaNV, HoTen, NgaySinh, GioiTinh, CCCD, DiaChi, SoDienThoai, Email, NgayVaoLam, LuongCoBan, TrangThai, MaPB, TenPB, MaCV, TenCV, PhuCapChucVu, TenDangNhap, VaiTro, TrangThaiTaiKhoan)\n"
-    "- dbo.vw_TongHopChamCongThang(MaNV, HoTen, Thang, Nam, SoNgayDiLam, SoLanDiTre, SoLanVeSom, SoNgayVang, TongSoGioLam)\n"
-    "- dbo.vw_TongPhuCapThang(MaNV, HoTen, Thang, Nam, SoKhoanPhuCap, TongTienPhuCap)\n"
-    "- dbo.vw_TongKhauTruThang(MaNV, HoTen, Thang, Nam, TongKhauTru)\n"
-    "3. 5 SCALAR FUNCTIONS:\n"
-    "- dbo.fn_TinhSoNgayCong(@MaNV int, @Thang int, @Nam int) RETURNS int\n"
-    "- dbo.fn_TinhTienCong(@LuongCoBan decimal(18,2), @NgayCongChuan int, @NgayCongThucTe int) RETURNS decimal(18,2)\n"
-    "- dbo.fn_TongPhuCap(@MaNV int, @Thang int, @Nam int) RETURNS decimal(18,2)\n"
-    "- dbo.fn_TongKhauTru(@MaNV int, @Thang int, @Nam int) RETURNS decimal(18,2)\n"
-    "- dbo.fn_TinhThucNhan(@TienCong decimal(18,2), @TongPhuCap decimal(18,2), @TongKhauTru decimal(18,2)) RETURNS decimal(18,2)\n"
-    "4. STORED PROCEDURES:\n"
-    "- dbo.sp_ChotBangLuong(@MaBangLuong int), dbo.sp_HuyChotBangLuong(@MaBangLuong int)\n"
-    "- dbo.sp_TinhBangLuongThang(@Thang int, @Nam int, @NgayCongChuan int=26, @MaBangLuong int OUTPUT)\n"
-    "- dbo.sp_XoaBangLuongChuaChot(@MaBangLuong int), dbo.sp_XoaKyLuongChuaChot(@Thang int, @Nam int)\n"
-    "- dbo.sp_ThemNhanVien(@HoTen, @NgaySinh, @GioiTinh, @CCCD, @DiaChi, @SoDienThoai, @Email, @NgayVaoLam, @LuongCoBan, @MaPB, @MaCV, @TaoTaiKhoan, @TenDangNhap, @MatKhauSHA256, @VaiTro, @NewMaNV OUTPUT)\n"
-    "- dbo.sp_GhiNhanChamCong(@MaNV, @NgayChamCong, @GioVao, @GioRa, @TrangThai, @GhiChu, @MaChamCong OUTPUT)\n"
-    "- dbo.sp_ThemPhuCapNhanVien(@MaNV, @Thang, @Nam, @TenPhuCap, @SoTien, @NgayGhiNhan, @GhiChu, @MaPCNV OUTPUT)\n"
-    "- dbo.sp_LayTaiKhoanHienTai(), dbo.sp_AdminSetStatus(@MaTK, @TrangThai), dbo.sp_AdminSetRole(@MaTK, @VaiTro), dbo.sp_AdminResetPassword(@MaTK, @Hash, @Password), dbo.sp_DBAProvisionIdentity(@Login, @Password, @Hash, @VaiTro, @MaNV)\n"
-    "5. 9 TRIGGERS:\n"
-    "- trg_BangLuong_KhongSuaKhiDaChot, trg_ChiTietLuong_KhongSuaKhiDaChot, trg_ChamCong_KhongSuaKhiDaChotLuong, trg_PhuCap_KhongSuaKhiDaChotLuong, trg_KhauTru_KhongSuaKhiDaChotLuong, trg_NhanVien_KhongXoaKhiDaPhatSinhLuong, trg_ChamCong_KiemTraGio, trg_ChamCong_KiemTraNhanVien, trg_NhanVien_LichSuLuong.\n"
-    "6. ROLES & LOGINS:\n"
-    "- 4 Roles: role_DBAdmin, role_HRManager, role_PayrollOfficer, role_Employee.\n"
-    "- 5 Logins: gui_admin (MaNV 1001), gui_hr (MaNV 1002), gui_payroll (MaNV 1005), gui_a (MaNV 1008), gui_b (MaNV 1009).\n"
+AI_SQL_RULES = (
+    "Bạn là chuyên gia T-SQL. SQL sẽ chạy trong database đang được chọn trong SSMS.\n"
+    "Phong cách: code đơn giản, ngắn gọn, dễ đọc; từ khóa SQL phải viết thường (select, from, where, join, exec...). "
+    "Giữ nguyên cách viết tên bảng/cột/hàm/biến và giá trị chuỗi. Mỗi mệnh đề chính xuống một dòng.\n"
+    "Chỉ sinh phần SQL tối thiểu để giải quyết yêu cầu. Với truy vấn đọc, ưu tiên select trực tiếp; "
+    "không thêm hàng loạt declare, if exists, try/catch, metadata, kết quả phụ hoặc thông báo trang trí. "
+    "Chỉ giữ biến, kiểm tra và transaction khi cần cho thao tác thay đổi dữ liệu hay kiểm tra trigger.\n"
+    "Cú pháp SQL Server: tham số exec chỉ nhận hằng số hoặc biến, không truyền trực tiếp "
+    "(select ...), lời gọi hàm hay biểu thức tính toán. Lấy giá trị bằng select vào biến trước, "
+    "rồi exec dbo.sp_HuyChotBangLuong @MaBangLuong = @MaBangLuong.\n"
+    "Metadata bên dưới được đọc từ database đã tồn tại; chỉ dùng đúng đối tượng/cột/tham số có trong đó.\n"
+    "Không thêm USE; chỉ thêm GO để tách batch khi ALTER/CREATE VIEW, FUNCTION, PROCEDURE hoặc TRIGGER thực sự cần.\n"
+    "Mặc định không CREATE DATABASE/TABLE/VIEW/FUNCTION/PROCEDURE/TRIGGER/INDEX, không SELECT INTO, "
+    "không tự thêm dữ liệu mẫu rồi mới thực hiện yêu cầu. Chỉ sinh DDL khi người dùng yêu cầu rõ việc tạo/sửa cấu trúc.\n"
+    "Khi sửa đối tượng đã có, dùng ALTER; khi gọi hàm/thủ tục hoặc kích hoạt trigger, dùng đối tượng đang có.\n"
+    "Không đoán mã nhân viên, mã kỳ lương hay ngày tháng. Nếu người dùng không chỉ định mã, SELECT bản ghi thực tế phù hợp; "
+    "truy vấn đọc không có dữ liệu thì trả kết quả rỗng. Với thao tác thay đổi, thiếu đối tượng/bản ghi thì báo lỗi; "
+    "không tự tạo dữ liệu hay đổi trạng thái để chuẩn bị.\n"
+    "Test trigger trên dòng phù hợp đã có, transaction rồi rollback; không tự bật/tắt hoặc tạo lại trigger, "
+    "không tự chốt/mở kỳ lương để tạo điều kiện kiểm tra.\n"
+    "Chỉ trả T-SQL đúng yêu cầu, kết thúc câu bằng dấu chấm phẩy, không Markdown hay lời giải thích.\n"
 )
 
 
 def _call_gemini_fallback(user_prompt: str) -> Optional[str]:
+    global _last_ai_error
+    _last_ai_error = ""
     api_key = _load_api_key()
     if not api_key:
+        _last_ai_error = "Chưa có GEMINI_API_KEY hoặc file api_key.txt."
         return None
-    schema_prompt = (
-        FULL_DB_SCHEMA_CONTEXT
-        + "YÊU CẦU ĐẦU RA: Chỉ trả về câu lệnh T-SQL ngắn gọn, đúng tên bảng/cột/hàm/thủ tục/giá trị CHECK ở trên, trình bày xuống dòng theo từng mệnh đề (SELECT / FROM / WHERE / ORDER BY), kết thúc bằng dấu ; (KHÔNG bọc ```sql, TUYỆT ĐỐI KHÔNG viết bất kỳ dòng comment -- hay /* */ nào) cho yêu cầu: "
-        + user_prompt
+    schema = load_schema_context(**_active_sql_target)
+    if not schema:
+        detail = get_last_schema_error()
+        _last_ai_error = (
+            "Không đọc được schema database hiện có. "
+            + (detail + " " if detail else "")
+            + "Kiểm tra sqlcmd, quyền Windows "
+            "và kết nối SSMS_SQL_SERVER / SSMS_SQL_DATABASE."
+        )
+        return None
+    schema_prompt = AI_SQL_RULES + "\n" + schema + "\nYêu cầu: " + user_prompt
+    configured_model = os.environ.get("GEMINI_MODEL", "").strip()
+    model_names = (configured_model,) if configured_model else (
+        "gemini-3.5-flash-lite", "gemini-3.8-flash",
     )
-    for model_name in ("gemini-3-flash-preview", "gemini-3.5-flash-lite"):
+    for model_name in model_names:
+        if not re.fullmatch(r"[A-Za-z0-9._-]+", model_name):
+            _last_ai_error = "GEMINI_MODEL không phải mã model hợp lệ."
+            return None
         try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-            body = {
-                "contents": [{"parts": [{"text": schema_prompt}]}],
-                "generationConfig": {"thinkingConfig": {"thinkingBudget": 0}},
-            }
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+            body = {"contents": [{"parts": [{"text": schema_prompt}]}]}
             payload = json.dumps(body).encode("utf-8")
-            req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=8.0) as resp:
+            req = urllib.request.Request(
+                url, data=payload,
+                headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
+            )
+            with urllib.request.urlopen(req, timeout=12.0) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-                text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                text = re.sub(r"^```(?:sql|tsql)?\s*", "", text, flags=re.IGNORECASE)
-                text = re.sub(r"\s*```$", "", text)
-                return text
-        except Exception:
-            continue
+            parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+            sql = "\n".join(part["text"] for part in parts if "text" in part and not part.get("thought")).strip()
+            sql = re.sub(r"^```(?:sql|tsql)?\s*", "", sql, flags=re.IGNORECASE)
+            sql = re.sub(r"\s*```$", "", sql).strip()
+            if sql:
+                return sql
+            _last_ai_error = "Gemini không trả về đoạn SQL có thể dùng."
+        except urllib.error.HTTPError as exc:
+            reasons = {
+                400: "Gemini từ chối yêu cầu hoặc cấu hình model (HTTP 400).",
+                401: "API key không hợp lệ (HTTP 401).",
+                403: "API key hoặc project không có quyền gọi model (HTTP 403).",
+                404: "Không tìm thấy model Gemini; kiểm tra GEMINI_MODEL (HTTP 404).",
+                429: "Gemini đã hết hạn mức hoặc đang giới hạn tốc độ (HTTP 429).",
+            }
+            _last_ai_error = reasons.get(exc.code, f"Gemini trả lỗi HTTP {exc.code}.")
+        except (urllib.error.URLError, TimeoutError):
+            _last_ai_error = "Không kết nối được Gemini hoặc đã hết thời gian chờ."
+        except (ValueError, KeyError, IndexError, TypeError):
+            _last_ai_error = "Gemini trả về dữ liệu không đúng định dạng."
     return None
