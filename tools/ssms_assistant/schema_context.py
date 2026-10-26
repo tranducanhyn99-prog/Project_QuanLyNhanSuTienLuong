@@ -183,7 +183,7 @@ def load_schema_context(server: Optional[str] = None, database: Optional[str] = 
         return None
     try:
         result = subprocess.run(
-            [sqlcmd, "-S", server, "-d", database, "-E", "-l", "3", "-t", "3",
+            [sqlcmd, "-S", server, "-d", database, "-E", "-C", "-l", "3", "-t", "3",
              "-f", "65001", "-y", "0", "-w", "65535", "-b", "-r", "1",
              "-Q", _SCHEMA_QUERY],
             capture_output=True,

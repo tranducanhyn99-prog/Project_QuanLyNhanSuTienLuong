@@ -131,6 +131,8 @@ _active_sql_target = {}
 def set_database_context(server: str, database: str) -> None:
     """Use the connection shown by the active SSMS query for metadata reads."""
     _active_sql_target.clear()
+    if database and database.strip().lower() in ("master", "tempdb", "model", "msdb"):
+        database = os.environ.get("SSMS_SQL_DATABASE", "").strip() or "QuanLyNhanSuTienLuong"
     _active_sql_target.update(server=server, database=database)
 
 
@@ -271,7 +273,7 @@ def _generate_offline_or_fallback(cleaned_raw: str, norm: str) -> str:
             "revoke ",
             "cam quyen",
             "chan quyen",
-            "deny ",
+            "deny ", "tat quyen", "tat het quyen", "xoa het quyen", "thu hoi het quyen",
         ]
     ) or re.match(r"^(grant|revoke|deny|cap|cam|thu hoi)\b", norm):
         return _sql_dynamic_permission(norm)
@@ -420,7 +422,12 @@ def _sql_dynamic_permission(norm: str) -> str:
     role_name, _ = _extract_role(norm)
     obj_name, is_exec = _extract_object(norm)
     privs = _extract_privileges(norm, is_exec)
-    if any(w in norm for w in ["cam", "chan", "deny", "khong cho"]):
+    if any(w in norm for w in ["het quyen", "toan bo quyen", "tat ca quyen"]):
+        all_privs = "SELECT, INSERT, UPDATE, DELETE, EXECUTE"
+        if any(w in norm for w in ["thu hoi", "go", "xoa", "revoke", "cap", "mo", "grant"]):
+            return f"REVOKE {all_privs} ON SCHEMA::dbo FROM [{role_name}];"
+        return f"DENY {all_privs} ON SCHEMA::dbo TO [{role_name}];"
+    if any(w in norm for w in ["cam", "chan", "deny", "khong cho", "tat quyen"]):
         return f"DENY {privs} ON OBJECT::{obj_name} TO [{role_name}];"
     if any(w in norm for w in ["thu hoi", "go quyen", "xoa quyen", "revoke"]):
         return f"REVOKE {privs} ON OBJECT::{obj_name} FROM [{role_name}];"
@@ -1009,6 +1016,7 @@ AI_SQL_RULES = (
     "không tự tạo dữ liệu hay đổi trạng thái để chuẩn bị.\n"
     "Test trigger trên dòng phù hợp đã có, transaction rồi rollback; không tự bật/tắt hoặc tạo lại trigger, "
     "không tự chốt/mở kỳ lương để tạo điều kiện kiểm tra.\n"
+    "Cú pháp phân quyền SQL Server: GRANT/REVOKE/DENY <quyền> ON OBJECT::dbo.<Tên> (hoặc ON SCHEMA::dbo nếu áp dụng toàn bộ quyền) TO/FROM [<TênRole>]; tuyệt đối không viết TO ROLE hay FROM ROLE.\n"
     "Chỉ trả T-SQL đúng yêu cầu, kết thúc câu bằng dấu chấm phẩy, không Markdown hay lời giải thích.\n"
 )
 
@@ -1033,7 +1041,7 @@ def _call_gemini_fallback(user_prompt: str) -> Optional[str]:
     schema_prompt = AI_SQL_RULES + "\n" + schema + "\nYêu cầu: " + user_prompt
     configured_model = os.environ.get("GEMINI_MODEL", "").strip()
     model_names = (configured_model,) if configured_model else (
-        "gemini-3.5-flash-lite", "gemini-3.8-flash",
+        "gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-3.8-flash",
     )
     for model_name in model_names:
         if not re.fullmatch(r"[A-Za-z0-9._-]+", model_name):
